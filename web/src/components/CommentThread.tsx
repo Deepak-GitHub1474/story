@@ -8,6 +8,7 @@ import { ReportMenu } from '@/components/ReportMenu';
 import {
   addComment,
   deleteComment,
+  editComment,
   loadReplies,
   toggleCommentLike,
 } from '@/lib/actions/stories';
@@ -15,6 +16,13 @@ import { relativeTime } from '@/lib/format';
 import type { TComment } from '@/lib/types';
 
 const QUICK_EMOJI = ['❤️', '🫂', '😢', '🙏', '💛', '✨'];
+const EDIT_WINDOW_MINUTES = 15;
+
+function isWithinEditWindow(createdAt: string) {
+  const posted = new Date(createdAt).getTime();
+  if (Number.isNaN(posted)) return false;
+  return Date.now() - posted < EDIT_WINDOW_MINUTES * 60_000;
+}
 const TAG_PATTERN = /(@[a-z0-9_]{3,20})/g;
 
 function renderBody(body: string) {
@@ -168,6 +176,8 @@ function CommentItem({
 }) {
   const [, startTransition] = useTransition();
   const [isReporting, setIsReporting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.body);
   const [notice, setNotice] = useState<string | null>(null);
   const [extraReplies, setExtraReplies] = useState<TComment[] | null>(null);
   const [like, setLike] = useOptimistic(
@@ -179,6 +189,8 @@ function CommentItem({
   );
 
   const canDelete = comment.author.user_id === currentUserId || isStoryAuthor;
+  const canEdit =
+    comment.author.user_id === currentUserId && isWithinEditWindow(comment.created_at);
   const shown = extraReplies ?? comment.replies ?? [];
   const hidden = comment.counts.replies - shown.length;
 
@@ -187,14 +199,63 @@ function CommentItem({
       <div className="flex gap-3">
         <Avatar seed={comment.author.avatar_seed} size={isReply ? 24 : 30} />
         <div className="min-w-0 flex-1">
-          <p className="leading-relaxed text-text-secondary">
-            <span className="font-semibold text-text-primary">
-              {comment.author.display_name}
-            </span>{' '}
-            {renderBody(comment.body)}
-          </p>
+          {isEditing ? (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                startTransition(async () => {
+                  const next = draft.trim();
+                  if (!next || next === comment.body) {
+                    setIsEditing(false);
+                    return;
+                  }
+                  const result = await editComment(
+                    comment.comment_id,
+                    storyId,
+                    next,
+                  );
+                  if (result.error) setNotice(result.error);
+                  else setIsEditing(false);
+                });
+              }}
+              className="flex flex-col gap-2"
+            >
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                rows={3}
+                maxLength={2000}
+                className="resize-y rounded-[length:var(--radius-md)] border border-border bg-surface px-3 py-2 outline-none focus:border-accent"
+              />
+              <div className="flex gap-3 text-[length:var(--text-caption)] font-semibold">
+                <button type="submit" className="text-accent">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft(comment.body);
+                    setIsEditing(false);
+                  }}
+                  className="text-text-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="leading-relaxed text-text-secondary">
+              <span className="font-semibold text-text-primary">
+                {comment.author.display_name}
+              </span>{' '}
+              {renderBody(comment.body)}
+            </p>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-4 text-[length:var(--text-caption)] text-text-muted">
-            <span>{relativeTime(comment.created_at)}</span>
+            <span>
+              {relativeTime(comment.created_at)}
+              {comment.edited_at ? ' · edited' : ''}
+            </span>
             <button
               type="button"
               aria-pressed={like.isLiked}
@@ -230,6 +291,15 @@ function CommentItem({
             >
               Reply
             </button>
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="font-semibold hover:text-text-secondary"
+              >
+                Edit
+              </button>
+            ) : null}
             {canDelete ? (
               <button
                 type="button"

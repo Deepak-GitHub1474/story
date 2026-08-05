@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -132,6 +133,27 @@ class SettingsScreen extends ConsumerWidget {
                 AppSection(
                   title: 'About',
                   children: [
+                    AppListRow(
+                      label: 'Your referral code',
+                      value: user?.referralCode,
+                      icon: Icons.card_giftcard_outlined,
+                      onTap: user == null
+                          ? null
+                          : () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: user.referralCode),
+                              );
+                              if (context.mounted) {
+                                AppToast.show(context, 'Referral code copied.');
+                              }
+                            },
+                    ),
+                    if (user?.referredBy != null)
+                      AppListRow(
+                        label: 'Referred by',
+                        value: user!.referredBy,
+                        icon: Icons.people_outline,
+                      ),
                     const AppListRow(
                       label: 'Version',
                       value: '0.1.0',
@@ -142,6 +164,12 @@ class SettingsScreen extends ConsumerWidget {
                       icon: Icons.logout,
                       isDanger: true,
                       onTap: () => _confirmSignout(context, ref),
+                    ),
+                    AppListRow(
+                      label: 'Sign out everywhere',
+                      icon: Icons.devices_other_outlined,
+                      isDanger: true,
+                      onTap: () => _confirmSignoutAll(context, ref),
                     ),
                     AppListRow(
                       label: 'Deactivate or delete',
@@ -202,6 +230,24 @@ class SettingsScreen extends ConsumerWidget {
     if (choice != null) {
       await ref.read(themeProvider.notifier).select(choice);
     }
+  }
+
+  Future<void> _confirmSignoutAll(BuildContext context, WidgetRef ref) async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'Sign out everywhere?',
+      body: 'Every device signs out, including this one. Useful if you think '
+          'someone else has your account.',
+      confirmLabel: 'Sign out everywhere',
+      cancelLabel: 'Stay',
+    );
+
+    if (!confirmed || !context.mounted) return;
+
+    await ref.read(authProvider.notifier).signoutEverywhere();
+    if (!context.mounted) return;
+    AppToast.show(context, 'Signed out on every device.');
+    context.go(Routes.welcome);
   }
 
   Future<void> _confirmSignout(BuildContext context, WidgetRef ref) async {

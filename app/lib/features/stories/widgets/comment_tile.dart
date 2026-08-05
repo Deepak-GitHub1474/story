@@ -15,6 +15,8 @@ class CommentTile extends StatelessWidget {
     required this.onDelete,
     required this.onLike,
     required this.onReply,
+    this.canEdit = false,
+    this.onEdit,
     this.onExpandReplies,
     this.isReply = false,
     this.expandedReplies = const [],
@@ -26,6 +28,8 @@ class CommentTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onLike;
   final VoidCallback onReply;
+  final bool canEdit;
+  final VoidCallback? onEdit;
   final VoidCallback? onExpandReplies;
   final bool isReply;
   final List<Comment> expandedReplies;
@@ -78,7 +82,9 @@ class CommentTile extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          timeAgo(comment.createdAt),
+                          comment.editedAt == null
+                              ? timeAgo(comment.createdAt)
+                              : '${timeAgo(comment.createdAt)} · edited',
                           style: TextStyle(
                             color: colors.textMuted,
                             fontSize: AppTypeScale.caption,
@@ -107,6 +113,20 @@ class CommentTile extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (canEdit && onEdit != null) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          InkWell(
+                            onTap: onEdit,
+                            child: Text(
+                              'Edit',
+                              style: TextStyle(
+                                color: colors.textMuted,
+                                fontSize: AppTypeScale.caption,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(width: AppSpacing.md),
                         InkWell(
                           onTap: onDelete,

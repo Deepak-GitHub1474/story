@@ -143,6 +143,7 @@ class Comment {
     required this.replyCount,
     required this.isLiked,
     required this.createdAt,
+    this.editedAt,
     this.replies = const [],
   });
 
@@ -158,6 +159,7 @@ class Comment {
       replyCount: counts['replies'] as int? ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? '',
+      editedAt: json['edited_at'] as String?,
       replies: (json['replies'] as List<dynamic>? ?? [])
           .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
@@ -168,6 +170,7 @@ class Comment {
   final String storyId;
   final String? parentId;
   final StoryAuthor author;
+  final String? editedAt;
   final String body;
   final int likes;
   final int replyCount;

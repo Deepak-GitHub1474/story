@@ -136,3 +136,13 @@ export async function shareStory(storyId: string) {
   await backendFetch(`/stories/${storyId}/share`, { method: 'POST' });
   revalidatePath(`/story/${storyId}`);
 }
+
+export async function editComment(commentId: string, storyId: string, body: string) {
+  const result = await backendFetch(`/comments/${commentId}`, {
+    method: 'PATCH',
+    body: { body },
+  });
+  if (!result.ok) return { error: result.message };
+  revalidatePath(`/story/${storyId}`);
+  return { error: null };
+}

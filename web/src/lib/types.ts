@@ -72,6 +72,7 @@ export type TComment = {
   counts: { likes: number; replies: number };
   is_liked: boolean;
   created_at: string;
+  edited_at: string | null;
   replies?: TComment[];
 };
 

@@ -58,6 +58,11 @@ class AuthRepository {
     parse: (data) => data['signed_out'] as bool? ?? true,
   );
 
+  Future<Result<bool>> signoutEverywhere() => _client.post(
+    Endpoints.signoutAll,
+    parse: (data) => data['signed_out'] as bool? ?? true,
+  );
+
   DeviceDetails _currentDevice() {
     if (Platform.isAndroid) {
       return const DeviceDetails(platform: 'android', appVersion: '0.1.0');

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/app_button.dart';
+import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/report_sheet.dart';
 import '../../../core/utils/time_ago.dart';
@@ -140,6 +142,85 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     } else {
       AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
     }
+  }
+
+  bool _canEdit(Comment comment, String? currentUserId) {
+    if (comment.author.userId != currentUserId) return false;
+    final posted = DateTime.tryParse(comment.createdAt);
+    if (posted == null) return false;
+    return DateTime.now().toUtc().difference(posted.toUtc()).inMinutes < 15;
+  }
+
+  Future<void> _editComment(Comment comment, String storyId) async {
+    final controller = TextEditingController(text: comment.body);
+
+    final next = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.xl,
+          right: AppSpacing.xl,
+          top: AppSpacing.xl,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + AppSpacing.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Edit comment',
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontSize: AppTypeScale.heading,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: controller,
+              label: 'Your comment',
+              maxLines: 4,
+              autofocus: true,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Save',
+              onPressed: () => Navigator.of(sheetContext).pop(controller.text.trim()),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'You can edit a comment for 15 minutes after posting.',
+              style: TextStyle(
+                color: context.colors.textMuted,
+                fontSize: AppTypeScale.caption,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (next == null || next.isEmpty || next == comment.body || !mounted) return;
+
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .editComment(comment.commentId, next);
+
+    if (!mounted) return;
+    result.fold(
+      onSuccess: (_) {
+        _expanded.clear();
+        ref.invalidate(commentsProvider(storyId));
+      },
+      onFailure: (failure) =>
+          AppToast.show(context, failure.message, kind: AppToastKind.error),
+    );
   }
 
   Future<void> _deleteComment(Comment comment, String storyId) async {
@@ -391,6 +472,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                               targetKind: 'comment',
                                               targetId: raw.commentId,
                                             ),
+                                      canEdit: _canEdit(raw, currentUserId),
+                                      onEdit: () =>
+                                          _editComment(_resolve(raw), story.storyId),
                                       onLike: () => _toggleCommentLike(_resolve(raw)),
                                       onReply: () => _startReply(raw),
                                       onExpandReplies: () => _expandReplies(raw),

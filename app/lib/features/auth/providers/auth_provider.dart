@@ -120,6 +120,13 @@ class AuthNotifier extends Notifier<AuthState> {
     state = const AuthState(status: AuthStatus.signedOut);
   }
 
+  Future<void> signoutEverywhere() async {
+    state = state.copyWith(isBusy: true);
+    await _repository.signoutEverywhere();
+    await _store.clear();
+    state = const AuthState(status: AuthStatus.signedOut);
+  }
+
   void markSignedOut() {
     state = const AuthState(status: AuthStatus.signedOut);
   }
