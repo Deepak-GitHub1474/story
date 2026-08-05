@@ -8,6 +8,7 @@ import '../../../components/app_toast.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../communities/providers/community_providers.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 
@@ -27,6 +28,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
   Timer? _autosave;
   String? _storyId;
+  String? _communitySlug;
   bool _isLoading = false;
   bool _isPublishing = false;
   bool _isDirty = false;
@@ -114,7 +116,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     final result = await ref
         .read(storyRepositoryProvider)
-        .publish(storyId, visibility: visibility);
+        .publish(storyId, visibility: visibility, communitySlug: _communitySlug);
 
     if (!mounted) return;
     setState(() => _isPublishing = false);
@@ -162,7 +164,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
               _VisibilityOption(
                 icon: Icons.public,
                 title: 'Public',
-                subtitle: 'Anyone on STORY can read it. Your real name is never attached.',
+                subtitle: _communitySlug == null
+                    ? 'Anyone on STORY can read it. Your real name is never attached.'
+                    : 'Posts into the community you picked.',
                 onTap: () => Navigator.of(sheetContext).pop('public'),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -252,7 +256,13 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               ),
                             ),
                             Divider(color: colors.border, height: 1),
-                            const SizedBox(height: AppSpacing.lg),
+                            const SizedBox(height: AppSpacing.md),
+                            _CommunityPicker(
+                              slug: _communitySlug,
+                              onPick: (slug) =>
+                                  setState(() => _communitySlug = slug),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
                             TextField(
                               controller: _body,
                               focusNode: _bodyFocus,
@@ -372,6 +382,101 @@ class _VisibilityOption extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _CommunityPicker extends ConsumerWidget {
+  const _CommunityPicker({required this.slug, required this.onPick});
+
+  final String? slug;
+  final ValueChanged<String?> onPick;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final mine = ref.watch(myCommunitiesProvider);
+
+    return mine.when(
+      loading: () => const SizedBox.shrink(),
+      error: (error, _) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        final picked = items.where((item) => item.slug == slug).firstOrNull;
+
+        return InkWell(
+          onTap: () async {
+            final choice = await showModalBottomSheet<String?>(
+              context: context,
+              backgroundColor: colors.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+              ),
+              builder: (sheetContext) => SafeArea(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.public, color: colors.textMuted),
+                      title: Text(
+                        'No community',
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      onTap: () => Navigator.of(sheetContext).pop(null),
+                    ),
+                    for (final community in items)
+                      ListTile(
+                        leading: Icon(Icons.groups_outlined, color: colors.accent),
+                        title: Text(
+                          community.name,
+                          style: TextStyle(color: colors.textPrimary),
+                        ),
+                        onTap: () => Navigator.of(sheetContext).pop(community.slug),
+                      ),
+                  ],
+                ),
+              ),
+            );
+            onPick(choice);
+          },
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              border: Border.all(color: colors.border),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  picked == null ? Icons.public : Icons.groups_outlined,
+                  size: AppSizes.iconSm,
+                  color: picked == null ? colors.textMuted : colors.accent,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  picked?.name ?? 'No community',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: AppTypeScale.caption,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: AppSizes.iconSm,
+                  color: colors.textMuted,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

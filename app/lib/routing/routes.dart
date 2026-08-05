@@ -6,18 +6,21 @@ class Routes {
   static const String signup = '/signup';
   static const String signin = '/signin';
 
-  static const String feed = '/feed';
+  static const String stories = '/stories';
   static const String activity = '/activity';
   static const String profile = '/profile';
   static const String settings = '/settings';
 
   static const String compose = '/compose';
   static const String story = '/story';
+  static const String communities = '/communities';
+  static const String community = '/community';
+  static const String user = '/u';
 
   static const String editProfile = '/settings/profile';
   static const String interests = '/settings/interests';
   static const String changePassword = '/settings/password';
   static const String sessions = '/settings/sessions';
 
-  static const String home = feed;
+  static const String home = stories;
 }

@@ -23,6 +23,12 @@ Map<String, dynamic> _commentBody(String body, String? parentId) {
   return payload;
 }
 
+Map<String, dynamic> _publishBody(String visibility, String? communitySlug) {
+  final payload = <String, dynamic>{'visibility': visibility};
+  if (communitySlug != null) payload['community_slug'] = communitySlug;
+  return payload;
+}
+
 class StoryRepository {
   const StoryRepository(this._client);
 
@@ -40,9 +46,13 @@ class StoryRepository {
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
-  Future<Result<Story>> publish(String storyId, {required String visibility}) => _client.post(
+  Future<Result<Story>> publish(
+    String storyId, {
+    required String visibility,
+    String? communitySlug,
+  }) => _client.post(
     Endpoints.publishStory(storyId),
-    body: {'visibility': visibility},
+    body: _publishBody(visibility, communitySlug),
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 

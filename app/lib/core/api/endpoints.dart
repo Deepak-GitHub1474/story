@@ -48,6 +48,20 @@ class Endpoints {
 
   static String commentLike(String id) => '/comments/$id/like';
 
+  static const String communities = '/communities';
+  static const String myCommunities = '/communities/me';
+
+  static String community(String slug) => '/communities/$slug';
+
+  static String communityJoin(String slug) => '/communities/$slug/join';
+
+  static String communityStories(String slug) => '/communities/$slug/stories';
+
+  static String connection(String username) => '/connections/$username';
+
+  static const String following = '/connections/following';
+  static const String followers = '/connections/followers';
+
   static const String notifications = '/notifications';
   static const String unreadCount = '/notifications/unread-count';
   static const String markAllNotificationsRead = '/notifications/read-all';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/story_models.dart';
@@ -16,9 +17,11 @@ class StoryListView extends StatefulWidget {
     required this.onLoadMore,
     required this.onOpen,
     this.onLike,
+    this.onAuthorTap,
     this.onSwipe,
     this.emptyTitle = 'Nothing here yet',
     this.emptyBody = '',
+    this.endLabel = 'You are all caught up',
     this.showVisibility = false,
     this.header,
   });
@@ -28,9 +31,11 @@ class StoryListView extends StatefulWidget {
   final VoidCallback onLoadMore;
   final void Function(Story story) onOpen;
   final void Function(Story story)? onLike;
+  final void Function(Story story)? onAuthorTap;
   final Future<bool> Function(Story story, SwipeAction action)? onSwipe;
   final String emptyTitle;
   final String emptyBody;
+  final String endLabel;
   final bool showVisibility;
   final Widget? header;
 
@@ -45,8 +50,9 @@ class _StoryListViewState extends State<StoryListView> {
   void initState() {
     super.initState();
     _controller.addListener(() {
+      if (!widget.state.hasMore || widget.state.isLoadingMore) return;
       final position = _controller.position;
-      if (position.pixels > position.maxScrollExtent - 400) widget.onLoadMore();
+      if (position.pixels > position.maxScrollExtent - 600) widget.onLoadMore();
     });
   }
 
@@ -62,7 +68,7 @@ class _StoryListViewState extends State<StoryListView> {
     final state = widget.state;
 
     if (state.isLoading && state.items.isEmpty && widget.header == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonList();
     }
 
     return RefreshIndicator(
@@ -95,19 +101,13 @@ class _StoryListViewState extends State<StoryListView> {
           final adjusted = index - offset;
 
           if (state.items.isEmpty) {
-            return state.isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(AppSpacing.xxxl),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : _empty(context);
+            return state.isLoading ? const SkeletonList(count: 3) : _empty(context);
           }
 
           if (adjusted >= state.items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return state.isLoadingMore
+                ? const StorySkeleton()
+                : EndOfFeed(label: widget.endLabel);
           }
 
           return _buildPost(context, state.items[adjusted]);
@@ -122,6 +122,8 @@ class _StoryListViewState extends State<StoryListView> {
       showVisibility: widget.showVisibility,
       onTap: () => widget.onOpen(story),
       onLike: widget.onLike == null ? null : () => widget.onLike!(story),
+      onAuthorTap:
+          widget.onAuthorTap == null ? null : () => widget.onAuthorTap!(story),
     );
 
     if (widget.onSwipe == null) return post;
@@ -156,7 +158,8 @@ class _StoryListViewState extends State<StoryListView> {
   int _itemCount(StoryListState state) {
     final headerCount = widget.header != null ? 1 : 0;
     if (state.items.isEmpty) return headerCount + 1;
-    return headerCount + state.items.length + (state.isLoadingMore ? 1 : 0);
+    final trailing = state.isLoadingMore || !state.hasMore ? 1 : 0;
+    return headerCount + state.items.length + trailing;
   }
 
   Widget _empty(BuildContext context) {

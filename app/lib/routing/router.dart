@@ -10,6 +10,9 @@ import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
+import '../features/communities/screens/communities_screen.dart';
+import '../features/communities/screens/community_detail_screen.dart';
+import '../features/communities/screens/public_profile_screen.dart';
 import '../features/stories/screens/composer_screen.dart';
 import '../features/stories/screens/story_detail_screen.dart';
 import '../features/onboarding/screens/interests_screen.dart';
@@ -23,8 +26,8 @@ import 'transitions.dart';
 
 const shellDestinations = [
   ShellDestination(
-    route: Routes.feed,
-    label: 'Feed',
+    route: Routes.stories,
+    label: 'Story',
     icon: Icons.auto_stories_outlined,
     activeIcon: Icons.auto_stories,
   ),
@@ -102,6 +105,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: Routes.communities,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const CommunitiesScreen()),
+      ),
+      GoRoute(
+        path: '${Routes.community}/:slug',
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: CommunityDetailScreen(slug: state.pathParameters['slug']!),
+        ),
+      ),
+      GoRoute(
+        path: '${Routes.user}/:username',
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: PublicProfileScreen(username: state.pathParameters['username']!),
+        ),
+      ),
+      GoRoute(
         path: Routes.editProfile,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const EditProfileScreen()),
@@ -130,7 +152,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         routes: [
           GoRoute(
-            path: Routes.feed,
+            path: Routes.stories,
             pageBuilder: (context, state) =>
                 NoTransitionPage(key: state.pageKey, child: const FeedScreen()),
           ),
@@ -169,7 +191,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (publicRoutes.contains(location) || location == Routes.splash) {
-        return Routes.feed;
+        return Routes.stories;
       }
       return null;
     },
