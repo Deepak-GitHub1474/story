@@ -91,7 +91,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (!mounted) return;
 
     if (failure == null) {
-      context.go(Routes.home);
+      context.go(Routes.onboardingInterests);
       return;
     }
 

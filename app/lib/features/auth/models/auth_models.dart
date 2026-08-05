@@ -13,6 +13,7 @@ class AppUser {
     required this.interests,
     required this.onboarding,
     required this.counts,
+    required this.prefs,
     required this.emailMasked,
     required this.emailVerified,
     required this.createdAt,
@@ -32,6 +33,7 @@ class AppUser {
     interests: (json['interests'] as List<dynamic>? ?? []).cast<String>(),
     onboarding: Map<String, dynamic>.from(json['onboarding'] as Map? ?? {}),
     counts: Map<String, dynamic>.from(json['counts'] as Map? ?? {}),
+    prefs: Map<String, dynamic>.from(json['prefs'] as Map? ?? {}),
     emailMasked: json['email_masked'] as String?,
     emailVerified: json['email_verified'] as bool? ?? false,
     createdAt: json['created_at'] as String? ?? '',
@@ -50,6 +52,7 @@ class AppUser {
   final List<String> interests;
   final Map<String, dynamic> onboarding;
   final Map<String, dynamic> counts;
+  final Map<String, dynamic> prefs;
   final String? emailMasked;
   final bool emailVerified;
   final String createdAt;

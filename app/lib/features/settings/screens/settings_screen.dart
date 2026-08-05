@@ -8,6 +8,7 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -58,6 +59,25 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => ref
                           .read(readingSizeProvider.notifier)
                           .select(readingSize == 'readingLg' ? 'reading' : 'readingLg'),
+                    ),
+                  ],
+                ),
+                AppSection(
+                  title: 'Notifications',
+                  children: [
+                    AppListRow(
+                      label: 'In-app notifications',
+                      icon: Icons.notifications_outlined,
+                      trailing: Switch.adaptive(
+                        value: user?.prefs['notify_in_app'] as bool? ?? true,
+                        activeThumbColor: colors.accent,
+                        onChanged: (value) async {
+                          await ref
+                              .read(profileRepositoryProvider)
+                              .updateProfile(prefs: {'notify_in_app': value});
+                          await ref.read(authProvider.notifier).refreshUser();
+                        },
+                      ),
                     ),
                   ],
                 ),

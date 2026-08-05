@@ -65,6 +65,7 @@ class Endpoints {
   static const String followers = '/connections/followers';
   static const String blocked = '/connections/blocked';
   static const String search = '/search';
+  static const String reports = '/reports';
 
   static const String email = '/users/me/email';
   static const String emailVerify = '/users/me/email/verify';

@@ -175,6 +175,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             slidePage(key: state.pageKey, child: const EditProfileScreen()),
       ),
       GoRoute(
+        path: Routes.onboardingInterests,
+        pageBuilder: (context, state) => fadePage(
+          key: state.pageKey,
+          child: const InterestsScreen(isOnboarding: true),
+        ),
+      ),
+      GoRoute(
         path: Routes.interests,
         pageBuilder: (context, state) =>
             sheetPage(key: state.pageKey, child: const InterestsScreen()),
@@ -244,6 +251,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (publicRoutes.contains(location) || location == Routes.splash) {
         return Routes.stories;
       }
+      if (location == Routes.onboardingInterests) return null;
       return null;
     },
   );

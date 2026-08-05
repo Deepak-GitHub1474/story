@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/report_sheet.dart';
 import '../../../components/skeleton.dart';
+import '../../../core/api/endpoints.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -55,6 +58,67 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     }
   }
 
+  Future<void> _openMenu() async {
+    final colors = context.colors;
+    final profile = _override ?? ref.read(publicProfileProvider(widget.username)).valueOrNull;
+    if (profile == null || profile.isMe) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
+              title: Text('Report', style: TextStyle(color: colors.textPrimary)),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                showReportSheet(
+                  context,
+                  ref,
+                  targetKind: 'user',
+                  targetId: profile.username,
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.block, color: colors.danger),
+              title: Text('Block', style: TextStyle(color: colors.danger)),
+              subtitle: Text(
+                'They disappear from your feed, and you from theirs.',
+                style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+              ),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                final result = await ref.read(apiClientProvider).post<bool>(
+                  '${Endpoints.connection(profile.username)}/block',
+                  parse: (data) => true,
+                );
+                if (!mounted) return;
+                if (result.isSuccess) {
+                  ref.invalidate(feedProvider);
+                  AppToast.show(context, 'Blocked.');
+                  context.pop();
+                } else {
+                  AppToast.show(
+                    context,
+                    result.failureOrNull!.message,
+                    kind: AppToastKind.error,
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -66,6 +130,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       appBar: AppBar(
         leading: BackButton(onPressed: () => context.pop()),
         title: Text('@${widget.username}'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_horiz, color: colors.textMuted),
+            onPressed: _openMenu,
+          ),
+        ],
       ),
       body: asyncProfile.when(
         loading: () => const SkeletonList(count: 4),

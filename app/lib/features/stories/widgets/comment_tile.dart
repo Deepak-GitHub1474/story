@@ -107,19 +107,17 @@ class CommentTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (canDelete) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          InkWell(
-                            onTap: onDelete,
-                            child: Text(
-                              'Delete',
-                              style: TextStyle(
-                                color: colors.textMuted,
-                                fontSize: AppTypeScale.caption,
-                              ),
+                        const SizedBox(width: AppSpacing.md),
+                        InkWell(
+                          onTap: onDelete,
+                          child: Text(
+                            canDelete ? 'Delete' : 'Report',
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: AppTypeScale.caption,
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ],

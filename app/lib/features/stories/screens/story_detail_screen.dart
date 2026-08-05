@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/report_sheet.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -147,6 +150,81 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     ref.invalidate(storyDetailProvider(storyId));
   }
 
+  Future<void> _openStoryMenu(Story story, {required bool isMine}) async {
+    final colors = context.colors;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isMine) ...[
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+                title: Text('Edit', style: TextStyle(color: colors.textPrimary)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('${Routes.compose}?id=${story.storyId}');
+                },
+              ),
+              if (story.isPublic)
+                ListTile(
+                  leading: Icon(Icons.archive_outlined, color: colors.textPrimary),
+                  title: Text(
+                    'Move to drafts',
+                    style: TextStyle(color: colors.textPrimary),
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await ref
+                        .read(storyRepositoryProvider)
+                        .unpublish(story.storyId);
+                    if (!mounted) return;
+                    ref.invalidate(storyDetailProvider(story.storyId));
+                    unawaited(ref.read(feedProvider.notifier).refresh());
+                    unawaited(ref.read(myStoriesProvider.notifier).refresh());
+                    AppToast.show(context, 'Moved back to drafts.');
+                  },
+                ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: colors.danger),
+                title: Text('Delete', style: TextStyle(color: colors.danger)),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await ref.read(storyRepositoryProvider).remove(story.storyId);
+                  if (!mounted) return;
+                  unawaited(ref.read(feedProvider.notifier).refresh());
+                  unawaited(ref.read(myStoriesProvider.notifier).refresh());
+                  AppToast.show(context, 'Story deleted.');
+                  context.pop();
+                },
+              ),
+            ] else ...[
+              ListTile(
+                leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
+                title: Text('Report', style: TextStyle(color: colors.textPrimary)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  showReportSheet(
+                    context,
+                    ref,
+                    targetKind: 'story',
+                    targetId: story.storyId,
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -208,12 +286,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             ],
                           ),
                         ),
-                        if (isMine)
-                          IconButton(
-                            icon: Icon(Icons.edit_outlined, color: colors.textMuted),
-                            onPressed: () =>
-                                context.push('${Routes.compose}?id=${story.storyId}'),
-                          ),
+                        IconButton(
+                          icon: Icon(Icons.more_horiz, color: colors.textMuted),
+                          onPressed: () => _openStoryMenu(story, isMine: isMine),
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -306,8 +382,15 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                       isExpanded: _expanded.containsKey(raw.commentId),
                                       expandedReplies:
                                           _expanded[raw.commentId] ?? const [],
-                                      onDelete: () =>
-                                          _deleteComment(raw, story.storyId),
+                                      onDelete: () => raw.author.userId == currentUserId ||
+                                              isMine
+                                          ? _deleteComment(raw, story.storyId)
+                                          : showReportSheet(
+                                              context,
+                                              ref,
+                                              targetKind: 'comment',
+                                              targetId: raw.commentId,
+                                            ),
                                       onLike: () => _toggleCommentLike(_resolve(raw)),
                                       onReply: () => _startReply(raw),
                                       onExpandReplies: () => _expandReplies(raw),

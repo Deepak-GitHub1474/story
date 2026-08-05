@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_button.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_toast.dart';
+import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -38,7 +39,11 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
       await ref.read(authProvider.notifier).refreshUser();
       if (!mounted) return;
       AppToast.show(context, 'Interests saved.', kind: AppToastKind.success);
-      context.pop();
+      if (widget.isOnboarding) {
+        context.go(Routes.stories);
+      } else {
+        context.pop();
+      }
     } else {
       AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
     }
@@ -51,7 +56,17 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
 
     return AppScaffold(
       title: 'What are you carrying?',
-      leading: BackButton(onPressed: () => context.pop()),
+      leading: widget.isOnboarding
+          ? null
+          : BackButton(onPressed: () => context.pop()),
+      actions: widget.isOnboarding
+          ? [
+              TextButton(
+                onPressed: () => context.go(Routes.stories),
+                child: Text('Skip', style: TextStyle(color: colors.textMuted)),
+              ),
+            ]
+          : null,
       child: interests.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
