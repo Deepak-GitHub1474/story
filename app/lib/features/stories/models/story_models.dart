@@ -114,11 +114,14 @@ class Comment {
   const Comment({
     required this.commentId,
     required this.storyId,
+    required this.parentId,
     required this.author,
     required this.body,
     required this.likes,
+    required this.replyCount,
     required this.isLiked,
     required this.createdAt,
+    this.replies = const [],
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -126,19 +129,42 @@ class Comment {
     return Comment(
       commentId: json['comment_id'] as String,
       storyId: json['story_id'] as String,
+      parentId: json['parent_id'] as String?,
       author: StoryAuthor.fromJson(Map<String, dynamic>.from(json['author'] as Map? ?? {})),
       body: json['body'] as String,
       likes: counts['likes'] as int? ?? 0,
+      replyCount: counts['replies'] as int? ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? '',
+      replies: (json['replies'] as List<dynamic>? ?? [])
+          .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList(),
     );
   }
 
   final String commentId;
   final String storyId;
+  final String? parentId;
   final StoryAuthor author;
   final String body;
   final int likes;
+  final int replyCount;
   final bool isLiked;
   final String createdAt;
+  final List<Comment> replies;
+
+  bool get hasMoreReplies => replyCount > replies.length;
+
+  Comment copyWith({int? likes, bool? isLiked, List<Comment>? replies}) => Comment(
+    commentId: commentId,
+    storyId: storyId,
+    parentId: parentId,
+    author: author,
+    body: body,
+    likes: likes ?? this.likes,
+    replyCount: replyCount,
+    isLiked: isLiked ?? this.isLiked,
+    createdAt: createdAt,
+    replies: replies ?? this.replies,
+  );
 }

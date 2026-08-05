@@ -39,9 +39,9 @@ class FeedScreen extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
               AppSpacing.lg,
-              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.lg,
               AppSpacing.md,
             ),
             child: Row(
@@ -56,10 +56,6 @@ class FeedScreen extends ConsumerWidget {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.refresh, color: colors.textMuted),
-                  onPressed: () => ref.read(feedProvider.notifier).refresh(),
-                ),
               ],
             ),
           ),
@@ -72,8 +68,7 @@ class FeedScreen extends ConsumerWidget {
               onLike: (story) => _like(ref, story),
               emptyTitle: 'Nothing here yet',
               emptyBody:
-                  'Tap the middle button to write the first one. '
-                  'Nobody will know it was you.',
+                  'Tap the + to write the first one. Nobody will know it was you.',
             ),
           ),
         ],

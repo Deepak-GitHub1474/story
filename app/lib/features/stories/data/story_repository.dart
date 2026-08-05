@@ -17,6 +17,12 @@ Map<String, dynamic> _pageQuery({String? cursor, String? visibility, int limit =
   return query;
 }
 
+Map<String, dynamic> _commentBody(String body, String? parentId) {
+  final payload = <String, dynamic>{'body': body};
+  if (parentId != null) payload['parent_id'] = parentId;
+  return payload;
+}
+
 class StoryRepository {
   const StoryRepository(this._client);
 
@@ -90,11 +96,30 @@ class StoryRepository {
         .toList(),
   );
 
-  Future<Result<Comment>> addComment(String storyId, String body) => _client.post(
+  Future<Result<Comment>> addComment(
+    String storyId,
+    String body, {
+    String? parentId,
+  }) => _client.post(
     Endpoints.storyComments(storyId),
-    body: {'body': body},
+    body: _commentBody(body, parentId),
     parse: (data) => Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
   );
+
+  Future<Result<List<Comment>>> replies(String commentId) => _client.get(
+    Endpoints.commentReplies(commentId),
+    query: _pageQuery(limit: 50),
+    parse: (data) => (data['items'] as List<dynamic>)
+        .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+  );
+
+  Future<Result<int>> setCommentLike(String commentId, {required bool liked}) {
+    final path = Endpoints.commentLike(commentId);
+    return liked
+        ? _client.post(path, parse: _likes)
+        : _client.delete(path, parse: _likes);
+  }
 
   Future<Result<bool>> deleteComment(String commentId) => _client.delete(
     Endpoints.comment(commentId),

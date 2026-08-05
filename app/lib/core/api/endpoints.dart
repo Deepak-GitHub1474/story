@@ -43,4 +43,14 @@ class Endpoints {
   static String storyComments(String id) => '/stories/$id/comments';
 
   static String comment(String id) => '/comments/$id';
+
+  static String commentReplies(String id) => '/comments/$id/replies';
+
+  static String commentLike(String id) => '/comments/$id/like';
+
+  static const String notifications = '/notifications';
+  static const String unreadCount = '/notifications/unread-count';
+  static const String markAllNotificationsRead = '/notifications/read-all';
+
+  static String markNotificationRead(String id) => '/notifications/$id/read';
 }

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../features/notifications/providers/notification_providers.dart';
+import '../routing/routes.dart';
+
+import 'double_back_to_exit.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
@@ -10,15 +16,25 @@ class ShellDestination {
     required this.label,
     required this.icon,
     required this.activeIcon,
+    this.badgeCount = 0,
   });
 
   final String route;
   final String label;
   final IconData icon;
   final IconData activeIcon;
+  final int badgeCount;
+
+  ShellDestination withBadge(int count) => ShellDestination(
+    route: route,
+    label: label,
+    icon: icon,
+    activeIcon: activeIcon,
+    badgeCount: count,
+  );
 }
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({
     super.key,
     required this.child,
@@ -33,12 +49,14 @@ class AppShell extends StatelessWidget {
   final VoidCallback onCompose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final unread = ref.watch(unreadCountProvider);
 
-    return Scaffold(
-      backgroundColor: colors.bg,
-      body: AnimatedSwitcher(
+    return DoubleBackToExit(
+      child: Scaffold(
+        backgroundColor: colors.bg,
+        body: AnimatedSwitcher(
         duration: AppMotion.base,
         switchInCurve: AppMotion.easeOut,
         transitionBuilder: (child, animation) => FadeTransition(
@@ -51,9 +69,9 @@ class AppShell extends StatelessWidget {
             child: child,
           ),
         ),
-        child: KeyedSubtree(key: ValueKey(currentIndex), child: child),
-      ),
-      bottomNavigationBar: Container(
+          child: KeyedSubtree(key: ValueKey(currentIndex), child: child),
+        ),
+        bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: colors.surface,
           border: Border(top: BorderSide(color: colors.border)),
@@ -78,11 +96,15 @@ class AppShell extends StatelessWidget {
                       destination: destinations[index],
                       isActive: index == currentIndex,
                       onTap: () => context.go(destinations[index].route),
+                      badgeCount: destinations[index].route == Routes.activity
+                          ? unread
+                          : 0,
                     ),
                   ),
               ],
             ),
           ),
+        ),
         ),
       ),
     );
@@ -94,11 +116,13 @@ class _ShellTab extends StatelessWidget {
     required this.destination,
     required this.isActive,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final ShellDestination destination;
   final bool isActive;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -114,10 +138,37 @@ class _ShellTab extends StatelessWidget {
             scale: isActive ? 1.1 : 1,
             duration: AppMotion.fast,
             curve: AppMotion.easeOut,
-            child: Icon(
-              isActive ? destination.activeIcon : destination.icon,
-              color: color,
-              size: AppSizes.iconMd,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isActive ? destination.activeIcon : destination.icon,
+                  color: color,
+                  size: AppSizes.iconMd,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: colors.danger,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colors.bg,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -164,17 +215,13 @@ class _ComposeButtonState extends State<_ComposeButton> {
           scale: _isPressed ? 0.9 : 1,
           duration: AppMotion.fast,
           curve: AppMotion.easeOut,
-          child: Container(
+          child: SizedBox(
             width: 52,
             height: 40,
-            decoration: BoxDecoration(
-              color: colors.accent,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
             child: Icon(
-              Icons.edit_rounded,
-              color: colors.accentText,
-              size: AppSizes.iconMd,
+              Icons.add_box_outlined,
+              color: colors.textPrimary,
+              size: AppSizes.iconMd + 4,
             ),
           ),
         ),

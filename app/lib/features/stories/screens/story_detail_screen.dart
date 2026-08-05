@@ -12,6 +12,9 @@ import '../../auth/providers/auth_provider.dart';
 import '../../settings/providers/theme_provider.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
+import '../widgets/comment_composer.dart';
+import '../widgets/comment_tile.dart';
+import '../widgets/story_post.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
   const StoryDetailScreen({super.key, required this.storyId});
@@ -24,22 +27,34 @@ class StoryDetailScreen extends ConsumerStatefulWidget {
 
 class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   final _comment = TextEditingController();
+  final _commentFocus = FocusNode();
+
+  final Map<String, List<Comment>> _expanded = {};
+  final Map<String, Comment> _overrides = {};
+
   bool _isSending = false;
   Story? _story;
+  Comment? _replyTarget;
+
+  @override
+  void initState() {
+    super.initState();
+    _comment.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
     _comment.dispose();
+    _commentFocus.dispose();
     super.dispose();
   }
 
-  Future<void> _toggleLike(Story story) async {
+  Comment _resolve(Comment comment) => _overrides[comment.commentId] ?? comment;
+
+  Future<void> _toggleStoryLike(Story story) async {
     final next = !story.isLiked;
     setState(() {
-      _story = story.copyWith(
-        isLiked: next,
-        likes: story.likes + (next ? 1 : -1),
-      );
+      _story = story.copyWith(isLiked: next, likes: story.likes + (next ? 1 : -1));
     });
 
     final result = await ref
@@ -55,23 +70,81 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     }
   }
 
+  Future<void> _toggleCommentLike(Comment comment) async {
+    final next = !comment.isLiked;
+    setState(() {
+      _overrides[comment.commentId] = comment.copyWith(
+        isLiked: next,
+        likes: comment.likes + (next ? 1 : -1),
+      );
+    });
+
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .setCommentLike(comment.commentId, liked: next);
+
+    if (!mounted) return;
+    if (result.isSuccess) {
+      setState(() {
+        _overrides[comment.commentId] = _overrides[comment.commentId]!.copyWith(
+          likes: result.valueOrNull,
+        );
+      });
+    } else {
+      setState(() => _overrides[comment.commentId] = comment);
+    }
+  }
+
+  Future<void> _expandReplies(Comment comment) async {
+    final result = await ref.read(storyRepositoryProvider).replies(comment.commentId);
+    if (!mounted) return;
+    final replies = result.valueOrNull;
+    if (replies != null) setState(() => _expanded[comment.commentId] = replies);
+  }
+
+  void _startReply(Comment comment) {
+    setState(() => _replyTarget = comment);
+    final handle = comment.author.username;
+    if (handle != null && !_comment.text.contains('@$handle')) {
+      _comment.text = '@$handle ${_comment.text}';
+      _comment.selection = TextSelection.collapsed(offset: _comment.text.length);
+    }
+    _commentFocus.requestFocus();
+  }
+
   Future<void> _send(String storyId) async {
     final text = _comment.text.trim();
     if (text.isEmpty) return;
 
     setState(() => _isSending = true);
-    final result = await ref.read(storyRepositoryProvider).addComment(storyId, text);
+    final parent = _replyTarget;
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .addComment(storyId, text, parentId: parent?.parentId ?? parent?.commentId);
+
     if (!mounted) return;
-    setState(() => _isSending = false);
+    setState(() {
+      _isSending = false;
+      _replyTarget = null;
+    });
 
     if (result.isSuccess) {
       _comment.clear();
-      FocusScope.of(context).unfocus();
+      _commentFocus.unfocus();
+      _expanded.clear();
       ref.invalidate(commentsProvider(storyId));
       ref.invalidate(storyDetailProvider(storyId));
     } else {
       AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
     }
+  }
+
+  Future<void> _deleteComment(Comment comment, String storyId) async {
+    await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
+    if (!mounted) return;
+    _expanded.clear();
+    ref.invalidate(commentsProvider(storyId));
+    ref.invalidate(storyDetailProvider(storyId));
   }
 
   @override
@@ -107,11 +180,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   children: [
                     Row(
                       children: [
-                        AppAvatar(seed: story.author.avatarSeed, size: 40),
+                        AppAvatar(seed: story.author.avatarSeed, size: 38),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
@@ -167,56 +240,35 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
-                        InkWell(
-                          onTap: () => _toggleLike(story),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm,
-                            ),
-                            child: Row(
-                              children: [
-                                AnimatedScale(
-                                  scale: story.isLiked ? 1.2 : 1,
-                                  duration: AppMotion.fast,
-                                  curve: AppMotion.easeOut,
-                                  child: Icon(
-                                    story.isLiked
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: story.isLiked
-                                        ? colors.danger
-                                        : colors.textMuted,
-                                    size: AppSizes.iconMd,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(
-                                  '${story.likes}',
-                                  style: TextStyle(
-                                    color: story.isLiked
-                                        ? colors.danger
-                                        : colors.textMuted,
-                                    fontSize: AppTypeScale.label,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        LikeIcon(
+                          isLiked: story.isLiked,
+                          onTap: () => _toggleStoryLike(story),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          '${story.likes}',
+                          style: TextStyle(
+                            color: story.isLiked ? colors.danger : colors.textMuted,
+                            fontSize: AppTypeScale.label,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xl),
+                        Icon(
+                          Icons.mode_comment_outlined,
+                          size: AppSizes.iconMd,
+                          color: colors.textPrimary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          '${story.comments}',
+                          style: TextStyle(
+                            color: colors.textMuted,
+                            fontSize: AppTypeScale.label,
                           ),
                         ),
                       ],
                     ),
                     Divider(color: colors.border, height: AppSpacing.xxl),
-                    Text(
-                      'Comments',
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: AppTypeScale.heading,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
                     comments.when(
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (error, _) => const SizedBox.shrink(),
@@ -224,7 +276,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           ? Padding(
                               padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                               child: Text(
-                                'No comments yet. Be the first to say something that is not advice.',
+                                'No comments yet. Say something that is not advice.',
                                 style: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: AppTypeScale.label,
@@ -234,18 +286,32 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             )
                           : Column(
                               children: [
-                                for (final comment in items)
-                                  _CommentTile(
-                                    comment: comment,
-                                    canDelete:
-                                        comment.author.userId == currentUserId || isMine,
-                                    onDelete: () async {
-                                      await ref
-                                          .read(storyRepositoryProvider)
-                                          .deleteComment(comment.commentId);
-                                      ref.invalidate(commentsProvider(story.storyId));
-                                      ref.invalidate(storyDetailProvider(story.storyId));
-                                    },
+                                for (final raw in items)
+                                  TweenAnimationBuilder<double>(
+                                    key: ValueKey(raw.commentId),
+                                    tween: Tween(begin: 0, end: 1),
+                                    duration: AppMotion.base,
+                                    curve: AppMotion.easeOut,
+                                    builder: (context, value, child) => Opacity(
+                                      opacity: value,
+                                      child: Transform.translate(
+                                        offset: Offset(0, (1 - value) * 8),
+                                        child: child,
+                                      ),
+                                    ),
+                                    child: CommentTile(
+                                      comment: _resolve(raw),
+                                      canDelete:
+                                          raw.author.userId == currentUserId || isMine,
+                                      isExpanded: _expanded.containsKey(raw.commentId),
+                                      expandedReplies:
+                                          _expanded[raw.commentId] ?? const [],
+                                      onDelete: () =>
+                                          _deleteComment(raw, story.storyId),
+                                      onLike: () => _toggleCommentLike(_resolve(raw)),
+                                      onReply: () => _startReply(raw),
+                                      onExpandReplies: () => _expandReplies(raw),
+                                    ),
                                   ),
                               ],
                             ),
@@ -254,134 +320,16 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                  AppSpacing.lg,
-                  MediaQuery.of(context).viewInsets.bottom + AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  border: Border(top: BorderSide(color: colors.border)),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _comment,
-                          textCapitalization: TextCapitalization.sentences,
-                          style: TextStyle(color: colors.textPrimary),
-                          decoration: InputDecoration(
-                            hintText: 'Say something kind',
-                            hintStyle: TextStyle(color: colors.textMuted),
-                            border: InputBorder.none,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ),
-                      IconButton(
-                        icon: _isSending
-                            ? const SizedBox(
-                                width: AppSizes.iconSm,
-                                height: AppSizes.iconSm,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Icon(
-                                Icons.send_rounded,
-                                color: _comment.text.trim().isEmpty
-                                    ? colors.textMuted
-                                    : colors.accent,
-                              ),
-                        onPressed: _comment.text.trim().isEmpty || _isSending
-                            ? null
-                            : () => _send(story.storyId),
-                      ),
-                    ],
-                  ),
-                ),
+              CommentComposer(
+                controller: _comment,
+                isSending: _isSending,
+                replyingTo: _replyTarget?.author.displayName,
+                onCancelReply: () => setState(() => _replyTarget = null),
+                onSend: () => _send(story.storyId),
               ),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _CommentTile extends StatelessWidget {
-  const _CommentTile({
-    required this.comment,
-    required this.canDelete,
-    required this.onDelete,
-  });
-
-  final Comment comment;
-  final bool canDelete;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppAvatar(seed: comment.author.avatarSeed, size: 28),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      comment.author.displayName,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: AppTypeScale.label,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      timeAgo(comment.createdAt),
-                      style: TextStyle(
-                        color: colors.textMuted,
-                        fontSize: AppTypeScale.caption,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  comment.body,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.body,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (canDelete)
-            InkWell(
-              onTap: onDelete,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                child: Icon(
-                  Icons.close,
-                  size: AppSizes.iconSm,
-                  color: colors.textMuted,
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }

@@ -9,6 +9,8 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+
+import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
 import '../../stories/widgets/story_list_view.dart';
 
@@ -19,15 +21,95 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  String? _filter;
-
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   static const _tabs = [
     (null, 'All'),
     ('public', 'Public'),
     ('private', 'Private'),
     ('draft', 'Drafts'),
   ];
+
+  late final TabController _tabController = TabController(
+    length: _tabs.length,
+    vsync: this,
+  )..addListener(_onTabChanged);
+
+  String? _filter;
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    final next = _tabs[_tabController.index].$1;
+    if (next == _filter) return;
+    setState(() => _filter = next);
+    ref.read(myStoriesProvider.notifier).filter(next);
+  }
+
+  @override
+  void dispose() {
+    _tabController
+      ..removeListener(_onTabChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  Future<bool> _onSwipe(Story story, SwipeAction action) async {
+    final repository = ref.read(storyRepositoryProvider);
+    final notifier = ref.read(myStoriesProvider.notifier);
+
+    switch (action) {
+      case SwipeAction.delete:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            title: const Text('Delete this story?'),
+            content: const Text('This cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  'Keep',
+                  style: TextStyle(color: context.colors.textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(
+                  'Delete',
+                  style: TextStyle(color: context.colors.danger),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return false;
+        await repository.remove(story.storyId);
+        notifier.remove(story.storyId);
+        await ref.read(authProvider.notifier).refreshUser();
+        if (mounted) AppToast.show(context, 'Story deleted.');
+        return false;
+
+      case SwipeAction.archive:
+        await repository.unpublish(story.storyId);
+        await notifier.refresh();
+        await ref.read(authProvider.notifier).refreshUser();
+        if (mounted) AppToast.show(context, 'Moved back to drafts.');
+        return false;
+
+      case SwipeAction.publish:
+        await repository.publish(story.storyId, visibility: 'public');
+        await notifier.refresh();
+        await ref.read(authProvider.notifier).refreshUser();
+        if (mounted) {
+          AppToast.show(context, 'Your story is live.', kind: AppToastKind.success);
+        }
+        return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: StoryListView(
               state: stories,
               showVisibility: true,
+              onSwipe: _onSwipe,
               onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
               onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
               onOpen: (story) => story.isDraft
@@ -181,27 +264,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
-                  SizedBox(
-                    height: 36,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        for (final tab in _tabs)
-                          Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.sm),
-                            child: _FilterChip(
-                              label: tab.$2,
-                              isActive: _filter == tab.$1,
-                              onTap: () {
-                                setState(() => _filter = tab.$1);
-                                ref.read(myStoriesProvider.notifier).filter(tab.$1);
-                              },
-                            ),
-                          ),
-                      ],
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: false,
+                    labelColor: colors.textPrimary,
+                    unselectedLabelColor: colors.textMuted,
+                    indicatorColor: colors.accent,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelStyle: const TextStyle(
+                      fontSize: AppTypeScale.label,
+                      fontWeight: FontWeight.w600,
                     ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: AppTypeScale.label,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    tabs: [for (final tab in _tabs) Tab(text: tab.$2)],
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                 ],
               ),
             ),
@@ -238,51 +319,6 @@ class _Stat extends StatelessWidget {
           style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
         ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Material(
-      color: isActive ? colors.accent : colors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: AnimatedContainer(
-          duration: AppMotion.fast,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            border: Border.all(color: isActive ? colors.accent : colors.border),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isActive ? colors.accentText : colors.textSecondary,
-              fontSize: AppTypeScale.label,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -9,6 +9,7 @@ import '../features/auth/screens/signup_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
+import '../features/notifications/screens/notifications_screen.dart';
 import '../features/stories/screens/composer_screen.dart';
 import '../features/stories/screens/story_detail_screen.dart';
 import '../features/onboarding/screens/interests_screen.dart';
@@ -26,6 +27,12 @@ const shellDestinations = [
     label: 'Feed',
     icon: Icons.auto_stories_outlined,
     activeIcon: Icons.auto_stories,
+  ),
+  ShellDestination(
+    route: Routes.activity,
+    label: 'Activity',
+    icon: Icons.favorite_border,
+    activeIcon: Icons.favorite,
   ),
   ShellDestination(
     route: Routes.profile,
@@ -126,6 +133,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: Routes.feed,
             pageBuilder: (context, state) =>
                 NoTransitionPage(key: state.pageKey, child: const FeedScreen()),
+          ),
+          GoRoute(
+            path: Routes.activity,
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const NotificationsScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.profile,

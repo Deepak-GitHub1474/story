@@ -7,6 +7,7 @@ class Routes {
   static const String signin = '/signin';
 
   static const String feed = '/feed';
+  static const String activity = '/activity';
   static const String profile = '/profile';
   static const String settings = '/settings';
 
