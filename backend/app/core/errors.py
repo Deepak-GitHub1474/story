@@ -34,6 +34,16 @@ class ErrorCode(StrEnum):
     VAULT_LOSS_NOT_ACKNOWLEDGED = "VAULT_LOSS_NOT_ACKNOWLEDGED"
     KEYS_NOT_INITIALIZED = "KEYS_NOT_INITIALIZED"
     KEYS_ALREADY_INITIALIZED = "KEYS_ALREADY_INITIALIZED"
+    VAULT_ITEM_NOT_FOUND = "VAULT_ITEM_NOT_FOUND"
+    PASSCODE_NOT_FOUND = "PASSCODE_NOT_FOUND"
+    PASSCODE_LABEL_TAKEN = "PASSCODE_LABEL_TAKEN"
+    LABEL_REQUIRED = "LABEL_REQUIRED"
+    LABEL_TAKEN = "LABEL_TAKEN"
+    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+    ITEM_TOO_LARGE = "ITEM_TOO_LARGE"
+    ITEM_NOT_READY = "ITEM_NOT_READY"
+    ITEM_ORPHANED = "ITEM_ORPHANED"
+    UPLOAD_MISMATCH = "UPLOAD_MISMATCH"
 
     USER_NOT_FOUND = "USER_NOT_FOUND"
     BIO_LINK_NOT_ALLOWED = "BIO_LINK_NOT_ALLOWED"
@@ -101,6 +111,16 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ),
     ErrorCode.KEYS_NOT_INITIALIZED: (400, "Finish setting up your account first."),
     ErrorCode.KEYS_ALREADY_INITIALIZED: (409, "Your keys are already set up."),
+    ErrorCode.VAULT_ITEM_NOT_FOUND: (404, "We could not find that item."),
+    ErrorCode.PASSCODE_NOT_FOUND: (404, "We could not find that passcode."),
+    ErrorCode.PASSCODE_LABEL_TAKEN: (409, "You already have a passcode with that name."),
+    ErrorCode.LABEL_REQUIRED: (422, "A hidden item needs a label."),
+    ErrorCode.LABEL_TAKEN: (409, "You already used that label."),
+    ErrorCode.QUOTA_EXCEEDED: (400, "Your vault is full."),
+    ErrorCode.ITEM_TOO_LARGE: (413, "That file is too large for the vault."),
+    ErrorCode.ITEM_NOT_READY: (400, "That upload has not finished."),
+    ErrorCode.ITEM_ORPHANED: (400, "This item can no longer be decrypted."),
+    ErrorCode.UPLOAD_MISMATCH: (400, "The upload does not match what was declared."),
     ErrorCode.USER_NOT_FOUND: (404, "We could not find that account."),
     ErrorCode.BIO_LINK_NOT_ALLOWED: (422, "Your bio cannot contain a link."),
     ErrorCode.INTEREST_UNKNOWN: (422, "That interest does not exist."),

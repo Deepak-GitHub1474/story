@@ -78,6 +78,15 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_ENABLED: bool = True
 
+    STORAGE_PROVIDER: Literal["local", "s3"] = "local"
+    STORAGE_LOCAL_ROOT: str = ".storage"
+    STORAGE_LOCAL_BASE_URL: str = "http://127.0.0.1:9000/v1/storage"
+    PRESIGN_UPLOAD_TTL_SECONDS: int = 900
+    PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
+    VAULT_QUOTA_BYTES: int = 2 * 1024**3
+    VAULT_MAX_ITEM_BYTES: int = 512 * 1024**2
+    VAULT_MAX_ITEMS: int = 2000
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

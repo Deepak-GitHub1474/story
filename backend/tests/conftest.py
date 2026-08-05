@@ -41,6 +41,8 @@ MUTABLE_COLLECTIONS = (
     "devices",
     "reports",
     "audit_logs",
+    "vault_items",
+    "user_passcodes",
 )
 
 

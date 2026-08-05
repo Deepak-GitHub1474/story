@@ -110,6 +110,25 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_category_popular",
         ),
     ],
+    "vault_items": [
+        IndexSpec(
+            [("user_id", ASCENDING), ("visibility", ASCENDING), ("_id", DESCENDING)],
+            "ix_user_visibility",
+            partial={"deleted_at": None},
+        ),
+        IndexSpec(
+            [("user_id", ASCENDING), ("label_hash", ASCENDING)],
+            "uq_user_label",
+            unique=True,
+            partial={"label_hash": {"$type": "string"}},
+        ),
+        IndexSpec([("user_id", ASCENDING), ("passcode_id", ASCENDING)], "ix_user_passcode"),
+        IndexSpec([("user_id", ASCENDING), ("key_state", ASCENDING)], "ix_user_keystate"),
+    ],
+    "user_passcodes": [
+        IndexSpec([("user_id", ASCENDING), ("scope", ASCENDING)], "ix_user_scope"),
+        IndexSpec([("user_id", ASCENDING), ("label", ASCENDING)], "uq_user_label", unique=True),
+    ],
     "audit_logs": [
         IndexSpec([("occurred_at", DESCENDING)], "ix_recent"),
         IndexSpec([("action", ASCENDING), ("occurred_at", DESCENDING)], "ix_action"),
