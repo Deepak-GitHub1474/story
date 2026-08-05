@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -21,6 +22,7 @@ class EncryptedPayload {
     required this.saltItem,
     required this.encryptedMetadata,
     required this.chunkCount,
+    required this.compression,
   });
 
   final Uint8List ciphertext;
@@ -28,16 +30,42 @@ class EncryptedPayload {
   final Uint8List saltItem;
   final Uint8List encryptedMetadata;
   final int chunkCount;
+  final String compression;
 }
+
+class PackedBytes {
+  const PackedBytes({required this.bytes, required this.compression});
+
+  final Uint8List bytes;
+  final String compression;
+}
+
+const _compressibleKinds = {'pdf'};
 
 class VaultTransfer {
   const VaultTransfer(this._crypto, this._dio);
 
   final VaultCrypto _crypto;
-  final Dio _dio;
+  final Dio? _dio;
 
   static int chunkCountFor(int length) =>
       (length / VaultCrypto.chunkSize).ceil().clamp(1, 100000);
+
+  static PackedBytes pack(Uint8List plaintext, {required String kind}) {
+    if (!_compressibleKinds.contains(kind) || plaintext.isEmpty) {
+      return PackedBytes(bytes: plaintext, compression: 'none');
+    }
+
+    final squeezed = Uint8List.fromList(gzip.encode(plaintext));
+    return squeezed.length < plaintext.length
+        ? PackedBytes(bytes: squeezed, compression: 'gzip')
+        : PackedBytes(bytes: plaintext, compression: 'none');
+  }
+
+  static Uint8List unpack(Uint8List bytes, String compression) {
+    if (compression != 'gzip' || bytes.isEmpty) return bytes;
+    return Uint8List.fromList(gzip.decode(bytes));
+  }
 
   Future<EncryptedPayload> encrypt({
     required Uint8List plaintext,
@@ -45,7 +73,9 @@ class VaultTransfer {
     required Uint8List passcodeKey,
     required String itemId,
     required Map<String, dynamic> metadata,
+    String kind = 'other',
   }) async {
+    final packed = pack(plaintext, kind: kind);
     final saltItem = await _crypto.randomBytes(VaultCrypto.saltLength);
     final dek = await _crypto.randomBytes(VaultCrypto.keyLength);
 
@@ -64,13 +94,15 @@ class VaultTransfer {
 
     final ciphertext = await _crypto.wrap(
       key: dek,
-      plaintext: plaintext,
+      plaintext: packed.bytes,
       aad: '${VaultCrypto.dekAadPrefix}$itemId',
     );
 
     final encryptedMetadata = await _crypto.wrap(
       key: dek,
-      plaintext: Uint8List.fromList(utf8.encode(jsonEncode(metadata))),
+      plaintext: Uint8List.fromList(
+        utf8.encode(jsonEncode({...metadata, 'compression': packed.compression})),
+      ),
       aad: '${VaultCrypto.dekAadPrefix}$itemId',
     );
 
@@ -80,6 +112,7 @@ class VaultTransfer {
       saltItem: saltItem,
       encryptedMetadata: encryptedMetadata,
       chunkCount: chunkCountFor(ciphertext.length),
+      compression: packed.compression,
     );
   }
 
@@ -90,6 +123,7 @@ class VaultTransfer {
     required Uint8List umk,
     required Uint8List passcodeKey,
     required String itemId,
+    String compression = 'none',
   }) async {
     final itemKey = await _crypto.deriveItemKey(
       umk: umk,
@@ -104,11 +138,13 @@ class VaultTransfer {
       aad: '${VaultCrypto.dekAadPrefix}$itemId',
     );
 
-    return _crypto.unwrap(
+    final packed = await _crypto.unwrap(
       key: dek,
       sealed: ciphertext,
       aad: '${VaultCrypto.dekAadPrefix}$itemId',
     );
+
+    return unpack(packed, compression);
   }
 
   Future<Map<String, dynamic>> decryptMetadata({
@@ -135,7 +171,7 @@ class VaultTransfer {
     required Uint8List ciphertext,
     void Function(TransferProgress)? onProgress,
   }) async {
-    await _dio.put<void>(
+    await _dio!.put<void>(
       url,
       data: Stream.value(ciphertext),
       options: Options(
@@ -152,7 +188,7 @@ class VaultTransfer {
     required String url,
     void Function(TransferProgress)? onProgress,
   }) async {
-    final response = await _dio.get<List<int>>(
+    final response = await _dio!.get<List<int>>(
       url,
       options: Options(responseType: ResponseType.bytes),
       onReceiveProgress: (received, total) => onProgress?.call(

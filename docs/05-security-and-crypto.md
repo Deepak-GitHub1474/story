@@ -463,3 +463,20 @@ Before the vault ships:
 - [ ] Manual verification: `FLAG_SECURE` blocks screenshots on every vault screen.
 - [ ] Manual verification: no decrypted vault file appears in device backups or shared storage.
 - [ ] An external cryptographic review of this document and its implementation, before public launch.
+
+
+## Compression
+
+Compression happens **before** encryption, never after. Ciphertext is statistically random and does not compress; gzipping it would spend CPU to grow the payload by a header.
+
+- **PDF** — gzipped on the device. Text-heavy documents lose 10–40%.
+- **Image, video** — left alone. Both are already compressed formats.
+- **Any file that does not shrink** — stored as it is. The packer compares and keeps the smaller of the two, so a PDF that is mostly scanned images is never made bigger.
+
+`gzip` comes from `dart:io`; zstd would compress a little better and would cost a dependency.
+
+The `compression` flag lives in the **encrypted metadata**, not in the database. The server has no business knowing how well a user's file compressed, and a per-item compression ratio is a weak fingerprint of content. Decryption reads the metadata first, then inflates.
+
+`size_bytes` counts ciphertext, which is what actually occupies the bucket, so compression genuinely reduces what a user's quota is charged.
+
+**Deduplication is rejected, not deferred.** Convergent encryption would let identical files share one stored object, and would also tell anyone with database access that two accounts hold the same file. On a platform built for anonymity that is a worse trade than the storage it saves.

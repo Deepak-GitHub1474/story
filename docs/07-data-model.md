@@ -448,7 +448,7 @@ Encrypted personal storage. The server stores key material it cannot use and met
 | `_id` | `str` (`vit_…`) | generated | |
 | `user_id` | `str` | required | |
 | `passcode_id` | `str` | required | → `user_passcodes._id`. Which passcode gates this item. |
-| `kind` | `"image" \| "video" \| "pdf"` | required | Coarse, client-declared. Only enough to choose an icon. The server cannot verify it — it holds ciphertext — so the real check is a magic-byte sniff on the device, which also rejects a file whose bytes and extension disagree. |
+| `kind` | `"image" \| "video" \| "pdf"` | required | Coarse, client-declared. Also decides compression: a PDF is gzipped before encryption, an image or video is not, because both are already compressed and gzip would only cost CPU. Only enough to choose an icon. The server cannot verify it — it holds ciphertext — so the real check is a magic-byte sniff on the device, which also rejects a file whose bytes and extension disagree. |
 | `size_bytes` | `int` | required | Ciphertext size. Counts against quota. |
 | `chunk_count` | `int` | required | For streaming decrypt and integrity verification. |
 | `object_key` | `str` | required | `vault/{user_id}/{item_id}`. No filename, no extension. |

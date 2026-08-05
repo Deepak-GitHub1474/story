@@ -202,6 +202,7 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
       passcodeKey: session.passcodeKey!,
       itemId: placeholderId,
       metadata: {'filename': filename, 'size': bytes.length},
+      kind: kind,
     );
 
     final labelHash =
@@ -267,6 +268,15 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     final ciphertext = await transfer.download(url: url);
 
     try {
+      final metadata = await transfer.decryptMetadata(
+        encryptedMetadata: Uint8List.fromList(base64Decode(item.encryptedMetadata)),
+        wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
+        saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
+        umk: session.umk!,
+        passcodeKey: session.passcodeKey!,
+        itemId: item.itemId,
+      );
+
       return await transfer.decrypt(
         ciphertext: ciphertext,
         wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
@@ -274,6 +284,7 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         umk: session.umk!,
         passcodeKey: session.passcodeKey!,
         itemId: item.itemId,
+        compression: metadata['compression'] as String? ?? 'none',
       );
     } catch (_) {
       return null;
