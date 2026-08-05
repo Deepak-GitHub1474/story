@@ -14,8 +14,7 @@ class VaultTile extends StatelessWidget {
   IconData get _icon => switch (item.kind) {
     'image' => Icons.image_outlined,
     'video' => Icons.videocam_outlined,
-    'audio' => Icons.mic_none,
-    'document' => Icons.description_outlined,
+    'pdf' => Icons.picture_as_pdf_outlined,
     _ => Icons.insert_drive_file_outlined,
   };
 

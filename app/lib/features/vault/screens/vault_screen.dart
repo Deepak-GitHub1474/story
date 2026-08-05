@@ -324,8 +324,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'Files are encrypted on this device before they leave '
-                              'it. We receive ciphertext and no filename.',
+                              'Photos, videos, and PDFs. Each one is encrypted on '
+                              'this device before it leaves. We receive ciphertext '
+                              'and no filename.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: colors.textSecondary,
