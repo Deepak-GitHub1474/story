@@ -1,0 +1,47 @@
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "argon2-cffi>=23.1",
+    "fastapi>=0.115",
+    "motor>=3.6",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyjwt>=2.9",
+    "python-ulid>=3.0",
+    "redis[hiredis]>=5.0",
+    "structlog>=24.4",
+    "uvicorn[standard]>=0.52.1",
+]
+
+[dependency-groups]
+dev = [
+    "fakeredis>=2.37.0",
+    "httpx>=0.28.1",
+    "mongomock-motor>=0.0.36",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.16.1",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "DTZ", "ASYNC", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "DTZ001"]
+"app/core/errors.py" = ["S105"]
+"app/core/deps.py" = ["S104"]
+"app/api/endpoints/auth/models.py" = ["S105"]
+"app/api/endpoints/auth/utils.py" = ["S105"]

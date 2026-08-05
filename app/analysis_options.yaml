@@ -1,0 +1,14 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    prefer_initializing_formals: ignore
+
+linter:
+  rules:
+    prefer_initializing_formals: false
+    always_declare_return_types: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    unawaited_futures: true
+    avoid_print: true

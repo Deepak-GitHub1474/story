@@ -2,7 +2,7 @@
 
 FastAPI patterns, in enough detail that two engineers writing two features independently produce code that looks like it was written by one person.
 
-## 1. The ten rules
+## 1. The twelve rules
 
 1. **Routers route. Controllers decide. Nothing else exists.** No service layer, no use-case layer, no manager classes.
 2. **The envelope is built in the router, never in a controller.**
@@ -14,6 +14,8 @@ FastAPI patterns, in enough detail that two engineers writing two features indep
 8. **Controllers take the body positionally and infrastructure keyword-only.**
 9. **Every Mongo query has an explicit projection.**
 10. **Nothing sensitive reaches a log.** Default-deny redaction.
+11. **External vendors are reached through a port, never imported.** A controller depends on `StoragePort` or `AIPort`, never on `aioboto3` or `anthropic`. Enforced by `port-guard` in CI ([01](01-tech-stack.md) Decision 10).
+12. **Publication passes the gate on the server.** No controller writes `visibility: "public"` without a verdict from the sanity layer in the same call path. A client-supplied verdict is never trusted ([12](12-ai-layer.md)).
 
 ## 2. Application entrypoint
 
@@ -109,15 +111,29 @@ class Settings(BaseSettings):
     REDIS_URL: str
     ENSURE_INDEXES_ON_BOOT: bool = True
 
-    # --- Object storage ---
-    S3_ENDPOINT_URL: str
-    S3_REGION: str = "auto"
-    S3_ACCESS_KEY_ID: str
-    S3_SECRET_ACCESS_KEY: str
-    S3_BUCKET_VAULT: str
-    S3_BUCKET_PUBLIC: str
+    # --- Object storage: one block per profile, each independently pointed ---
+    STORAGE_PROFILE_VAULT: str = "primary"
+    STORAGE_PROFILE_MEDIA: str = "primary"
+    STORAGE_PROFILE_EXPORT: str = "primary"
+    S3_PRIMARY_ENDPOINT_URL: str
+    S3_PRIMARY_REGION: str = "auto"
+    S3_PRIMARY_ACCESS_KEY_ID: str
+    S3_PRIMARY_SECRET_ACCESS_KEY: str
+    S3_PRIMARY_BUCKET_VAULT: str
+    S3_PRIMARY_BUCKET_PUBLIC: str
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
+
+    # --- AI: provider per capability, see 12-ai-layer.md ---
+    AI_CLASSIFY_PROVIDER: Literal["anthropic", "openai_compat", "local", "null"] = "local"
+    AI_EMBED_PROVIDER: Literal["local", "openai_compat"] = "local"
+    AI_EXTRACT_PROVIDER: Literal["local"] = "local"
+    AI_CLASSIFY_MODEL: str = "claude-haiku-4-5-20251001"
+    AI_TIER3_ENABLED: bool = False
+    AI_TIER3_TIMEOUT_MS: int = 2500
+    AI_FAIL_MODE: Literal["hold", "allow"] = "hold"
+    AI_MODEL_DIR: str = "app/ai/models"
+    AI_PROVIDER_API_KEY: str | None = None
 
     # --- Auth ---
     JWT_SECRET: str
@@ -174,6 +190,10 @@ class Settings(BaseSettings):
                 raise ValueError("JWT_SECRET must be at least 32 characters.")
             if self.KMS_PROVIDER == "local":
                 raise ValueError("KMS_PROVIDER cannot be local in production.")
+            if self.AI_FAIL_MODE == "allow":
+                raise ValueError("AI_FAIL_MODE cannot be 'allow' in production.")
+            if self.AI_CLASSIFY_PROVIDER == "null":
+                raise ValueError("AI_CLASSIFY_PROVIDER cannot be 'null' in production.")
         return self
 
 
@@ -703,7 +723,7 @@ Rules:
 
 - **Jobs take identifiers, never documents.** A job argument is serialized into Redis; passing a document means stale data and a payload that may contain sensitive fields.
 - **Jobs are idempotent.** `max_tries = 3` means every job will sometimes run twice.
-- **Jobs never touch plaintext vault content.** `verify_vault_object` checks size and existence against R2; it does not download and cannot decrypt.
+- **Jobs never touch plaintext vault content.** `verify_vault_object` checks size and existence through `StoragePort`; it does not download and cannot decrypt.
 - **`expire_reveal_links` is a security control, not maintenance.** It enforces the 24-hour ticket reveal window; if it stops running, reveal blobs persist indefinitely. It is monitored and alerts on failure.
 - **The worker owns its own clients.** Sharing a connection pool with the API means a slow job degrades request latency.
 

@@ -72,7 +72,11 @@ Twenty-four primitives and twelve domain components. This is the complete v1 set
 | `CommentTile` | One comment with author, body, and relative time. |
 | `CommentComposer` | Inline comment input. |
 | `CommunityCard` | Community name, description, member count, join control. |
+| `CategoryTile` | One category on the browse screen: icon, name, tone-derived copy, community count. Colors resolve through the category's `accent_token`, never a stored hex. |
 | `InterestPicker` | Chip grid for selecting interests during onboarding. |
+| `ModerationNotice` | Renders a sanity-layer verdict: the rule in plain language, what happens next, and the appeal action. One component for `warn`, `redirect`, `hold`, and `block` — because four bespoke screens would drift into four different tones of voice, and the tone of a refusal is the entire user experience of being refused. |
+| `ExposureHighlight` | Inline highlighting of self-identifying spans in the composer, with per-span remove and keep. |
+| `CommunitySuggestionSheet` | The `redirect` surface: up to three rooms with reasons, plus "publish here anyway". |
 | `VaultTile` | One vault item: type icon, encrypted-name display, size, lock state. |
 | `PasscodePad` | Numeric passcode entry with masked display and shake-on-error. |
 | `TicketStatusCard` | Ticket state, timeline, and next action. |

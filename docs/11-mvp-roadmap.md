@@ -10,19 +10,21 @@ Nine phases. Mobile first, mobile finished, then web. Every phase has a definiti
 
 **S3 — Security work is never a later phase.** Crypto ships with the vault, redaction ships with logging, the audit log ships with the first privileged action. There is no "harden it before launch" milestone, because that milestone always slips into the launch.
 
+**S3a — Moderation is security.** The safety gate ships in the same phase as the first publishable story, not in the AI phase. A platform that can publish before it can refuse has a window during which it is an unmoderated anonymous network, and that window is exactly when a closed beta is running. The *suggestion* half of the AI layer is a feature and can wait; the *gate* half cannot.
+
 **S4 — Web starts only after the mobile app is finalized.** Explicitly per the requirement. Finalized means the token file, the component contract, and the API contract have stopped changing — those are exactly the three things the web app consumes, and building against moving versions of them doubles the work.
 
 **S5 — Every phase leaves `main` deployable.** Feature flags gate incomplete work. No long-lived branches.
 
 ```mermaid
 flowchart TD
-    P0["Phase 0<br/>Foundations"] --> P1["Phase 1<br/>Onboarding"]
-    P1 --> P2["Phase 2<br/>Stories"]
-    P2 --> P3["Phase 3<br/>Communities & social"]
+    P0["Phase 0<br/>Foundations + ports"] --> P1["Phase 1<br/>Onboarding"]
+    P1 --> P2["Phase 2<br/>Stories + safety gate"]
+    P2 --> P3["Phase 3<br/>Categories, communities,<br/>social + fit check"]
     P3 --> P4["Phase 4<br/>Vault"]
     P4 --> P5["Phase 5<br/>Settings, email, recovery"]
-    P5 --> P6["Phase 6<br/>Admin & tickets"]
-    P6 --> P7["Phase 7<br/>AI recommendations"]
+    P5 --> P6["Phase 6<br/>Admin, tickets,<br/>moderation queue"]
+    P6 --> P7["Phase 7<br/>AI suggestions & discovery"]
     P7 --> P8["Phase 8<br/>Hardening & mobile launch"]
     P8 --> P9["Phase 9<br/>Web"]
 ```
@@ -53,6 +55,14 @@ Nothing user-visible. Everything downstream depends on it.
 - `/health` and `/health/ready`.
 - Contract tests: envelope shape, route policy enforcement.
 
+**Provider ports** — [01](01-tech-stack.md) Decision 10
+- The four Protocols in `ports/`, plus `factory.py` resolving each from settings at startup.
+- `S3CompatAdapter` verified against **both** MinIO and R2, and `LocalDiskAdapter`.
+- Storage profiles (`vault`, `media`, `export`) wired and independently configurable.
+- `NullAdapter` for AI, `ConsoleAdapter` for mail, `LocalKeyfileAdapter` for KMS.
+- The **adapter contract test suite** — one suite every adapter must pass. This is the artifact that makes a later vendor swap a half-day rather than a rewrite.
+- `port-guard` in CI, proven to fail on a deliberate `import aioboto3` in a controller.
+
 **Flutter skeleton**
 - `app.dart`, theme wiring, `ThemeController` with persistence and no-flash resolution.
 - `Result<T>`, `ApiClient` with all interceptors, `go_router` with the `guard` function.
@@ -65,6 +75,8 @@ Nothing user-visible. Everything downstream depends on it.
 - [ ] `design-guard` fails on an intentionally added raw color, and CI shows it.
 - [ ] Redaction test passes: a payload of every denied key leaks nothing.
 - [ ] Codegen drift check fails on a hand-edited generated file.
+- [ ] Switching `STORAGE_PROFILE_VAULT` from `minio` to `r2` requires no code change and all storage tests still pass.
+- [ ] `port-guard` fails on a deliberate vendor import outside `adapters/`.
 
 **Why this phase is worth its cost.** Everything after it is faster, and none of the shortcuts that produce a hardcoded-value codebase are available. The reference project's token layer was theme-ready but its theme switch was never built; by the time anyone tried, two hundred components had accumulated assumptions. Building the switch in Phase 0 is what makes multi-theme real.
 
@@ -109,12 +121,13 @@ The first end-to-end flow. A user can create an account and sign in.
 
 ---
 
-## Phase 2 — Stories
+## Phase 2 — Stories and the safety gate
 
-The core product loop.
+The core product loop, and the thing that stops it becoming a sewer. Per S3a these ship together.
 
 **Backend**
-- `stories` and `comments` collections with all partial indexes.
+- `stories` and `comments` collections with all partial indexes, including `moderation.state` on the feed filters.
+- `content_reviews` collection.
 - `POST /stories`, `PATCH`, `DELETE`, `POST /{id}/publish`, `/unpublish`.
 - `GET /stories/mine`, `/stories/{id}`.
 - `POST /stories/media/presign`, `/complete`.
@@ -123,10 +136,22 @@ The core product loop.
 - Excerpt and reading-time derivation.
 - Opaque slug generation.
 
+**Sanity layer — tiers 1 and 2 only** ([12](12-ai-layer.md))
+- `ai/cascade.py` with the verdict merge and the tier budget.
+- `ai_rules.py`: identifier regexes, blocklists, spam heuristics, repetition detection.
+- `ai_local.py`: the ONNX classifier, loaded at startup, refusing to boot if absent.
+- `safety.v1.yaml` and `exposure.v1.yaml` rubrics.
+- Safety gate and exposure check on publish; care signal async.
+- `POST /stories/{id}/precheck`.
+- The golden set with its first ~300 labelled cases, and `ai-eval` in CI.
+- Tier 3 **not built yet** — uncertainty resolves to `hold`, and the queue is drained manually by the team.
+
 **Mobile**
 - Story composer: title, body, autosave to draft.
 - Visibility picker with schedule.
 - Image attachment with an EXIF-stripping notice.
+- Debounced `precheck` while writing, surfacing exposure spans inline.
+- Held / blocked states rendered as states, with the rule cited and an appeal affordance (the ticket itself lands in Phase 6; until then the button opens a stub).
 - Draft list, published list, scheduled list.
 - Story detail with `reading` typography and the max-width cap.
 - Edit within the 24-hour window.
@@ -141,27 +166,42 @@ The core product loop.
 - [ ] A private story returns `404` to another account, not `403`.
 - [ ] `published_at` is truncated to the minute.
 - [ ] Story body reads comfortably at 160% text scale.
+- [ ] **A draft produces zero `AIPort` calls** — asserted by a test, not by inspection.
+- [ ] A story containing a phone number and an employer name warns before publish and publishes anyway on `exposure_ack`.
+- [ ] A spam story is blocked with its rule cited in language a human understands.
+- [ ] The golden set's emotional-distress slice has **zero** false blocks.
+- [ ] Inline gate p95 is under 900 ms on the deployment target.
+- [ ] With the AI adapter forced to fail, publish returns `MODERATION_UNAVAILABLE`, the story is preserved, and nothing reaches a feed.
 
 ---
 
-## Phase 3 — Communities and social
+## Phase 3 — Categories, communities, social, and the fit check
 
-Stories become social.
+Stories become social, and the taxonomy from [00](00-product-overview.md) §6.1 becomes real.
 
 **Backend**
-- `communities`, `community_members`, `connections`, `reactions`, `notifications`.
-- Community browse, detail, join, leave, my-communities.
+- `community_categories`, `communities`, `community_members`, `connections`, `reactions`, `notifications`.
+- Seed script: all 15 categories, ~30 curated communities spread across every one of them — **not just the reflective ones.** `job-search`, `money`, `study`, and `starting-over` each ship with at least two real rooms, because a taxonomy with empty shelves teaches users that the product is only about grief.
+- `GET /communities/categories`, browse by category and tone, detail, join, leave, my-communities.
+- `GET /communities/{slug}/members`, gated on `member_directory`.
 - Follow, unfollow, followers, following, block, blocked.
 - Like and unlike for stories and comments.
-- Comments with one nesting level, tombstone handling.
+- Comments with one nesting level, tombstone handling; safety gate on comments.
 - `GET /stories/feed`.
 - `fan_out_new_story`, `fan_out_comment` workers.
 - Notifications list, unread count, mark read.
 - `reconcile_counts` cron.
-- ~12 seeded curated communities across the archetypes.
+
+**Sanity layer — the fit check**
+- The four tone rubrics, each with its own labelled slice in the golden set.
+- Fit scoring against the target community, with per-room `fit_threshold` overrides.
+- `warn` / `redirect` bands, suggested-community generation, and `fit_override`.
+- `wrong_community` reports routed to a fit re-check rather than to a human.
 
 **Mobile**
-- Community browse and detail with a join control.
+- Category browse → community browse → community detail with a join control.
+- Community picker in the composer, defaulting to the best-fit suggestion.
+- The `redirect` sheet: up to three suggested rooms plus "publish here anyway".
 - Home feed with skeletons, pull-to-refresh, cursor pagination.
 - Reaction bar; comment thread with composer.
 - Public profile with follow.
@@ -170,12 +210,17 @@ Stories become social.
 
 **Definition of done**
 - [ ] The feed renders followed users and joined communities, correctly paginated.
+- [ ] Held and blocked stories never appear in any feed **at the query level**, verified against the raw API.
 - [ ] A double-tapped like produces one like (idempotency verified).
 - [ ] Blocking removes the user from the feed in both directions.
 - [ ] Comments from a deleted account render as a tombstone without breaking the thread.
 - [ ] Counts match a recomputed aggregate after the nightly job.
 - [ ] The feed's first paint is under 1.5 s on a mid-range Android over 4G.
 - [ ] Every empty list shows a real `EmptyState`, never a blank screen.
+- [ ] Adding a sixteenth category is a seed row and a deploy of data only — **no code change**, verified by actually doing it.
+- [ ] A job-search story submitted to a grief community is redirected with sensible suggestions, and publishes anyway on override.
+- [ ] A grief story submitted to a grief community scores above the warn band. Manual review of 30 real-shaped samples.
+- [ ] `member_directory: false` makes `/members` return `404`, not `403`.
 
 ---
 
@@ -283,7 +328,9 @@ The escrow release flow, end to end.
 - Passcode release approval with justification and optional dual approval.
 - Reveal token, one-time code, 24-hour expiry, `expire_reveal_links` cron.
 - Every `/admin/*` endpoint.
-- `reports` and the moderation queue.
+- `reports` and the moderation queue: `GET /admin/moderation/queue`, `POST /admin/moderation/{review_id}/resolve`, `GET /admin/moderation/stats`.
+- `content_appeal` tickets wired to `POST /stories/{id}/appeal`; an overturn republishes, notifies, and writes the case into the golden set.
+- `expire_holds` cron — holds older than 24 hours auto-resolve to `allow` and page on-call.
 - Full audit coverage of every privileged action.
 - Staff TOTP enrolment, IP allowlist, idle timeout.
 
@@ -307,37 +354,51 @@ A minimal Next.js app — the one exception to S4, because it is staff-only, has
 - [ ] Every step appears in the user's Security activity log in plain language.
 - [ ] `audit_logs` rejects an update attempt at the database-role level.
 - [ ] No impersonation, password-set, or vault-read endpoint exists anywhere in the admin surface.
+- [ ] A blocked story can be appealed, overturned, republished, and the overturned case appears in the golden set as a new test.
+- [ ] A hold left untouched for 24 hours publishes itself and pages on-call. **A backlog must never become a silent ban.**
+- [ ] A moderator reviewing content sees `user_id` and nothing else identifying — because nothing else exists.
 
 ---
 
-## Phase 7 — AI recommendations
+## Phase 7 — AI suggestions, discovery, and tier 3
 
-The last feature phase.
+The last feature phase. The gate has been live since Phase 2; this phase adds the half of the AI layer that is a feature rather than a control, and closes the manual review loop by adding the hosted tier.
 
-**Backend**
-- Interest embeddings and the `refresh_interest_embeddings` worker.
+**Backend — suggestions**
+- Local embedding pipeline: `embeddings.py` worker, `refresh_interest_embeddings`, story embeddings on publish for public stories only.
 - `recommendations` collection and the nightly `recompute_recommendations` worker.
 - `GET /recommendations/communities`, `/people`, `POST /dismiss`.
 - Human-readable `reason` generation for every recommendation.
 - `GET /stories/discover`.
-- `risk_signal` detection on story text, surfacing regional helpline resources to the author only.
 - Improved avatar generation from the seed.
+
+**Backend — tier 3**
+- `ai_anthropic.py` and `ai_openai_compat.py`, both passing the adapter contract suite.
+- Escalation on the uncertain slice only; `AI_TIER3_TIMEOUT_MS` and fallback to the tier-2 verdict.
+- Prompt-injection fixtures added to the golden set and gating CI.
+- The cost dashboard: `tier_reached` distribution and per-day hosted-call count.
+- Config validator rejecting `AI_FAIL_MODE=allow` in `production`.
 
 **Mobile**
 - Suggested communities and people, each with its visible reason.
 - Discover feed.
 - Dismiss.
-- Helpline resource sheet when a risk signal fires.
+- Helpline resource sheet when a care signal fires.
 
 **Definition of done**
-- [ ] Recommendations are relevant to declared interests and joined communities (manual review of 20 accounts).
+- [ ] Recommendations are relevant to declared interests and joined communities (manual review of 20 accounts spanning at least six categories, not only the reflective ones).
 - [ ] Every recommendation shows a reason a user can understand.
 - [ ] Dismissal persists.
 - [ ] The request path is a single primary-key read — no inference at request time.
-- [ ] `risk_signal` never removes, hides, or reports content; it only offers resources to the author.
-- [ ] No recommendation exposes any signal derived from a private story or a vault item.
+- [ ] Embeddings are computed locally; the hosted provider bill contains zero embedding calls.
+- [ ] A care signal never removes, hides, or reports content; it only offers resources to the author.
+- [ ] No recommendation exposes any signal derived from a private story, a draft, a held story, or a vault item.
+- [ ] Turning `AI_TIER3_ENABLED=false` leaves the platform fully safe, with more holds and no crashes.
+- [ ] A hosted-provider outage produces holds, not published-unreviewed content, and not a broken publish button.
+- [ ] Every injection fixture fails to change a verdict.
+- [ ] Tier-3 share of total checks is under 15% on a week of real traffic.
 
-The last item is a hard constraint. Feeding private content into a recommendation model would make private stories observable through their effects, which is a subtler but real violation of the product's promise. Only public stories, joined communities, and declared interests are inputs.
+The private-content item is a hard constraint. Feeding private content into a recommendation model would make private stories observable through their effects, which is a subtler but real violation of the product's promise. Only public stories, joined communities, and declared interests are inputs.
 
 ---
 
@@ -353,7 +414,8 @@ No new features. Only the work that makes it safe to ship.
 - Sentry with PII scrubbing verified.
 - **External security review of [05](05-security-and-crypto.md) and its implementation.**
 - Penetration test of auth, vault, and the admin surface.
-- Privacy policy and terms, written to match what the system actually does.
+- Privacy policy and terms, written to match what the system actually does — including what the AI layer reads, what leaves the platform, and what the hosted provider is contractually forbidden from doing with it.
+- Moderation calibration review: overturn rate per rule over the beta, and a rubric revision for anything above threshold.
 - App Store and Play Store listings, with the data-safety declarations completed honestly.
 - Support runbooks for every ticket type.
 - Incident response runbook and on-call rotation.
@@ -368,7 +430,8 @@ No new features. Only the work that makes it safe to ship.
 - [ ] Every query is index-covered.
 - [ ] Restore from backup verified end to end.
 - [ ] Beta feedback triaged; every crash fixed.
-- [ ] Transparency report template ready.
+- [ ] Transparency report template ready, including verdict distribution, appeal count, and overturn rate.
+- [ ] No beta user reports a wrongly blocked story that survived appeal review.
 
 ---
 
@@ -410,6 +473,8 @@ Begins only when Phase 8 is complete and the token file, component contract, and
 | Contract tests updated with every new route | Every phase |
 | Golden tests updated with every component change | Every phase |
 | Index declared in the same commit as the query that needs it | Every phase |
+| Golden-set cases added in the same PR as any rubric or check change | Phases 2, 3, 6, 7 |
+| A new external vendor arrives as an adapter behind an existing port, never as a direct import | Every phase |
 | Docs updated in the same PR as the behaviour they describe | Every phase |
 
 **The last row is the one that decays first.** These twelve documents are only useful while they are true. A PR that changes the token contract, adds an error code, or alters a collection and does not touch the corresponding document has introduced a second source of truth — and from that point on, nobody can trust either one. Reviewers should treat a stale doc as a defect on the same footing as a failing test.
@@ -418,6 +483,6 @@ Begins only when Phase 8 is complete and the token file, component contract, and
 
 Out of scope for everything above, listed so the boundary is not renegotiated mid-phase:
 
-Direct messaging, video stories, live audio, user-created communities, story collections and series, reactions beyond a single like, push notifications, in-app search across comments, translation, monetization, story analytics for authors, group vaults or shared vault items, desktop apps, and any form of advertising.
+Direct messaging, video stories, live audio, user-created communities, story collections and series, reactions beyond a single like, push notifications, in-app search across comments, translation, monetization, story analytics for authors, group vaults or shared vault items, desktop apps, a dedicated vector database, on-device pre-checking in Flutter, multilingual fit checking, and any form of advertising.
 
 Each of these is a reasonable future feature. None of them is required to prove that people will tell their story to strangers who cannot judge them, which is the only question the MVP exists to answer.

@@ -105,8 +105,9 @@ Clients branch on these. Adding a code is a minor version change; changing the m
 | `USERNAME_TAKEN` | 409 | |
 | `USERNAME_INVALID` | 422 | Fails `^[a-z0-9_]{3,20}$`. |
 | `PASSWORD_TOO_WEAK` | 422 | Under 10 chars, or on the breached list. |
-| `ACCOUNT_BLOCKED` | 403 | |
+| `ACCOUNT_BLOCKED` | 403 | `blocked` is true. Reason is never returned. |
 | `ACCOUNT_DEACTIVATED` | 403 | Recoverable by signing in within 30 days. |
+| `REFERRAL_CODE_INVALID` | 422 | No account owns that code. Signup is rejected rather than silently dropping the code. |
 | `TNC_REQUIRED` | 422 | |
 | `STEP_UP_REQUIRED` | 403 | Route needs re-authentication. `data.factors` lists which. |
 | `CSRF_MISSING` / `CSRF_MISMATCH` | 403 | |
@@ -148,6 +149,23 @@ Clients branch on these. Adding a code is a minor version change; changing the m
 | `NESTING_TOO_DEEP` | 400 | One reply level only. |
 | `SELF_FOLLOW` | 400 | |
 | `BLOCKED_BY_USER` | 403 | |
+| `CATEGORY_NOT_FOUND` | 404 | |
+
+### The sanity layer
+
+Publication is gated, so the publish endpoint has its own outcomes. See [12-ai-layer.md](12-ai-layer.md).
+
+| Code | Status | Meaning |
+|---|---|---|
+| `CONTENT_BLOCKED` | 400 | The safety gate refused. `data.rule` names the rule, `data.rationale` is one displayable sentence, `data.review_id` identifies the decision, `data.appeal_available` is a boolean. |
+| `CONTENT_HELD` | 202 | Queued for human review. `data.review_id`, `data.expected_by`. **Not an error in the user's sense** — the story is safe, it is waiting — so the envelope's `success` is `true` and the client renders it as a state, not a failure. |
+| `CONTENT_OFF_TOPIC` | 400 | Fit check landed on `redirect`. `data.fit_score`, `data.suggested_communities[]` with `slug`, `name`, and `score`. Retrying with `fit_override: true` succeeds. |
+| `SELF_EXPOSURE_UNACKNOWLEDGED` | 400 | The exposure check found identifying spans and the client did not send `exposure_ack`. `data.spans[]` carries `{start, end, kind}` for highlighting. **Never blocks on retry with `exposure_ack: true`** — this code exists to guarantee the warning was shown, not to prevent the choice. |
+| `MODERATION_UNAVAILABLE` | 503 | The gate could not reach a verdict and `AI_FAIL_MODE` is `hold`. The story is saved and queued; nothing is lost. |
+| `APPEAL_ALREADY_OPEN` | 409 | One open appeal per piece of content. |
+| `APPEAL_NOT_AVAILABLE` | 403 | The verdict is terminal and not appealable. |
+
+**`CONTENT_HELD` returning `202` with `success: true` is deliberate and is the one place the envelope rules bend toward the product.** A person who spent an hour writing something and pressed publish has not made an error, and an interface that returns them a red failure state for a review queue is telling them they did something wrong. The client branches on `data.moderation_state`, not on a red toast.
 
 ### Vault
 
@@ -249,7 +267,7 @@ The reference project's health endpoint reported "up and running" unconditionall
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/auth/signup` | — | Create account. Body: `username`, `password`, `tnc_accepted`. Returns tokens plus `keys_required: true`. |
+| `POST` | `/auth/signup` | — | Create account. Body: `username`, `password`, `tnc_accepted`, `referral_code?`. Returns tokens plus `keys_required: true` and the new account's own `referral_code`. |
 | `POST` | `/auth/signin` | — | Body: `username`, `password`. Constant-time on failure. |
 | `POST` | `/auth/refresh` | — (refresh token) | Rotate. |
 | `POST` | `/auth/signout` | S | Revoke this session's family and denylist the access token. |
@@ -298,16 +316,18 @@ The reference project's health endpoint reported "up and running" unconditionall
 
 Every response carries `email_masked` only. There is no endpoint anywhere that returns a plaintext email address, so a stolen session cannot harvest one.
 
-### Communities — `/communities`
+### Categories and communities — `/communities`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/communities` | S | Browse. Filters: `archetype`, `q`. Paginated. |
+| `GET` | `/communities/categories` | S | The category taxonomy with `tone`, icon, accent token, and community counts. Cached 5 minutes; it changes about once a quarter. |
+| `GET` | `/communities` | S | Browse. Filters: `category`, `tone`, `q`. Paginated. |
 | `GET` | `/communities/{slug}` | S | Detail with `is_member`. |
 | `GET` | `/communities/{slug}/stories` | S | Community feed. Paginated. |
 | `POST` | `/communities/{slug}/join` | S | Idempotent. |
 | `DELETE` | `/communities/{slug}/join` | S | Idempotent. |
 | `GET` | `/communities/me` | S | Joined communities with unread indicators. |
+| `GET` | `/communities/{slug}/members` | S | **Only when `member_directory` is `true`.** `404` otherwise — the flag's absence is not disclosed. Returns display name, avatar seed, joined-at. No sort parameter, no filter parameter, ever. |
 | `PATCH` | `/communities/{slug}/settings` | S | `notifications_enabled`, `last_read_at`. |
 
 ### Connections — `/connections`
@@ -330,7 +350,9 @@ Every response carries `email_masked` only. There is no endpoint anywhere that r
 | `GET` | `/stories/{id}` | S | Own stories at any visibility; others' public only. |
 | `PATCH` | `/stories/{id}` | S | Update `title`, `body`, `community_id`, `media`. Drafts freely; published within a 24-hour window, and edits set `edited_at`. |
 | `DELETE` | `/stories/{id}` | S | Soft delete. |
-| `POST` | `/stories/{id}/publish` | S | Body: `visibility` (`public`/`private`/`scheduled`), `scheduled_for?`, `community_id?`. The only transition out of `draft`. |
+| `POST` | `/stories/{id}/precheck` | S | Runs the sanity layer **without publishing**. Body: `community_id?`. Returns the verdict, fit score, suggested communities, and exposure spans. Rate limited 10/hour per story. |
+| `POST` | `/stories/{id}/publish` | S | Body: `visibility` (`public`/`private`/`scheduled`), `scheduled_for?`, `community_id?`, `fit_override?`, `exposure_ack?`. The only transition out of `draft`. Runs the gate; see the sanity-layer error codes. |
+| `POST` | `/stories/{id}/appeal` | S | Opens a `content_appeal` ticket for a `hold` or `block`. Body: `reason`. 201. |
 | `POST` | `/stories/{id}/unpublish` | S | Back to `draft`. Comments and likes are preserved but hidden. |
 | `GET` | `/stories/mine` | S | Own stories. Filter by `visibility`. |
 | `GET` | `/stories/feed` | S | Home feed: followed users plus joined communities. |
@@ -342,7 +364,9 @@ Every response carries `email_masked` only. There is no endpoint anywhere that r
 | `POST` | `/stories/media/presign` | S | Body: `content_type`, `size_bytes`. Returns `object_key` and a presigned PUT URL. |
 | `POST` | `/stories/media/complete` | S | Body: `object_key`. Enqueues EXIF strip and thumbnailing. 202. |
 
-**Publish is a separate endpoint rather than a `PATCH` on `visibility`.** Publishing has side effects — validation that a community is set, EXIF verification, slug generation, notification fan-out, feed cache invalidation — and a general-purpose field update should not carry that weight. Separating it also means the audit trail distinguishes "edited a draft" from "made something public", which for this product is a meaningful difference.
+**Publish is a separate endpoint rather than a `PATCH` on `visibility`.** Publishing has side effects — the sanity gate, validation that a community is set, EXIF verification, slug generation, notification fan-out, feed cache invalidation — and a general-purpose field update should not carry that weight. Separating it also means the audit trail distinguishes "edited a draft" from "made something public", which for this product is a meaningful difference.
+
+**`precheck` exists so the composer never ambushes the author.** The client calls it on a debounce while writing, so exposure warnings and a community suggestion appear *as* the story is written rather than at the moment the author presses publish and is emotionally finished. The publish endpoint re-runs the gate regardless — a precheck result is advisory and is never trusted as authorization, because a client that could pre-authorize its own publication would be the whole gate's bypass.
 
 ### Comments — `/stories/{id}/comments`
 
@@ -414,7 +438,7 @@ Every response carries `email_masked` only. There is no endpoint anywhere that r
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/reports` | S | Body: `target_kind`, `target_id`, `reason`, `note?`. Vault items are not a valid target. |
+| `POST` | `/reports` | S | Body: `target_kind`, `target_id`, `reason`, `note?`. Vault items are not a valid target. A report triggers a `trigger: "report"` re-check immediately, so a machine settles what a machine can before anything reaches a human queue. |
 
 ### Admin — `/admin`
 
@@ -432,6 +456,9 @@ Separate router, IP-allowlisted, staff-only. Not part of the public OpenAPI sche
 | `POST` | `/admin/users/{id}/block` | `R:admin+` | |
 | `POST` | `/admin/users/{id}/unblock` | `R:admin+` | |
 | `GET` | `/admin/reports` | `R:moderator+` | |
+| `GET` | `/admin/moderation/queue` | `R:moderator+` | Held content, oldest first, with the verdict, rule, rationale, rubric version, and the model's spans. |
+| `POST` | `/admin/moderation/{review_id}/resolve` | `R:moderator+` | Body: `outcome` (`stood`/`overturned`), `note`. An overturn republishes, notifies the author, and writes the case into the golden set. |
+| `GET` | `/admin/moderation/stats` | `R:admin+` | Verdict distribution, overturn rate per rule, tier-3 share. The calibration dashboard, and the source of the transparency report. |
 | `POST` | `/admin/content/{kind}/{id}/remove` | `R:moderator+` | |
 | `GET` | `/admin/audit` | `R:admin+` | Read-only. Filterable. |
 | `POST` | `/admin/roles/{user_id}` | `R:super_admin` + SU | Grant or revoke. |

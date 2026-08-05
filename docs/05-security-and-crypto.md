@@ -318,6 +318,30 @@ Anonymity is not achieved by omitting a name field. These are the specific measu
 | Image content | Story images are the user's own choice, but the composer warns when an image contains a detected face and offers to blur it, on-device. |
 | Contacts / social graph import | No such feature. No "people you may know", no contact upload, no address-book permission requested. |
 | Public story sharing | Share links carry an opaque slug, not the `user_id`, and no referrer is leaked (`rel="noopener noreferrer"`, `Referrer-Policy: no-referrer`). |
+| Self-deanonymization in one's own prose | The exposure check ([12](12-ai-layer.md) §2.3) scans for names, employers, phone numbers, addresses, handles, and school-plus-year combinations before publish, and warns. It never blocks — the user's own information is the user's decision. |
+| AI provider as a correlation vector | Content sent to a hosted model carries **no** `user_id`, no username, no device fingerprint, and no session identifier. The request contains the text and the rubric, nothing else. Two stories by the same author are unlinkable at the provider. |
+
+### 7.1 The AI boundary
+
+The sanity layer reads content, which makes it a data-flow worth stating precisely rather than trusting to implementation.
+
+| Content | Reaches a local model | Reaches a hosted model |
+|---|---|---|
+| Draft | **No** | **No** |
+| Private story | Exposure check and care signal only | **No** |
+| Public / community story | Yes | Only the ambiguous slice that tiers 1 and 2 could not resolve |
+| Comment | Safety gate only | Only the ambiguous slice |
+| Username, display name, bio | On change only | **No** |
+| Email, in any form | **No** | **No** |
+| Vault item, its metadata, filename, label, or thumbnail | **No** | **No** |
+
+The vault row is not a policy. It is a statement of fact: vault content is AES-GCM ciphertext and the server holds no key, so there is nothing a model could be given. **Any future feature proposal that requires a model to read vault content is a proposal to remove the vault**, and is rejected on that basis rather than debated on its merits.
+
+Three enforcement mechanisms, because a table in a document is not a control:
+
+1. A unit test asserts that the publish path with `visibility: "draft"` issues zero calls through `AIPort`.
+2. The hosted adapter's request builder accepts a text and a rubric and has no parameter through which an identifier could be passed. It is not that we choose not to send `user_id` — there is no argument for it.
+3. Contractual terms with any hosted provider: no training on submitted content, no retention beyond the request, signed DPA. Stated in the privacy policy in the same words.
 
 ## 8. Transport and platform hardening
 
@@ -346,6 +370,8 @@ Fixed-window Redis counters, applied per route and per identity. Applied to **ev
 | `POST /vault/search` | 20 / min per user |
 | `POST /vault/items/{id}/unlock` | 5 consecutive failures → 15 min lockout, exponential |
 | `POST /stories` | 20 / hour per user |
+| `POST /stories/{id}/precheck` | 10 / hour per story, 60 / hour per user |
+| `POST /stories/{id}/publish` | 20 / hour per user |
 | `POST /comments` | 60 / hour per user |
 | Read endpoints | 300 / min per user |
 
@@ -386,6 +412,10 @@ Logs are retained 30 days. Access to the log store is itself audited.
 | XSS on web | Nonce-based CSP with no `unsafe-inline`, React escaping, story text rendered as text with a strict allowlist for formatting. |
 | Log-based leakage | Default-deny redaction with a CI assertion. |
 | Backup-based leakage | Decrypt directory and cache excluded from OS backups. |
+| Prompt injection through story text | Content is delimited and labelled, never concatenated into instructions; the model returns a constrained schema with no actionable field; no tool use and no retrieval on the moderation path; injection fixtures in the CI golden set. [12](12-ai-layer.md) §7. |
+| Gate evasion by probing `precheck` | Rate limited per story and per user; every precheck writes a `content_review`, so a user grinding against the classifier produces a visible pattern rather than a silent success. |
+| Client-side bypass of the gate | `precheck` is advisory only. `publish` re-runs the full gate server-side and never trusts a client-supplied verdict. |
+| Deanonymization via the AI provider | No identifier is sent, and there is no parameter through which one could be. |
 
 ### Threats explicitly **not** defended against
 
@@ -401,6 +431,8 @@ Stated plainly, because a security document that claims completeness is lying.
 | **Traffic analysis by a network observer** | Upload sizes and timings leak coarse information. Chunk padding to 1 MiB boundaries reduces this; it does not eliminate it. |
 | **Legal compulsion for stories** | Public and private story content is server-readable and can be compelled. Vault content cannot be produced because we cannot decrypt it. A transparency report will state both facts. |
 | **A malicious client build** | A modified app could exfiltrate a user's own plaintext. Certificate pinning and integrity attestation raise the bar; they do not close it. |
+| **A determined author defeating the exposure check** | Identifiers can be spelled out, transliterated, or implied by context no classifier will catch. The check reduces accidental exposure; it cannot prevent deliberate exposure, and it is presented to users as a warning rather than a guarantee. |
+| **A wrong moderation verdict** | The gate will sometimes be wrong. The mitigations are structural rather than technical: a `hold` instead of a `block` wherever the model is unsure, a cited rule on every refusal, a human appeal on every non-terminal verdict, a published overturn rate, and a hard CI gate at 0% false-blocks on the emotional-distress slice. We do not claim the model is right; we claim being wrong is visible and correctable. |
 
 ## 12. Cryptographic hygiene
 

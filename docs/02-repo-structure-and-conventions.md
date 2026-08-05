@@ -45,8 +45,27 @@ backend/
 │   │   ├── crypto.py               AES-GCM, HKDF, blind index, KMS envelope
 │   │   ├── deps.py                 CurrentClaims, require_role, csrf_protect, rate_limit
 │   │   ├── ids.py                  ULID generation with typed prefixes
-│   │   ├── errors.py               Error code catalogue
-│   │   └── storage.py              R2 presigning
+│   │   └── errors.py               Error code catalogue
+│   ├── ports/                      Vendor-neutral Protocols — see 01 Decision 10
+│   │   ├── storage.py              StoragePort + profile resolution
+│   │   ├── ai.py                   AIPort + Judgement types
+│   │   ├── mail.py                 MailPort
+│   │   ├── kms.py                  KmsPort
+│   │   └── factory.py              Config → adapter, resolved once at startup
+│   ├── adapters/                   THE ONLY PLACE A VENDOR SDK MAY BE IMPORTED
+│   │   ├── storage_s3.py           R2, B2, S3, MinIO, Hetzner
+│   │   ├── storage_local.py
+│   │   ├── ai_rules.py             Tier 1
+│   │   ├── ai_local.py             Tier 2 — ONNX
+│   │   ├── ai_anthropic.py         Tier 3
+│   │   ├── ai_openai_compat.py     Tier 3 alternative
+│   │   ├── mail_resend.py
+│   │   └── kms_cloud.py
+│   ├── ai/                         The sanity layer itself — see 12
+│   │   ├── cascade.py              Tier orchestration and the verdict merge
+│   │   ├── checks.py               safety / fit / exposure / care
+│   │   ├── rubrics/*.yaml          Versioned rule sets and prompt fragments
+│   │   └── models/                 Downloaded ONNX artifacts (gitignored)
 │   ├── api/
 │   │   ├── router.py               Mounts every feature router under API_PREFIX
 │   │   └── endpoints/
@@ -57,6 +76,7 @@ backend/
 │   │       ├── connections/
 │   │       ├── stories/
 │   │       ├── comments/
+│   │       ├── moderation/
 │   │       ├── vault/
 │   │       ├── tickets/
 │   │       ├── notifications/
@@ -66,6 +86,7 @@ backend/
 │       ├── media.py
 │       ├── notifications.py
 │       ├── recommendations.py
+│       ├── embeddings.py
 │       └── maintenance.py
 ├── tests/
 │   ├── conftest.py
@@ -281,6 +302,51 @@ Promotion preserves internal shape. A promoted feature folder keeps its `widgets
 
 **Do not pre-promote.** A component in `components/` that has one caller is a lie about its generality, and it will grow props for hypothetical cases that never arrive.
 
+## 5a. Code style: what to follow, what not
+
+These are binding on every language in the repository — Python, Dart, TypeScript.
+
+### No comments. No docstrings.
+
+**Source files contain code only.** No inline comments, no block comments, no docstrings, no section banners, no `TODO`, no commented-out code. The single exception is the generated-file banner in §7, which is machine-written.
+
+The reasoning lives in these twelve documents, and it lives there because a comment and the code beside it drift apart the moment either is edited, and the reader has no way to tell which one is lying. A document is versioned, reviewed, and searched as a unit; a comment is not.
+
+What replaces a comment:
+
+| You were about to write | Write this instead |
+|---|---|
+| `# check if the user is blocked` | A function named `ensure_not_blocked()` |
+| `# 900 = presign TTL in seconds` | A constant named `PRESIGN_UPLOAD_TTL_SECONDS = 900` |
+| `# this is O(n²) but n is small` | A note in the relevant doc, and a test asserting the bound |
+| `# noqa: S104` | A `per-file-ignores` entry in `pyproject.toml` |
+| `// TODO: handle the empty case` | A failing test, or nothing |
+| A docstring explaining why | A section in the doc that owns that decision |
+
+If a piece of code genuinely cannot be understood without prose, that is a signal to rename or split it, not to annotate it. If the reasoning is architectural, it belongs in `docs/` and the PR that adds the code updates the doc in the same commit.
+
+**Test names carry the intent.** `test_refresh_token_hash_does_not_reveal_the_token` needs no docstring; `test_hash_2` would need three. A test whose name does not say what it proves is misnamed.
+
+### Follow
+
+- **One response shape.** `{success, message, data}` on every backend response; `TResult` / `Result<T>` on every client call. No endpoint and no client call may invent a second shape.
+- **Named constants over literals.** Every number and string with meaning gets a name in `constants.py` or `const.ts`.
+- **Explicit projections.** Every Mongo read names the fields it wants.
+- **Small, single-purpose functions.** A function that needs a comment to divide it into parts is two functions.
+- **Errors as data.** One `ErrorCode` enum, one status and one sentence per code, defined together.
+- **Custom components.** The design system is ours — see [04](04-component-library.md). A UI element gets built once, in one place, and reused.
+- **Dates through one helper.** `utc_now()` on the backend, the equivalent on each client. See [07](07-data-model.md) §1.
+
+### Do not
+
+- **Do not add a package for something small.** Every dependency needs a reason that could not be met in under ~50 lines of our own code. Runtime dependency lists stay short by policy, not by accident ([01](01-tech-stack.md)).
+- **Do not add a UI component library.** No Material-style kit on web, no `flutter_bloc`-adjacent widget packs, no icon packages — icons are generated from our own SVGs.
+- **Do not use a raw value where a token exists.** No hex, no px, no ad-hoc `TextStyle`. Enforced by `design-guard`.
+- **Do not build a second way to do something that already has one way.** A second date helper, a second HTTP wrapper, a second response envelope, or a second button component is a defect regardless of how good it is.
+- **Do not leave dead code.** Delete it. Git remembers.
+- **Do not silence a linter inline.** Configure the exception centrally so it is visible and countable.
+- **Do not write production code without a failing test first.** See [11](11-mvp-roadmap.md) cross-phase practices.
+
 ## 6. Naming conventions
 
 ### Files and directories
@@ -402,8 +468,13 @@ Fast checks only, so the hook stays under a couple of seconds:
 | `app` | `flutter pub get` → `dart format --set-exit-if-changed` → `flutter analyze --fatal-infos` → `flutter test` |
 | `codegen-drift` | Run all four generators, fail if `git diff --exit-code` is dirty |
 | `design-guard` | Fail on raw hex, raw px, raw `TextStyle`, raw `BoxShadow`, or non-token Tailwind arbitrary values outside token files ([03-design-tokens.md](03-design-tokens.md)) |
-| `vocab-guard` | Fail on banned domain synonyms (`post`, `confession`) in source |
+| `vocab-guard` | Fail on banned domain synonyms (`post`, `confession`, `archetype`) in source |
 | `secret-guard` | Fail if `.env.example` is missing a key that `config.py` requires, or if a secret pattern appears in a diff |
+| `port-guard` | Fail if a vendor SDK (`aioboto3`, `anthropic`, `openai`, any mail SDK) is imported outside `backend/app/adapters/`. This is what keeps [01](01-tech-stack.md) Decision 10 real rather than aspirational — without it the abstraction leaks within a month |
+| `ai-eval` | Run the golden set from [12](12-ai-layer.md) §10. Fails on any threshold regression, and **hard-fails on a single false block in the emotional-distress slice** |
+| `comment-guard` | Fail on any comment, docstring, or inline linter suppression in `backend/app/`, `app/lib/`, or `web/src/`, excluding generated-file banners (§5a) |
+
+`ai-eval` runs on any change to `app/ai/**`, to a rubric file, or to a model or provider setting — and on nothing else, because it is the only slow job in the matrix.
 
 `--max-warnings 0` throughout. A warning nobody must fix is a warning nobody will fix.
 
@@ -419,6 +490,9 @@ make dev       # docker compose up (mongo, redis, minio) + API with reload + wor
 make tokens    # regenerate design tokens for both platforms
 make icons     # regenerate icon sets
 make types     # regenerate API types from the running backend's OpenAPI schema
+make models    # download the local ONNX classifier and embedding models
+make ai-eval   # run the moderation golden set
+make seed      # seed categories, communities, and interests into local MongoDB
 make check     # everything CI runs, locally
 ```
 

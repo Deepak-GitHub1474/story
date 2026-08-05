@@ -237,15 +237,17 @@ They also receive a notification on every transition. A ticket that sits in `und
 
 ## 5. Roles and permissions
 
-Five roles. A user has exactly one.
+Five roles at full scope. A user has exactly one.
 
-| Role | Description |
-|---|---|
-| `user` | Default. Every account. |
-| `moderator` | Handles content reports and appeals. No account access. |
-| `admin` | Handles account, export, and deletion tickets. No escrow access. |
-| `super_admin` | Handles passcode releases. The only role with escrow release capability. |
-| `system` | Internal, non-interactive. Used by workers. Cannot authenticate. |
+| Role | Description | Ships in |
+|---|---|---|
+| `user` | Default. Every account. | Phase 1 |
+| `admin` | Handles account, export, and deletion tickets. No escrow access. | Phase 1 |
+| `super_admin` | Handles passcode releases. The only role with escrow release capability. | Phase 1 |
+| `moderator` | Handles content reports and appeals. No account access. | Phase 6 |
+| `system` | Internal, non-interactive. Used by workers. Cannot authenticate. | Phase 6 |
+
+The `role` enum in [07](07-data-model.md) carries only the first three until the moderation queue exists. **Adding an unreachable role early is worse than adding it late** — it appears in the permission matrix, in tests, and in admin dropdowns as a capability that silently does nothing.
 
 ### 5.1 Permission matrix
 
@@ -255,6 +257,9 @@ Five roles. A user has exactly one.
 | Read another user's stories (public) | ✅ | ✅ | ✅ | ✅ |
 | Read another user's private stories | ❌ | ❌ | ❌ | ❌ |
 | Read reported content in a moderation queue | ❌ | ✅ | ✅ | ✅ |
+| Read **held** content awaiting review | ❌ | ✅ | ✅ | ✅ |
+| Resolve a hold, or overturn a block on appeal | ❌ | ✅ | ✅ | ✅ |
+| Change a moderation rubric | ❌ | ❌ | ❌ | ❌ — a rubric change is a code review, not a runtime action |
 | Read another user's vault item **metadata** | ❌ | ❌ | ❌ | ❌ |
 | Decrypt another user's vault content | ❌ | ❌ | ❌ | ❌ |
 | Read another user's email plaintext | ❌ | ❌ | ❌ | ❌ |
@@ -270,10 +275,11 @@ Five roles. A user has exactly one.
 | Modify or delete the audit log | ❌ | ❌ | ❌ | ❌ |
 | Grant or change roles | ❌ | ❌ | ❌ | ✅ |
 
-Five rows are `❌` for every role including `super_admin`, and they are the load-bearing ones:
+Six rows are `❌` for every role including `super_admin`, and they are the load-bearing ones:
 
 - **Nobody can decrypt vault content.** Not a policy — an absence of capability. There is no endpoint, no admin tool, no script.
-- **Nobody can read a private story.** Private means private to the author. Moderation operates only on reported content, and only public or community-visible content can be reported.
+- **Nobody can read a private story.** Private means private to the author. Moderation operates only on reported content and on content the sanity layer held before publication — and a private story is never held, because there is no audience to protect.
+- **Nobody can change a moderation rubric at runtime.** Rubrics are versioned files reviewed and merged like code, and every decision records the version that produced it. A staff-editable rule set would mean a decision nobody could later reconstruct, and an appeal nobody could answer.
 - **Nobody can read an email in plaintext.** Staff tools show `d••••k@g••••.com`.
 - **Nobody can change a user's password or log in as them.** There is no impersonation feature. This satisfies R4 and it is why passcode escrow is safe.
 - **Nobody can modify the audit log.** Including the role that can read all of it.
@@ -362,6 +368,9 @@ A nightly job walks the chain and alerts on any break. The chain head is additio
 | Escrow | `passcode_release.approved`, `passcode_release.reveal_issued`, `passcode_release.revealed`, `passcode_release.expired` |
 | Staff | `staff.role_granted`, `staff.role_revoked`, `staff.step_up_failed`, `staff.admin_login` |
 | Moderation | `content.reported`, `content.removed`, `content.restored`, `account.blocked`, `account.unblocked` |
+| Sanity layer | `content.held`, `content.blocked`, `content.hold_resolved`, `content.appeal_opened`, `content.appeal_overturned`, `content.hold_expired` |
+
+Sanity-layer entries carry `details: {rule, rubric_versions, tier_reached, review_id}` and are `visible_to_target: true` — an author can see, in their own security log, exactly what was decided about their writing and on what basis. **A moderation action a user cannot see is indistinguishable from shadowbanning**, which is the practice this product exists in opposition to.
 
 Vault item *content* is never audited (there is nothing readable to audit), but every *access* is — which is how a user can see whether their vault was opened while they were away.
 
@@ -385,11 +394,11 @@ Not in v1 scope as features, but the design must not preclude them, and regulati
 | Tier | Effect |
 |---|---|
 | **Deactivate** | Account hidden, stories unpublished, sessions revoked. Reversible within 30 days by signing in. |
-| **Delete** | Irreversible after a 14-day grace period. Purges `users`, `user_keys`, `user_passcodes`, `vault_items`, R2 objects, `devices`, `connections`, `notifications`. Stories are hard-deleted; comments on other users' stories are anonymized to a tombstone author rather than deleted, so conversation threads do not develop holes. |
+| **Delete** | Irreversible after a 14-day grace period. Purges `users`, `user_keys`, `user_passcodes`, `vault_items`, stored objects, `devices`, `connections`, `notifications`. Stories are hard-deleted; comments on other users' stories are anonymized to a tombstone author rather than deleted, so conversation threads do not develop holes. |
 
 `audit_logs` entries **survive deletion**, with the `user_id` retained. This is a deliberate and defensible exception: the log's integrity is a security control that protects other users, and its entries contain no personal content — only identifiers and action names. The privacy policy will state this.
 
-Deletion requires the password plus, if set, an email OTP. Vault items are purged from R2 by the maintenance worker with a verification pass, and the deletion is only marked complete once objects are confirmed gone.
+Deletion requires the password plus, if set, an email OTP. Vault items are purged from object storage by the maintenance worker with a verification pass, and the deletion is only marked complete once objects are confirmed gone.
 
 ## 8. Incident response
 
