@@ -54,6 +54,12 @@ class AppShell extends ConsumerWidget {
     final unread = ref.watch(unreadCountProvider);
 
     return DoubleBackToExit(
+      onBack: currentIndex == 0
+          ? null
+          : () {
+              context.go(destinations[0].route);
+              return true;
+            },
       child: Scaffold(
         backgroundColor: colors.bg,
         body: AnimatedSwitcher(

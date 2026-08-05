@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -59,34 +60,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     switch (action) {
       case SwipeAction.delete:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            backgroundColor: context.colors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            title: const Text('Delete this story?'),
-            content: const Text('This cannot be undone.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: Text(
-                  'Keep',
-                  style: TextStyle(color: context.colors.textSecondary),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(
-                  'Delete',
-                  style: TextStyle(color: context.colors.danger),
-                ),
-              ),
-            ],
-          ),
+        final confirmed = await confirmAction(
+          context,
+          title: 'Delete this story?',
+          body: 'This cannot be undone.',
+          confirmLabel: 'Delete',
+          cancelLabel: 'Keep',
         );
-        if (confirmed != true) return false;
+        if (!confirmed) return false;
         await repository.remove(story.storyId);
         notifier.remove(story.storyId);
         await ref.read(authProvider.notifier).refreshUser();

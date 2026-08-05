@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_card.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -194,30 +195,15 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmSignout(BuildContext context, WidgetRef ref) async {
-    final colors = context.colors;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        title: const Text('Sign out?'),
-        content: const Text('You will need your username and password to come back.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Stay', style: TextStyle(color: colors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('Sign out', style: TextStyle(color: colors.danger)),
-          ),
-        ],
-      ),
+    final confirmed = await confirmAction(
+      context,
+      title: 'Sign out?',
+      body: 'You will need your username and password to come back.',
+      confirmLabel: 'Sign out',
+      cancelLabel: 'Stay',
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     await ref.read(authProvider.notifier).signout();
     if (!context.mounted) return;

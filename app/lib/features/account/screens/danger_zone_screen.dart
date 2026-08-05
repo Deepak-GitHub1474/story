@@ -6,6 +6,7 @@ import '../../../components/app_button.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -36,6 +37,20 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
   }
 
   Future<void> _deactivate() async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'Deactivate your account?',
+      body: 'Everything is hidden until you come back.',
+      confirmLabel: 'Deactivate',
+      isDestructive: false,
+      consequences: const [
+        'Your stories stop appearing to anyone.',
+        'Your profile becomes unreachable.',
+        'Signing in restores all of it, exactly as it was.',
+      ],
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() {
       _isBusy = true;
       _error = null;
@@ -58,6 +73,20 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
   }
 
   Future<void> _delete() async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'Delete your account?',
+      body: 'This is scheduled for 14 days from now. After that nothing can '
+          'bring it back, including us.',
+      confirmLabel: 'Delete my account',
+      consequences: const [
+        'Every story, draft and comment is removed.',
+        'Your username is released for anyone to take.',
+        'Sign in before the 14 days are up to cancel.',
+      ],
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() {
       _isBusy = true;
       _error = null;
