@@ -123,6 +123,20 @@ async def create_comment(
     return ok_response("Comment added.", data=data)
 
 
+@router.get("/comments/{comment_id}/replies", status_code=status.HTTP_200_OK)
+async def list_replies(
+    comment_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    limit: int = FEED_DEFAULT_LIMIT,
+    cursor: str | None = None,
+):
+    data = await controllers.list_replies(
+        comment_id, claims=claims, mongo=mongo, limit=limit, cursor=cursor
+    )
+    return ok_response("Replies loaded.", data=data)
+
+
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_200_OK)
 async def delete_comment(comment_id: str, claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.delete_comment(comment_id, claims=claims, mongo=mongo)

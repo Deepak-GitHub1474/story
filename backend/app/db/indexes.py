@@ -86,6 +86,19 @@ INDEXES: dict[str, list[IndexSpec]] = {
         ),
         IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_reactions"),
     ],
+    "notifications": [
+        IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_recent"),
+        IndexSpec(
+            [("user_id", ASCENDING), ("read_at", ASCENDING)],
+            "ix_user_unread",
+            partial={"read_at": None},
+        ),
+        IndexSpec(
+            [("user_id", ASCENDING), ("dedupe_key", ASCENDING)],
+            "uq_user_dedupe",
+            unique=True,
+        ),
+    ],
     "devices": [
         IndexSpec(
             [("user_id", ASCENDING), ("fingerprint", ASCENDING)],

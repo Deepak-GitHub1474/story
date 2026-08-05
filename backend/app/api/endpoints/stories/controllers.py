@@ -3,6 +3,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.api.endpoints.notifications.service import notify, preview, withdraw
 from app.api.endpoints.stories import constants as c
 from app.api.endpoints.stories.models import (
     CreateCommentRequest,
@@ -259,6 +260,27 @@ async def set_like(
     if delta:
         await mongo[c.STORIES].update_one({"_id": story_id}, {"$inc": {"counts.likes": delta}})
 
+        if delta > 0:
+            await notify(
+                mongo=mongo,
+                user_id=story["author_id"],
+                actor_id=claims.user_id,
+                actor_snapshot=await _author_snapshot(claims.user_id, mongo),
+                kind="story_like",
+                target_kind="story",
+                target_id=story_id,
+                body="liked your story.",
+                collapse=True,
+            )
+        else:
+            await withdraw(
+                mongo=mongo,
+                user_id=story["author_id"],
+                kind="story_like",
+                actor_id=claims.user_id,
+                target_id=story_id,
+            )
+
     likes = max(0, story.get("counts", {}).get("likes", 0) + delta)
     return {"likes": likes, "is_liked": liked}
 
@@ -266,7 +288,8 @@ async def set_like(
 async def create_comment(
     story_id: str, body: CreateCommentRequest, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:
-    await _readable_story(story_id, claims.user_id, mongo)
+    story = await _readable_story(story_id, claims.user_id, mongo)
+    parent = None
 
     if body.parent_id:
         parent = await mongo[c.COMMENTS].find_one(
@@ -294,8 +317,33 @@ async def create_comment(
     }
     await mongo[c.COMMENTS].insert_one(comment)
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$inc": {"counts.comments": 1}})
-    if body.parent_id:
+
+    snapshot = comment["author_snapshot"]
+
+    if parent is not None:
         await mongo[c.COMMENTS].update_one({"_id": body.parent_id}, {"$inc": {"counts.replies": 1}})
+        await notify(
+            mongo=mongo,
+            user_id=parent["author_id"],
+            actor_id=claims.user_id,
+            actor_snapshot=snapshot,
+            kind="comment_reply",
+            target_kind="story",
+            target_id=story_id,
+            body=f"replied: {preview(body.body)}",
+        )
+
+    if parent is None or parent["author_id"] != story["author_id"]:
+        await notify(
+            mongo=mongo,
+            user_id=story["author_id"],
+            actor_id=claims.user_id,
+            actor_snapshot=snapshot,
+            kind="story_comment",
+            target_kind="story",
+            target_id=story_id,
+            body=f"commented: {preview(body.body)}",
+        )
 
     return {"comment": serialize_comment(comment)}
 
@@ -306,7 +354,76 @@ async def list_comments(
     await _readable_story(story_id, claims.user_id, mongo)
 
     limit = max(1, min(limit, c.FEED_MAX_LIMIT))
-    query: dict[str, Any] = {"story_id": story_id, "deleted_at": None}
+    query: dict[str, Any] = {"story_id": story_id, "parent_id": None, "deleted_at": None}
+    if cursor:
+        query["_id"] = {"$gt": cursor}
+
+    roots = (
+        await mongo[c.COMMENTS]
+        .find(query)
+        .sort("_id", 1)
+        .limit(limit + 1)
+        .to_list(length=limit + 1)
+    )
+    has_more = len(roots) > limit
+    page = roots[:limit]
+
+    replies_by_parent: dict[str, list[dict[str, Any]]] = {}
+    if page:
+        root_ids = [doc["_id"] for doc in page]
+        cursor_replies = (
+            mongo[c.COMMENTS]
+            .find({"parent_id": {"$in": root_ids}, "deleted_at": None})
+            .sort("_id", 1)
+        )
+        async for reply in cursor_replies:
+            replies_by_parent.setdefault(reply["parent_id"], []).append(reply)
+
+    liked_ids = await _liked_comment_ids(
+        claims.user_id,
+        [doc["_id"] for doc in page]
+        + [reply["_id"] for group in replies_by_parent.values() for reply in group],
+        mongo,
+    )
+
+    items = []
+    for doc in page:
+        replies = replies_by_parent.get(doc["_id"], [])
+        payload = serialize_comment(doc, is_liked=doc["_id"] in liked_ids)
+        payload["replies"] = [
+            serialize_comment(reply, is_liked=reply["_id"] in liked_ids)
+            for reply in replies[: c.INLINE_REPLIES]
+        ]
+        payload["counts"] = {**payload.get("counts", {}), "replies": len(replies)}
+        items.append(payload)
+
+    return {
+        "items": items,
+        "next_cursor": page[-1]["_id"] if page and has_more else None,
+        "has_more": has_more,
+    }
+
+
+async def _liked_comment_ids(user_id: str, comment_ids, mongo) -> set[str]:
+    if not comment_ids:
+        return set()
+    reaction_ids = [f"{user_id}:comment:{comment_id}" for comment_id in comment_ids]
+    liked = set()
+    async for reaction in mongo[c.REACTIONS].find({"_id": {"$in": reaction_ids}}, {"target_id": 1}):
+        liked.add(reaction["target_id"])
+    return liked
+
+
+async def list_replies(
+    comment_id: str, *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+) -> dict[str, Any]:
+    parent = await mongo[c.COMMENTS].find_one({"_id": comment_id, "deleted_at": None})
+    if parent is None:
+        raise api_error(ErrorCode.COMMENT_NOT_FOUND)
+    await _readable_story(parent["story_id"], claims.user_id, mongo)
+
+    limit = max(1, min(limit, c.FEED_MAX_LIMIT))
+    query: dict[str, Any] = {"parent_id": comment_id, "deleted_at": None}
     if cursor:
         query["_id"] = {"$gt": cursor}
 
@@ -319,12 +436,7 @@ async def list_comments(
     )
     has_more = len(docs) > limit
     page = docs[:limit]
-
-    liked_ids = set()
-    if page:
-        ids = [f"{claims.user_id}:comment:{doc['_id']}" for doc in page]
-        async for reaction in mongo[c.REACTIONS].find({"_id": {"$in": ids}}, {"target_id": 1}):
-            liked_ids.add(reaction["target_id"])
+    liked_ids = await _liked_comment_ids(claims.user_id, [doc["_id"] for doc in page], mongo)
 
     return {
         "items": [serialize_comment(doc, is_liked=doc["_id"] in liked_ids) for doc in page],
@@ -380,6 +492,27 @@ async def set_comment_like(
 
     if delta:
         await mongo[c.COMMENTS].update_one({"_id": comment_id}, {"$inc": {"counts.likes": delta}})
+
+        if delta > 0:
+            await notify(
+                mongo=mongo,
+                user_id=comment["author_id"],
+                actor_id=claims.user_id,
+                actor_snapshot=await _author_snapshot(claims.user_id, mongo),
+                kind="comment_like",
+                target_kind="story",
+                target_id=comment["story_id"],
+                body="liked your comment.",
+                collapse=True,
+            )
+        else:
+            await withdraw(
+                mongo=mongo,
+                user_id=comment["author_id"],
+                kind="comment_like",
+                actor_id=claims.user_id,
+                target_id=comment["story_id"],
+            )
 
     likes = max(0, comment.get("counts", {}).get("likes", 0) + delta)
     return {"likes": likes, "is_liked": liked}

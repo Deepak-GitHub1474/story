@@ -34,6 +34,7 @@ class ErrorCode(StrEnum):
     STORY_NOT_EDITABLE = "STORY_NOT_EDITABLE"
     COMMENT_NOT_FOUND = "COMMENT_NOT_FOUND"
     NESTING_TOO_DEEP = "NESTING_TOO_DEEP"
+    NOTIFICATION_NOT_FOUND = "NOTIFICATION_NOT_FOUND"
 
     VALIDATION_FAILED = "VALIDATION_FAILED"
     RATE_LIMITED = "RATE_LIMITED"
@@ -72,6 +73,7 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.STORY_NOT_EDITABLE: (400, "The edit window for this story has closed."),
     ErrorCode.COMMENT_NOT_FOUND: (404, "We could not find that comment."),
     ErrorCode.NESTING_TOO_DEEP: (400, "Replies only go one level deep."),
+    ErrorCode.NOTIFICATION_NOT_FOUND: (404, "We could not find that notification."),
     ErrorCode.VALIDATION_FAILED: (422, "Some of that information is not valid."),
     ErrorCode.RATE_LIMITED: (429, "Too many attempts. Try again shortly."),
     ErrorCode.SERVICE_UNAVAILABLE: (503, "Something we depend on is unavailable."),
