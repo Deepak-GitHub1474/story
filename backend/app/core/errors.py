@@ -50,6 +50,8 @@ class ErrorCode(StrEnum):
     SELF_FOLLOW = "SELF_FOLLOW"
     BLOCKED_BY_USER = "BLOCKED_BY_USER"
     NOTIFICATION_NOT_FOUND = "NOTIFICATION_NOT_FOUND"
+    REPORT_TARGET_NOT_FOUND = "REPORT_TARGET_NOT_FOUND"
+    SELF_REPORT = "SELF_REPORT"
 
     VALIDATION_FAILED = "VALIDATION_FAILED"
     RATE_LIMITED = "RATE_LIMITED"
@@ -110,6 +112,8 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.SELF_FOLLOW: (400, "You cannot follow yourself."),
     ErrorCode.BLOCKED_BY_USER: (403, "This is not available."),
     ErrorCode.NOTIFICATION_NOT_FOUND: (404, "We could not find that notification."),
+    ErrorCode.REPORT_TARGET_NOT_FOUND: (404, "We could not find what you reported."),
+    ErrorCode.SELF_REPORT: (400, "You cannot report your own content."),
     ErrorCode.VALIDATION_FAILED: (422, "Some of that information is not valid."),
     ErrorCode.RATE_LIMITED: (429, "Too many attempts. Try again shortly."),
     ErrorCode.SERVICE_UNAVAILABLE: (503, "Something we depend on is unavailable."),

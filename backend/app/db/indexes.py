@@ -105,6 +105,11 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_category_popular",
         ),
     ],
+    "reports": [
+        IndexSpec([("state", ASCENDING), ("created_at", ASCENDING)], "ix_queue"),
+        IndexSpec([("target_kind", ASCENDING), ("target_id", ASCENDING)], "ix_target_reports"),
+        IndexSpec([("reporter_id", ASCENDING), ("created_at", DESCENDING)], "ix_reporter"),
+    ],
     "notifications": [
         IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_recent"),
         IndexSpec(

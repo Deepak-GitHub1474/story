@@ -38,6 +38,7 @@ MUTABLE_COLLECTIONS = (
     "connections",
     "community_members",
     "devices",
+    "reports",
 )
 
 

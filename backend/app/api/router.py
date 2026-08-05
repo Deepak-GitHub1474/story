@@ -7,6 +7,7 @@ from app.api.endpoints.email.router import router as email_router
 from app.api.endpoints.health.router import router as health_router
 from app.api.endpoints.interests.router import router as interests_router
 from app.api.endpoints.notifications.router import router as notifications_router
+from app.api.endpoints.reports.router import router as reports_router
 from app.api.endpoints.search.router import router as search_router
 from app.api.endpoints.stories.router import router as stories_router
 from app.api.endpoints.users.router import router as users_router
@@ -20,5 +21,6 @@ api_router.include_router(stories_router)
 api_router.include_router(communities_router)
 api_router.include_router(connections_router)
 api_router.include_router(notifications_router)
+api_router.include_router(reports_router)
 api_router.include_router(search_router)
 api_router.include_router(interests_router)

@@ -33,6 +33,10 @@ async def notify(
     if user_id == actor_id:
         return
 
+    recipient = await mongo["users"].find_one({"_id": user_id}, {"prefs": 1})
+    if recipient and recipient.get("prefs", {}).get("notify_in_app") is False:
+        return
+
     now = utc_now()
     document = {
         "user_id": user_id,
