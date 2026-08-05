@@ -25,8 +25,10 @@ def new_slug() -> str:
 
 def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) -> dict:
     snapshot = doc.get("author_snapshot", {})
+    community = doc.get("community")
     payload = {
         "story_id": doc["_id"],
+        "community": community,
         "author": {
             "user_id": doc.get("author_id"),
             "display_name": snapshot.get("display_name", "A deleted account"),

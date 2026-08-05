@@ -65,6 +65,10 @@ INDEXES: dict[str, list[IndexSpec]] = {
             partial={"visibility": "public", "deleted_at": None},
         ),
         IndexSpec(
+            [("community_slug", ASCENDING), ("visibility", ASCENDING), ("_id", DESCENDING)],
+            "ix_community_feed",
+        ),
+        IndexSpec(
             [("slug", ASCENDING)],
             "uq_slug",
             unique=True,
@@ -85,6 +89,21 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_target",
         ),
         IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_reactions"),
+    ],
+    "connections": [
+        IndexSpec([("follower_id", ASCENDING), ("status", ASCENDING)], "ix_follower_status"),
+        IndexSpec([("followee_id", ASCENDING), ("status", ASCENDING)], "ix_followee_status"),
+    ],
+    "community_members": [
+        IndexSpec([("user_id", ASCENDING), ("joined_at", DESCENDING)], "ix_user_joined"),
+        IndexSpec([("community_slug", ASCENDING), ("joined_at", DESCENDING)], "ix_community"),
+    ],
+    "communities": [
+        IndexSpec([("slug", ASCENDING)], "uq_community_slug", unique=True),
+        IndexSpec(
+            [("category_id", ASCENDING), ("status", ASCENDING), ("counts.members", -1)],
+            "ix_category_popular",
+        ),
     ],
     "notifications": [
         IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_recent"),

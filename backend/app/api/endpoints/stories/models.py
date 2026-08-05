@@ -23,6 +23,7 @@ class PublishStoryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     visibility: Literal["public", "private"]
+    community_slug: str | None = None
 
 
 class CreateCommentRequest(BaseModel):

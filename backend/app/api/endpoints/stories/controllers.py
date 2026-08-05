@@ -3,6 +3,8 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.api.endpoints.communities import controllers as community_controllers
+from app.api.endpoints.connections import controllers as connection_controllers
 from app.api.endpoints.notifications.service import notify, preview, withdraw
 from app.api.endpoints.stories import constants as c
 from app.api.endpoints.stories.models import (
@@ -132,6 +134,22 @@ async def publish_story(
         "updated_at": now,
         "moderation.state": "allowed",
     }
+
+    if body.community_slug:
+        community = await mongo["communities"].find_one(
+            {"slug": body.community_slug, "status": "active"},
+            {"slug": 1, "name": 1, "category_id": 1},
+        )
+        if community is None:
+            raise api_error(ErrorCode.COMMUNITY_NOT_FOUND)
+        if not await community_controllers.is_member(claims.user_id, body.community_slug, mongo):
+            raise api_error(ErrorCode.NOT_A_MEMBER)
+        update["community_slug"] = body.community_slug
+        update["community"] = {
+            "slug": community["slug"],
+            "name": community["name"],
+            "category_id": community.get("category_id"),
+        }
     if story.get("published_at") is None:
         update["published_at"] = _to_minute(now)
     if body.visibility == "public" and not story.get("slug"):
@@ -141,6 +159,10 @@ async def publish_story(
 
     if story["visibility"] == "draft":
         await mongo[c.USERS].update_one({"_id": claims.user_id}, {"$inc": {"counts.stories": 1}})
+        if body.community_slug:
+            await mongo["communities"].update_one(
+                {"slug": body.community_slug}, {"$inc": {"counts.stories": 1}}
+            )
 
     story.update(update)
     return {"story": serialize_story(story, include_body=True)}
@@ -186,7 +208,110 @@ async def list_mine(
 async def list_feed(
     *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
 ) -> dict[str, Any]:
-    query = {"visibility": "public", "deleted_at": None, "moderation.state": "allowed"}
+    limit = max(1, min(limit, c.FEED_MAX_LIMIT))
+
+    following = await connection_controllers.following_ids(claims.user_id, mongo)
+    joined = await community_controllers.joined_slugs(claims.user_id, mongo)
+    blocked = await connection_controllers.blocked_ids(claims.user_id, mongo)
+
+    personal_clauses: list[dict[str, Any]] = []
+    if following:
+        personal_clauses.append({"author_id": {"$in": following}})
+    if joined:
+        personal_clauses.append({"community_slug": {"$in": joined}})
+
+    base: dict[str, Any] = {
+        "visibility": "public",
+        "deleted_at": None,
+        "moderation.state": "allowed",
+    }
+    if blocked:
+        base["author_id"] = {"$nin": blocked}
+
+    phase, marker = _split_cursor(cursor)
+    items: list[dict[str, Any]] = []
+
+    if phase == "p" and personal_clauses:
+        query = {**base, "$or": personal_clauses}
+        if marker:
+            query["_id"] = {"$lt": marker}
+        items = await _fetch(query, mongo=mongo, limit=limit + 1)
+
+        if len(items) > limit:
+            page = items[:limit]
+            return _page(page, f"p:{page[-1]['_id']}", True)
+
+        remaining = limit - len(items)
+        if remaining == 0:
+            probe = await _fetch(_global_query(base, personal_clauses, None), mongo=mongo, limit=1)
+            return _page(items, "g:", bool(probe))
+
+        fill = await _fetch(
+            _global_query(base, personal_clauses, None), mongo=mongo, limit=remaining + 1
+        )
+        has_more = len(fill) > remaining
+        taken = fill[:remaining]
+        page = items + taken
+        marker_id = taken[-1]["_id"] if taken else None
+        return _page(page, f"g:{marker_id}" if marker_id else None, has_more)
+
+    docs = await _fetch(_global_query(base, personal_clauses, marker), mongo=mongo, limit=limit + 1)
+    has_more = len(docs) > limit
+    page = docs[:limit]
+    return _page(page, f"g:{page[-1]['_id']}" if page and has_more else None, has_more)
+
+
+def _split_cursor(cursor: str | None) -> tuple[str, str | None]:
+    if not cursor:
+        return "p", None
+    if ":" not in cursor:
+        return "g", cursor
+    phase, marker = cursor.split(":", 1)
+    return (phase if phase in ("p", "g") else "g"), (marker or None)
+
+
+def _global_query(
+    base: dict[str, Any], personal_clauses: list[dict[str, Any]], marker: str | None
+) -> dict[str, Any]:
+    query = dict(base)
+    if personal_clauses:
+        query["$nor"] = personal_clauses
+    if marker:
+        query["_id"] = {"$lt": marker}
+    return query
+
+
+async def _fetch(query: dict[str, Any], *, mongo, limit: int) -> list[dict[str, Any]]:
+    return (
+        await mongo[c.STORIES]
+        .find(query, c.FEED_PROJECTION)
+        .sort("_id", -1)
+        .limit(limit)
+        .to_list(length=limit)
+    )
+
+
+def _page(docs, next_cursor, has_more) -> dict[str, Any]:
+    return {
+        "items": [serialize_story(doc, include_body=False) for doc in docs],
+        "next_cursor": next_cursor if has_more else None,
+        "has_more": has_more,
+    }
+
+
+async def list_community_stories(
+    slug: str, *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+) -> dict[str, Any]:
+    community = await mongo["communities"].find_one({"slug": slug, "status": "active"}, {"slug": 1})
+    if community is None:
+        raise api_error(ErrorCode.COMMUNITY_NOT_FOUND)
+
+    query = {
+        "community_slug": slug,
+        "visibility": "public",
+        "deleted_at": None,
+        "moderation.state": "allowed",
+    }
     return await _paginate(query, mongo=mongo, limit=limit, cursor=cursor)
 
 

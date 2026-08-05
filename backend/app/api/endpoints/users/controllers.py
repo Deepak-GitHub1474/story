@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.auth.constants import PUBLIC_USER_PROJECTION, USERS
 from app.api.endpoints.auth.utils import new_avatar_seed, serialize_user
+from app.api.endpoints.connections import controllers as connection_controllers
 from app.api.endpoints.users.models import ChangePasswordRequest, UpdateProfileRequest
 from app.api.endpoints.users.utils import contains_link, serialize_public_user
 from app.core.errors import ErrorCode, api_error
@@ -75,14 +76,21 @@ async def regenerate_avatar(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str,
     return {"user": serialize_user(await _load(claims.user_id, mongo))}
 
 
-async def public_profile(username: str, *, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def public_profile(username: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     user = await mongo[USERS].find_one(
         {"username_lower": username.lower(), "deleted_at": None},
         PUBLIC_PROFILE_PROJECTION,
     )
     if user is None or user.get("blocked"):
         raise api_error(ErrorCode.USER_NOT_FOUND)
-    return {"user": serialize_public_user(user)}
+
+    is_me = user["_id"] == claims.user_id
+    following = (
+        False
+        if is_me
+        else await connection_controllers.is_following(claims.user_id, user["_id"], mongo)
+    )
+    return {"user": serialize_public_user(user, is_following=following, is_me=is_me)}
 
 
 async def change_password(

@@ -23,5 +23,5 @@ async def regenerate_avatar(claims: CurrentClaims, mongo: MongoDatabase):
 
 @router.get("/{username}", status_code=status.HTTP_200_OK)
 async def public_profile(username: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.public_profile(username, mongo=mongo)
+    data = await controllers.public_profile(username, claims=claims, mongo=mongo)
     return ok_response("Profile loaded.", data=data)

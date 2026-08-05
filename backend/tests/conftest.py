@@ -26,7 +26,7 @@ async def client(app_instance):
         yield http_client
 
 
-REFERENCE_COLLECTIONS = {"interests", "community_categories"}
+REFERENCE_COLLECTIONS = {"interests", "community_categories", "communities"}
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -38,6 +38,7 @@ async def clean_state(app_instance):
     for name in await db.list_collection_names():
         if name not in REFERENCE_COLLECTIONS:
             await db[name].delete_many({})
+    await db["communities"].update_many({}, {"$set": {"counts": {"members": 0, "stories": 0}}})
     await seed_reference_data(db)
     await redis.flushdb()
     yield

@@ -15,6 +15,7 @@ INLINE_REPLIES = 3
 
 FEED_PROJECTION = {
     "_id": 1,
+    "community": 1,
     "author_id": 1,
     "author_snapshot": 1,
     "title": 1,

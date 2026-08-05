@@ -7,8 +7,10 @@ def contains_link(text: str) -> bool:
     return bool(LINK_PATTERN.search(text))
 
 
-def serialize_public_user(doc: dict) -> dict:
+def serialize_public_user(doc: dict, *, is_following: bool = False, is_me: bool = False) -> dict:
     return {
+        "is_following": is_following,
+        "is_me": is_me,
         "user_id": doc["_id"],
         "username": doc["username"],
         "display_name": doc["display_name"],

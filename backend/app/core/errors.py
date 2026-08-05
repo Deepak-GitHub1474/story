@@ -34,6 +34,10 @@ class ErrorCode(StrEnum):
     STORY_NOT_EDITABLE = "STORY_NOT_EDITABLE"
     COMMENT_NOT_FOUND = "COMMENT_NOT_FOUND"
     NESTING_TOO_DEEP = "NESTING_TOO_DEEP"
+    COMMUNITY_NOT_FOUND = "COMMUNITY_NOT_FOUND"
+    NOT_A_MEMBER = "NOT_A_MEMBER"
+    SELF_FOLLOW = "SELF_FOLLOW"
+    BLOCKED_BY_USER = "BLOCKED_BY_USER"
     NOTIFICATION_NOT_FOUND = "NOTIFICATION_NOT_FOUND"
 
     VALIDATION_FAILED = "VALIDATION_FAILED"
@@ -73,6 +77,10 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.STORY_NOT_EDITABLE: (400, "The edit window for this story has closed."),
     ErrorCode.COMMENT_NOT_FOUND: (404, "We could not find that comment."),
     ErrorCode.NESTING_TOO_DEEP: (400, "Replies only go one level deep."),
+    ErrorCode.COMMUNITY_NOT_FOUND: (404, "We could not find that community."),
+    ErrorCode.NOT_A_MEMBER: (403, "Join this community before posting in it."),
+    ErrorCode.SELF_FOLLOW: (400, "You cannot follow yourself."),
+    ErrorCode.BLOCKED_BY_USER: (403, "This is not available."),
     ErrorCode.NOTIFICATION_NOT_FOUND: (404, "We could not find that notification."),
     ErrorCode.VALIDATION_FAILED: (422, "Some of that information is not valid."),
     ErrorCode.RATE_LIMITED: (429, "Too many attempts. Try again shortly."),
