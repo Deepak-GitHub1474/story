@@ -87,7 +87,7 @@ async def _issue_session(
 def _ensure_usable(user: dict[str, Any]) -> None:
     if user.get("blocked"):
         raise api_error(ErrorCode.ACCOUNT_BLOCKED)
-    if user.get("status") == "pending_deletion":
+    if user.get("status") in ("pending_deletion", "deactivated"):
         raise api_error(ErrorCode.ACCOUNT_DEACTIVATED)
 
 
@@ -179,7 +179,10 @@ async def signin(
     if not verify_password(body.password, user["password_hash"]):
         raise api_error(ErrorCode.INVALID_CREDENTIALS)
 
-    _ensure_usable(user)
+    if user.get("blocked"):
+        raise api_error(ErrorCode.ACCOUNT_BLOCKED)
+    if user.get("status") == "pending_deletion":
+        raise api_error(ErrorCode.ACCOUNT_DEACTIVATED)
 
     now = utc_now()
     device = body.device or DeviceInfo()
@@ -204,6 +207,8 @@ async def signin(
         "last_active_at": now,
         "updated_at": now,
     }
+    if user.get("status") == "deactivated":
+        update["status"] = "active"
     if needs_rehash(user["password_hash"]):
         update["password_hash"] = hash_password(body.password)
 
@@ -211,6 +216,7 @@ async def signin(
     user.update(update)
 
     await _record_device(user_id=user["_id"], login_info=login_info, mongo=mongo, now=now)
+    await redis.delete(keys.reset_marker(user["_id"]))
 
     tokens = await _issue_session(user=user, settings=settings, redis=redis)
     return {"user": serialize_user(user), "tokens": tokens}
@@ -318,7 +324,17 @@ async def me(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     if user is None:
         raise api_error(ErrorCode.USER_NOT_FOUND)
     _ensure_usable(user)
-    return {"user": serialize_user(user)}
+
+    document = await mongo["user_keys"].find_one(
+        {"_id": claims.user_id}, {"email_masked": 1, "email_verified": 1}
+    )
+    return {
+        "user": serialize_user(
+            user,
+            email_masked=(document or {}).get("email_masked"),
+            email_verified=(document or {}).get("email_verified", False),
+        )
+    }
 
 
 async def list_sessions(*, claims, mongo: AsyncIOMotorDatabase, redis: Redis) -> dict[str, Any]:

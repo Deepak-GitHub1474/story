@@ -4,9 +4,10 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "argon2-cffi>=23.1",
+    "cryptography>=44.0",
     "fastapi>=0.115",
     "motor>=3.6",
-    "pydantic>=2.9",
+    "pydantic[email]>=2.9",
     "pydantic-settings>=2.6",
     "pyjwt>=2.9",
     "python-ulid>=3.0",
@@ -42,6 +43,7 @@ ignore = ["S101"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "DTZ001"]
 "app/core/errors.py" = ["S105"]
+"app/config.py" = ["S105"]
 "app/core/deps.py" = ["S104"]
 "app/api/endpoints/auth/models.py" = ["S105"]
 "app/api/endpoints/auth/utils.py" = ["S105"]

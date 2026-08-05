@@ -28,7 +28,9 @@ def device_fingerprint(
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
-def serialize_user(doc: dict[str, Any]) -> dict[str, Any]:
+def serialize_user(
+    doc: dict[str, Any], *, email_masked: str | None = None, email_verified: bool = False
+) -> dict[str, Any]:
     login_info = doc.get("login_info")
     if login_info:
         login_info = {**login_info, "logged_in_at": to_wire(login_info.get("logged_in_at"))}
@@ -49,6 +51,8 @@ def serialize_user(doc: dict[str, Any]) -> dict[str, Any]:
         "prefs": doc.get("prefs", {}),
         "onboarding": doc.get("onboarding", {}),
         "login_info": login_info,
+        "email_masked": email_masked,
+        "email_verified": email_verified,
         "created_at": to_wire(doc["created_at"]),
         "last_login_at": to_wire(doc.get("last_login_at")),
     }

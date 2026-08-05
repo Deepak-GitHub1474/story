@@ -18,10 +18,20 @@ class ErrorCode(StrEnum):
     PASSWORD_TOO_WEAK = "PASSWORD_TOO_WEAK"
     ACCOUNT_BLOCKED = "ACCOUNT_BLOCKED"
     ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED"
+    DELETION_NOT_ACKNOWLEDGED = "DELETION_NOT_ACKNOWLEDGED"
     TNC_REQUIRED = "TNC_REQUIRED"
     REFERRAL_CODE_INVALID = "REFERRAL_CODE_INVALID"
     ROLE_REQUIRED = "ROLE_REQUIRED"
 
+    EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
+    EMAIL_IN_USE = "EMAIL_IN_USE"
+    EMAIL_NOT_SET = "EMAIL_NOT_SET"
+    EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED"
+    OTP_INVALID = "OTP_INVALID"
+    OTP_LOCKED = "OTP_LOCKED"
+    OTP_COOLDOWN = "OTP_COOLDOWN"
+    RESET_TOKEN_INVALID = "RESET_TOKEN_INVALID"
+    VAULT_LOSS_NOT_ACKNOWLEDGED = "VAULT_LOSS_NOT_ACKNOWLEDGED"
     KEYS_NOT_INITIALIZED = "KEYS_NOT_INITIALIZED"
     KEYS_ALREADY_INITIALIZED = "KEYS_ALREADY_INITIALIZED"
 
@@ -65,9 +75,25 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.PASSWORD_TOO_WEAK: (422, "Choose a longer, less common password."),
     ErrorCode.ACCOUNT_BLOCKED: (403, "This account cannot be used right now."),
     ErrorCode.ACCOUNT_DEACTIVATED: (403, "This account is deactivated."),
+    ErrorCode.DELETION_NOT_ACKNOWLEDGED: (
+        422,
+        "You must acknowledge that deletion is permanent.",
+    ),
     ErrorCode.TNC_REQUIRED: (422, "Accept the terms to continue."),
     ErrorCode.REFERRAL_CODE_INVALID: (422, "That referral code does not exist."),
     ErrorCode.ROLE_REQUIRED: (403, "You do not have access to this."),
+    ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
+    ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
+    ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),
+    ErrorCode.EMAIL_NOT_VERIFIED: (403, "Verify your email address first."),
+    ErrorCode.OTP_INVALID: (400, "That code is not right."),
+    ErrorCode.OTP_LOCKED: (429, "Too many attempts. Try again later."),
+    ErrorCode.OTP_COOLDOWN: (429, "Wait a moment before asking for another code."),
+    ErrorCode.RESET_TOKEN_INVALID: (400, "That reset link is no longer valid."),
+    ErrorCode.VAULT_LOSS_NOT_ACKNOWLEDGED: (
+        422,
+        "You must acknowledge that a reset cannot restore your vault.",
+    ),
     ErrorCode.KEYS_NOT_INITIALIZED: (400, "Finish setting up your account first."),
     ErrorCode.KEYS_ALREADY_INITIALIZED: (409, "Your keys are already set up."),
     ErrorCode.USER_NOT_FOUND: (404, "We could not find that account."),

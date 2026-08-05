@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     PUBLIC_WEB_URL: str = "https://story.app"
 
+    MAIL_PROVIDER: Literal["console", "resend", "smtp"] = "console"
+    EMAIL_INDEX_KEY: str = "local-dev-email-index-key-change-me-000000000000"
+    EMAIL_ENCRYPTION_KEY: str = "local-dev-email-encryption-key-change-me-0000"
+    OTP_HMAC_SECRET: str = "local-dev-otp-secret-change-me-00000000000000"
+    OTP_TTL_SECONDS: int = 600
+    OTP_FAIL_THRESHOLD: int = 5
+    OTP_LOCKOUT_SECONDS: int = 900
+    OTP_RESEND_COOLDOWN_SECONDS: int = 30
+    RESET_TOKEN_TTL_SECONDS: int = 900
+
     MONGODB_URI: str = "mongodb://127.0.0.1:27017"
     MONGODB_DB_NAME: str = "story_local"
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
@@ -58,6 +68,9 @@ class Settings(BaseSettings):
                 raise ValueError("CORS_ORIGINS cannot contain a wildcard in production.")
             if len(self.JWT_SECRET) < 32 or "change-me" in self.JWT_SECRET:
                 raise ValueError("JWT_SECRET must be a real secret of 32+ characters.")
+            for name in ("EMAIL_INDEX_KEY", "EMAIL_ENCRYPTION_KEY", "OTP_HMAC_SECRET"):
+                if "change-me" in getattr(self, name):
+                    raise ValueError(f"{name} must be a real secret in production.")
         return self
 
 

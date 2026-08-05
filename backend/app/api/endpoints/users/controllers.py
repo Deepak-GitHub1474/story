@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -9,7 +10,7 @@ from app.api.endpoints.users.models import ChangePasswordRequest, UpdateProfileR
 from app.api.endpoints.users.utils import contains_link, serialize_public_user
 from app.core.errors import ErrorCode, api_error
 from app.core.password import hash_password, validate_password_strength, verify_password
-from app.core.time import utc_now
+from app.core.time import to_wire, utc_now
 
 PUBLIC_PROFILE_PROJECTION = {
     "_id": 1,
@@ -115,3 +116,67 @@ async def change_password(
         {"$set": {"password_hash": hash_password(body.new_password), "updated_at": utc_now()}},
     )
     return {"password_changed": True}
+
+
+DELETION_GRACE_DAYS = 14
+
+
+async def _revoke_all_sessions(user_id: str, redis) -> None:
+    from app.db import keys
+
+    families = await redis.smembers(keys.user_sessions(user_id))
+    for family_id in families:
+        hashes = await redis.smembers(keys.refresh_family(family_id))
+        for token_hash in hashes:
+            await redis.delete(keys.refresh_token(token_hash))
+        await redis.delete(keys.refresh_family(family_id))
+    await redis.delete(keys.user_sessions(user_id))
+    await redis.set(keys.reset_marker(user_id), "1", ex=1800)
+
+
+async def _verify_password(user_id: str, password: str, mongo: AsyncIOMotorDatabase) -> dict:
+    user = await mongo[USERS].find_one({"_id": user_id}, {"password_hash": 1, "username": 1})
+    if user is None or not verify_password(password, user["password_hash"]):
+        raise api_error(ErrorCode.INVALID_CREDENTIALS, field="password")
+    return user
+
+
+async def deactivate(body, *, claims, mongo: AsyncIOMotorDatabase, redis) -> dict[str, Any]:
+    await _verify_password(claims.user_id, body.password, mongo)
+    await mongo[USERS].update_one(
+        {"_id": claims.user_id},
+        {"$set": {"status": "deactivated", "updated_at": utc_now()}},
+    )
+    await _revoke_all_sessions(claims.user_id, redis)
+    return {"status": "deactivated"}
+
+
+async def request_deletion(body, *, claims, mongo: AsyncIOMotorDatabase, redis) -> dict[str, Any]:
+    if not body.acknowledged:
+        raise api_error(ErrorCode.DELETION_NOT_ACKNOWLEDGED, field="acknowledged")
+
+    await _verify_password(claims.user_id, body.password, mongo)
+
+    now = utc_now()
+    deletes_at = now + timedelta(days=DELETION_GRACE_DAYS)
+    await mongo[USERS].update_one(
+        {"_id": claims.user_id},
+        {"$set": {"status": "pending_deletion", "deletes_at": deletes_at, "updated_at": now}},
+    )
+    await _revoke_all_sessions(claims.user_id, redis)
+    return {"status": "pending_deletion", "deletes_at": to_wire(deletes_at)}
+
+
+async def cancel_deletion(body, *, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    user = await mongo[USERS].find_one(
+        {"username_lower": body.username.lower(), "status": "pending_deletion"},
+        {"password_hash": 1},
+    )
+    if user is None or not verify_password(body.password, user["password_hash"]):
+        raise api_error(ErrorCode.INVALID_CREDENTIALS)
+
+    await mongo[USERS].update_one(
+        {"_id": user["_id"]},
+        {"$set": {"status": "active", "deletes_at": None, "updated_at": utc_now()}},
+    )
+    return {"status": "active"}

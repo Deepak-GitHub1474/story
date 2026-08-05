@@ -163,9 +163,39 @@ async def publish_story(
             await mongo["communities"].update_one(
                 {"slug": body.community_slug}, {"$inc": {"counts.stories": 1}}
             )
+            await _notify_community(
+                body.community_slug,
+                story_id=story_id,
+                claims=claims,
+                mongo=mongo,
+                community_name=update["community"]["name"],
+            )
 
     story.update(update)
     return {"story": serialize_story(story, include_body=True)}
+
+
+async def _notify_community(
+    slug: str, *, story_id: str, claims, mongo: AsyncIOMotorDatabase, community_name: str
+) -> None:
+    snapshot = await _author_snapshot(claims.user_id, mongo)
+    members = (
+        await mongo["community_members"]
+        .find({"community_slug": slug, "user_id": {"$ne": claims.user_id}}, {"user_id": 1})
+        .limit(c.COMMUNITY_FANOUT_CAP)
+        .to_list(length=c.COMMUNITY_FANOUT_CAP)
+    )
+    for member in members:
+        await notify(
+            mongo=mongo,
+            user_id=member["user_id"],
+            actor_id=claims.user_id,
+            actor_snapshot=snapshot,
+            kind="community_story",
+            target_kind="story",
+            target_id=story_id,
+            body=f"posted in {community_name}.",
+        )
 
 
 async def unpublish_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -237,13 +267,22 @@ async def list_feed(
     if joined:
         personal_clauses.append({"community_slug": {"$in": joined}})
 
+    hidden = set(blocked)
+    inactive = (
+        await mongo[c.USERS]
+        .find({"status": {"$ne": "active"}}, {"_id": 1})
+        .limit(500)
+        .to_list(length=500)
+    )
+    hidden.update(doc["_id"] for doc in inactive)
+
     base: dict[str, Any] = {
         "visibility": "public",
         "deleted_at": None,
         "moderation.state": "allowed",
     }
-    if blocked:
-        base["author_id"] = {"$nin": blocked}
+    if hidden:
+        base["author_id"] = {"$nin": list(hidden)}
 
     phase, marker = _split_cursor(cursor)
     items: list[dict[str, Any]] = []

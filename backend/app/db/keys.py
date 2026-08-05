@@ -27,3 +27,23 @@ def rate_limit(scope: str, identity: str) -> str:
 
 def username_lock(username: str) -> str:
     return f"{NAMESPACE}:LOCK:USERNAME:{username}"
+
+
+def email_otp(user_id: str) -> str:
+    return f"{NAMESPACE}:OTP:{user_id}"
+
+
+def otp_cooldown(user_id: str) -> str:
+    return f"{NAMESPACE}:OTP_CD:{user_id}"
+
+
+def reset_otp(user_id: str) -> str:
+    return f"{NAMESPACE}:RESET_OTP:{user_id}"
+
+
+def reset_token(token_hash: str) -> str:
+    return f"{NAMESPACE}:RESET_TOKEN:{token_hash}"
+
+
+def reset_marker(user_id: str) -> str:
+    return f"{NAMESPACE}:RESET_MARK:{user_id}"

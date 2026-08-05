@@ -31,3 +31,23 @@ class ChangePasswordRequest(BaseModel):
 
     current_password: Annotated[str, Field(min_length=1, max_length=128)]
     new_password: Annotated[str, Field(min_length=10, max_length=128)]
+
+
+class DeactivateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: Annotated[str, Field(min_length=1, max_length=128)]
+
+
+class DeleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: Annotated[str, Field(min_length=1, max_length=128)]
+    acknowledged: bool
+
+
+class CancelDeleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    username: Annotated[str, Field(min_length=1, max_length=20)]
+    password: Annotated[str, Field(min_length=1, max_length=128)]
