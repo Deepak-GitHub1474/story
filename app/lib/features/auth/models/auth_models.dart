@@ -12,6 +12,7 @@ class AppUser {
     required this.bio,
     required this.interests,
     required this.onboarding,
+    required this.counts,
     required this.createdAt,
   });
 
@@ -28,6 +29,7 @@ class AppUser {
     bio: json['bio'] as String?,
     interests: (json['interests'] as List<dynamic>? ?? []).cast<String>(),
     onboarding: Map<String, dynamic>.from(json['onboarding'] as Map? ?? {}),
+    counts: Map<String, dynamic>.from(json['counts'] as Map? ?? {}),
     createdAt: json['created_at'] as String? ?? '',
   );
 
@@ -43,6 +45,7 @@ class AppUser {
   final String? bio;
   final List<String> interests;
   final Map<String, dynamic> onboarding;
+  final Map<String, dynamic> counts;
   final String createdAt;
 
   bool get interestsDone => onboarding['interests_done'] == true;
@@ -91,4 +94,47 @@ class DeviceDetails {
     'app_version': appVersion,
     'device_model': deviceModel,
   };
+}
+
+
+class InterestOption {
+  const InterestOption({
+    required this.slug,
+    required this.name,
+    required this.categoryId,
+  });
+
+  factory InterestOption.fromJson(Map<String, dynamic> json) => InterestOption(
+    slug: json['slug'] as String,
+    name: json['name'] as String,
+    categoryId: json['category_id'] as String,
+  );
+
+  final String slug;
+  final String name;
+  final String categoryId;
+}
+
+class SessionInfo {
+  const SessionInfo({
+    required this.familyId,
+    required this.isCurrent,
+    required this.label,
+    required this.platform,
+    required this.lastSeenAt,
+  });
+
+  factory SessionInfo.fromJson(Map<String, dynamic> json) => SessionInfo(
+    familyId: json['family_id'] as String,
+    isCurrent: json['is_current'] as bool? ?? false,
+    label: json['label'] as String? ?? 'Unknown device',
+    platform: json['platform'] as String? ?? 'web',
+    lastSeenAt: json['last_seen_at'] as String?,
+  );
+
+  final String familyId;
+  final bool isCurrent;
+  final String label;
+  final String platform;
+  final String? lastSeenAt;
 }

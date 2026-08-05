@@ -59,6 +59,28 @@ class ApiClient {
     skipAuth: skipAuth,
   );
 
+  Future<Result<T>> patch<T>(
+    String path, {
+    JsonMap? body,
+    required T Function(JsonMap data) parse,
+    bool skipAuth = false,
+  }) => _send(
+    () => _dio.patch(path, data: body, options: Options(extra: {'skipAuth': skipAuth})),
+    parse,
+    skipAuth: skipAuth,
+  );
+
+  Future<Result<T>> delete<T>(
+    String path, {
+    JsonMap? body,
+    required T Function(JsonMap data) parse,
+    bool skipAuth = false,
+  }) => _send(
+    () => _dio.delete(path, data: body, options: Options(extra: {'skipAuth': skipAuth})),
+    parse,
+    skipAuth: skipAuth,
+  );
+
   Future<Result<T>> post<T>(
     String path, {
     JsonMap? body,

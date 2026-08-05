@@ -1,14 +1,50 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../components/app_shell.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/signin_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
-import '../features/home/screens/home_screen.dart';
+import '../features/home/screens/feed_screen.dart';
+import '../features/onboarding/screens/interests_screen.dart';
+import '../features/profile/screens/profile_screen.dart';
+import '../features/settings/screens/change_password_screen.dart';
+import '../features/settings/screens/edit_profile_screen.dart';
+import '../features/settings/screens/sessions_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
 import 'routes.dart';
+import 'transitions.dart';
+
+const shellDestinations = [
+  ShellDestination(
+    route: Routes.feed,
+    label: 'Feed',
+    icon: Icons.auto_stories_outlined,
+    activeIcon: Icons.auto_stories,
+  ),
+  ShellDestination(
+    route: Routes.profile,
+    label: 'You',
+    icon: Icons.person_outline,
+    activeIcon: Icons.person,
+  ),
+  ShellDestination(
+    route: Routes.settings,
+    label: 'Settings',
+    icon: Icons.settings_outlined,
+    activeIcon: Icons.settings,
+  ),
+];
+
+int _shellIndex(String location) {
+  final index = shellDestinations.indexWhere(
+    (destination) => location.startsWith(destination.route),
+  );
+  return index < 0 ? 0 : index;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ValueNotifier(ref.read(authProvider).status);
@@ -22,11 +58,70 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.splash,
     refreshListenable: notifier,
     routes: [
-      GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
-      GoRoute(path: Routes.welcome, builder: (_, _) => const WelcomeScreen()),
-      GoRoute(path: Routes.signup, builder: (_, _) => const SignupScreen()),
-      GoRoute(path: Routes.signin, builder: (_, _) => const SigninScreen()),
-      GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+      GoRoute(
+        path: Routes.splash,
+        pageBuilder: (context, state) =>
+            fadePage(key: state.pageKey, child: const SplashScreen()),
+      ),
+      GoRoute(
+        path: Routes.welcome,
+        pageBuilder: (context, state) =>
+            fadePage(key: state.pageKey, child: const WelcomeScreen()),
+      ),
+      GoRoute(
+        path: Routes.signup,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const SignupScreen()),
+      ),
+      GoRoute(
+        path: Routes.signin,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const SigninScreen()),
+      ),
+      GoRoute(
+        path: Routes.editProfile,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const EditProfileScreen()),
+      ),
+      GoRoute(
+        path: Routes.interests,
+        pageBuilder: (context, state) =>
+            sheetPage(key: state.pageKey, child: const InterestsScreen()),
+      ),
+      GoRoute(
+        path: Routes.changePassword,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const ChangePasswordScreen()),
+      ),
+      GoRoute(
+        path: Routes.sessions,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const SessionsScreen()),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => AppShell(
+          destinations: shellDestinations,
+          currentIndex: _shellIndex(state.matchedLocation),
+          child: child,
+        ),
+        routes: [
+          GoRoute(
+            path: Routes.feed,
+            pageBuilder: (context, state) =>
+                NoTransitionPage(key: state.pageKey, child: const FeedScreen()),
+          ),
+          GoRoute(
+            path: Routes.profile,
+            pageBuilder: (context, state) =>
+                NoTransitionPage(key: state.pageKey, child: const ProfileScreen()),
+          ),
+          GoRoute(
+            path: Routes.settings,
+            pageBuilder: (context, state) =>
+                NoTransitionPage(key: state.pageKey, child: const SettingsScreen()),
+          ),
+        ],
+      ),
     ],
     redirect: (context, state) {
       final status = ref.read(authProvider).status;
@@ -43,7 +138,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (publicRoutes.contains(location) || location == Routes.splash) {
-        return Routes.home;
+        return Routes.feed;
       }
       return null;
     },

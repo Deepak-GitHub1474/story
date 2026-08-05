@@ -16,4 +16,13 @@ class Endpoints {
   static const String signoutAll = '/auth/signout-all';
   static const String me = '/auth/me';
   static const String usernameAvailable = '/auth/username-available';
+  static const String sessions = '/auth/sessions';
+  static const String changePassword = '/auth/password/change';
+
+  static const String interests = '/interests';
+  static const String categories = '/communities/categories';
+  static const String updateProfile = '/users/me';
+  static const String regenerateAvatar = '/users/me/avatar/regenerate';
+
+  static String publicProfile(String username) => '/users/$username';
 }
