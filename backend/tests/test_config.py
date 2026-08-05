@@ -94,3 +94,29 @@ def test_local_tolerates_everything_production_refuses():
         COOKIE_SECURE=False,
     )
     assert settings.MAIL_PROVIDER == "console"
+
+
+def test_s3_storage_without_credentials_is_refused():
+    from app.ports.factory import build_storage
+
+    settings = production(STORAGE_PROVIDER="s3")
+    with pytest.raises(ValueError) as caught:
+        build_storage(settings)
+
+    assert "STORAGE_S3_ENDPOINT" in str(caught.value)
+    assert "STORAGE_S3_BUCKET_VAULT" in str(caught.value)
+
+
+def test_s3_storage_with_credentials_builds():
+    from app.ports.factory import build_storage
+
+    settings = production(
+        STORAGE_PROVIDER="s3",
+        STORAGE_S3_ENDPOINT="https://acc.r2.cloudflarestorage.com",
+        STORAGE_S3_ACCESS_KEY="a" * 20,
+        STORAGE_S3_SECRET_KEY="b" * 40,
+        STORAGE_S3_BUCKET_VAULT="story-vault",
+    )
+    storage = build_storage(settings)
+
+    assert storage.key_for(owner_id="usr_1", item_id="vit_2") == "vault/usr_1/vit_2"

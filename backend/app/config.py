@@ -82,6 +82,12 @@ class Settings(BaseSettings):
     STORAGE_PROVIDER: Literal["local", "s3"] = "local"
     STORAGE_LOCAL_ROOT: str = ".storage"
     STORAGE_LOCAL_BASE_URL: str = "http://127.0.0.1:9000/v1/storage"
+    STORAGE_S3_ENDPOINT: str = ""
+    STORAGE_S3_REGION: str = "auto"
+    STORAGE_S3_ACCESS_KEY: str = ""
+    STORAGE_S3_SECRET_KEY: str = ""
+    STORAGE_S3_BUCKET_VAULT: str = ""
+    STORAGE_S3_BUCKET_MEDIA: str = ""
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
     VAULT_QUOTA_BYTES: int = 2 * 1024**3
