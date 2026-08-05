@@ -3,47 +3,90 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
-import '../../../components/app_card.dart';
 import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/story_list_view.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  String? _filter;
+
+  static const _tabs = [
+    (null, 'All'),
+    ('public', 'Public'),
+    ('private', 'Private'),
+    ('draft', 'Drafts'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
     final user = ref.watch(authProvider).user;
+    final stories = ref.watch(myStoriesProvider);
 
     if (user == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: colors.bg,
-            surfaceTintColor: Colors.transparent,
-            title: const Text('You'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push(Routes.editProfile),
-              ),
-            ],
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            sliver: SliverList.list(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.sm,
+              0,
+            ),
+            child: Row(
               children: [
-                Center(
-                  child: Column(
+                Expanded(
+                  child: Text(
+                    '@${user.username}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: AppTypeScale.heading,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.edit_outlined, color: colors.textMuted),
+                  onPressed: () => context.push(Routes.editProfile),
+                ),
+                IconButton(
+                  icon: Icon(Icons.settings_outlined, color: colors.textMuted),
+                  onPressed: () => context.go(Routes.settings),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StoryListView(
+              state: stories,
+              showVisibility: true,
+              onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
+              onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
+              onOpen: (story) => story.isDraft
+                  ? context.push('${Routes.compose}?id=${story.storyId}')
+                  : context.push('${Routes.story}/${story.storyId}'),
+              emptyTitle: _filter == 'draft' ? 'No drafts' : 'No stories yet',
+              emptyBody: 'Everything you write lands here, drafts included.',
+              header: Column(
+                children: [
+                  Row(
                     children: [
                       GestureDetector(
                         onLongPress: () async {
@@ -57,111 +100,110 @@ class ProfileScreen extends ConsumerWidget {
                             AppToast.show(context, 'New avatar.');
                           }
                         },
-                        child: Hero(
-                          tag: 'avatar-${user.userId}',
-                          child: AppAvatar(seed: user.avatarSeed, size: 88),
-                        ),
+                        child: AppAvatar(seed: user.avatarSeed, size: 72),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        user.displayName,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: AppTypeScale.title,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '@${user.username}',
-                        style: TextStyle(
-                          color: colors.textMuted,
-                          fontSize: AppTypeScale.body,
-                        ),
-                      ),
-                      if (user.bio != null && user.bio!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          user.bio!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: AppTypeScale.reading,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'Long-press the avatar for a new one.',
-                        style: TextStyle(
-                          color: colors.textMuted,
-                          fontSize: AppTypeScale.caption,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Row(
-                  children: [
-                    _Stat(label: 'Stories', value: '${user.counts['stories'] ?? 0}'),
-                    _Stat(label: 'Following', value: '${user.counts['connections'] ?? 0}'),
-                    _Stat(label: 'Followers', value: '${user.counts['followers'] ?? 0}'),
-                  ],
-                ),
-                if (user.interests.isNotEmpty) ...[
-                  AppSection(
-                    title: 'Interests',
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
+                      const SizedBox(width: AppSpacing.xl),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            for (final slug in user.interests)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceRaised,
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                                ),
-                                child: Text(
-                                  slug.replaceAll('-', ' '),
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: AppTypeScale.label,
-                                  ),
-                                ),
-                              ),
+                            _Stat(
+                              value: '${user.counts['stories'] ?? 0}',
+                              label: 'Stories',
+                            ),
+                            _Stat(
+                              value: '${user.counts['followers'] ?? 0}',
+                              label: 'Readers',
+                            ),
+                            _Stat(
+                              value: '${user.counts['connections'] ?? 0}',
+                              label: 'Following',
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ],
-                AppSection(
-                  title: 'Invite',
-                  children: [
-                    AppListRow(
-                      label: 'Your referral code',
-                      value: user.referralCode,
-                      icon: Icons.card_giftcard_outlined,
-                    ),
-                    if (user.referredBy != null)
-                      AppListRow(
-                        label: 'Referred by',
-                        value: user.referredBy,
-                        icon: Icons.handshake_outlined,
+                  const SizedBox(height: AppSpacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      user.displayName,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: AppTypeScale.body,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                  ),
+                  if (user.bio != null && user.bio!.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        user.bio!,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: AppTypeScale.label,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
+                  if (user.interests.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          for (final slug in user.interests.take(6))
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.xs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceRaised,
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                              ),
+                              child: Text(
+                                slug.replaceAll('-', ' '),
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: AppTypeScale.caption,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                    height: 36,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final tab in _tabs)
+                          Padding(
+                            padding: const EdgeInsets.only(right: AppSpacing.sm),
+                            child: _FilterChip(
+                              label: tab.$2,
+                              isActive: _filter == tab.$1,
+                              onTap: () {
+                                setState(() => _filter = tab.$1);
+                                ref.read(myStoriesProvider.notifier).filter(tab.$1);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
             ),
           ),
         ],
@@ -171,32 +213,75 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.value, required this.label});
 
-  final String label;
   final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: AppTypeScale.heading,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          label,
+          style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Material(
+      color: isActive ? colors.accent : colors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: isActive ? colors.accent : colors.border),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Text(
+            label,
             style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: AppTypeScale.heading,
-              fontWeight: FontWeight.w700,
+              color: isActive ? colors.accentText : colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            label,
-            style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
-          ),
-        ],
+        ),
       ),
     );
   }

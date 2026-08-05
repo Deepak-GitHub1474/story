@@ -9,6 +9,8 @@ import '../features/auth/screens/signup_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
+import '../features/stories/screens/composer_screen.dart';
+import '../features/stories/screens/story_detail_screen.dart';
 import '../features/onboarding/screens/interests_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/settings/screens/change_password_screen.dart';
@@ -79,6 +81,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             slidePage(key: state.pageKey, child: const SigninScreen()),
       ),
       GoRoute(
+        path: Routes.compose,
+        pageBuilder: (context, state) => sheetPage(
+          key: state.pageKey,
+          child: ComposerScreen(storyId: state.uri.queryParameters['id']),
+        ),
+      ),
+      GoRoute(
+        path: '${Routes.story}/:storyId',
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: StoryDetailScreen(storyId: state.pathParameters['storyId']!),
+        ),
+      ),
+      GoRoute(
         path: Routes.editProfile,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const EditProfileScreen()),
@@ -102,6 +118,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(
           destinations: shellDestinations,
           currentIndex: _shellIndex(state.matchedLocation),
+          onCompose: () => context.push(Routes.compose),
           child: child,
         ),
         routes: [

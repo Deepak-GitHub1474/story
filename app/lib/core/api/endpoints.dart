@@ -24,5 +24,23 @@ class Endpoints {
   static const String updateProfile = '/users/me';
   static const String regenerateAvatar = '/users/me/avatar/regenerate';
 
+  static const String stories = '/stories';
+  static const String feed = '/stories/feed';
+  static const String myStories = '/stories/mine';
+
   static String publicProfile(String username) => '/users/$username';
+
+  static String userStories(String username) => '/users/$username/stories';
+
+  static String story(String id) => '/stories/$id';
+
+  static String publishStory(String id) => '/stories/$id/publish';
+
+  static String unpublishStory(String id) => '/stories/$id/unpublish';
+
+  static String storyLike(String id) => '/stories/$id/like';
+
+  static String storyComments(String id) => '/stories/$id/comments';
+
+  static String comment(String id) => '/comments/$id';
 }

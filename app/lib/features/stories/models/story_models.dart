@@ -1,0 +1,144 @@
+class StoryAuthor {
+  const StoryAuthor({
+    required this.userId,
+    required this.displayName,
+    required this.avatarSeed,
+    required this.username,
+  });
+
+  factory StoryAuthor.fromJson(Map<String, dynamic> json) => StoryAuthor(
+    userId: json['user_id'] as String?,
+    displayName: json['display_name'] as String? ?? 'A deleted account',
+    avatarSeed: json['avatar_seed'] as String? ?? '',
+    username: json['username'] as String?,
+  );
+
+  final String? userId;
+  final String displayName;
+  final String avatarSeed;
+  final String? username;
+}
+
+class Story {
+  const Story({
+    required this.storyId,
+    required this.author,
+    required this.title,
+    required this.excerpt,
+    required this.body,
+    required this.visibility,
+    required this.slug,
+    required this.likes,
+    required this.comments,
+    required this.readingMinutes,
+    required this.isLiked,
+    required this.publishedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory Story.fromJson(Map<String, dynamic> json) {
+    final counts = Map<String, dynamic>.from(json['counts'] as Map? ?? {});
+    return Story(
+      storyId: json['story_id'] as String,
+      author: StoryAuthor.fromJson(Map<String, dynamic>.from(json['author'] as Map? ?? {})),
+      title: json['title'] as String?,
+      excerpt: json['excerpt'] as String? ?? '',
+      body: json['body'] as String?,
+      visibility: json['visibility'] as String,
+      slug: json['slug'] as String?,
+      likes: counts['likes'] as int? ?? 0,
+      comments: counts['comments'] as int? ?? 0,
+      readingMinutes: json['reading_minutes'] as int? ?? 1,
+      isLiked: json['is_liked'] as bool? ?? false,
+      publishedAt: json['published_at'] as String?,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+    );
+  }
+
+  final String storyId;
+  final StoryAuthor author;
+  final String? title;
+  final String excerpt;
+  final String? body;
+  final String visibility;
+  final String? slug;
+  final int likes;
+  final int comments;
+  final int readingMinutes;
+  final bool isLiked;
+  final String? publishedAt;
+  final String createdAt;
+  final String updatedAt;
+
+  bool get isDraft => visibility == 'draft';
+
+  bool get isPublic => visibility == 'public';
+
+  Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(
+    storyId: storyId,
+    author: author,
+    title: title,
+    excerpt: excerpt,
+    body: body,
+    visibility: visibility ?? this.visibility,
+    slug: slug,
+    likes: likes ?? this.likes,
+    comments: comments ?? this.comments,
+    readingMinutes: readingMinutes,
+    isLiked: isLiked ?? this.isLiked,
+    publishedAt: publishedAt,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+}
+
+class StoryPage {
+  const StoryPage({required this.items, required this.nextCursor, required this.hasMore});
+
+  factory StoryPage.fromJson(Map<String, dynamic> json) => StoryPage(
+    items: (json['items'] as List<dynamic>)
+        .map((item) => Story.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+    nextCursor: json['next_cursor'] as String?,
+    hasMore: json['has_more'] as bool? ?? false,
+  );
+
+  final List<Story> items;
+  final String? nextCursor;
+  final bool hasMore;
+}
+
+class Comment {
+  const Comment({
+    required this.commentId,
+    required this.storyId,
+    required this.author,
+    required this.body,
+    required this.likes,
+    required this.isLiked,
+    required this.createdAt,
+  });
+
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    final counts = Map<String, dynamic>.from(json['counts'] as Map? ?? {});
+    return Comment(
+      commentId: json['comment_id'] as String,
+      storyId: json['story_id'] as String,
+      author: StoryAuthor.fromJson(Map<String, dynamic>.from(json['author'] as Map? ?? {})),
+      body: json['body'] as String,
+      likes: counts['likes'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      createdAt: json['created_at'] as String? ?? '',
+    );
+  }
+
+  final String commentId;
+  final String storyId;
+  final StoryAuthor author;
+  final String body;
+  final int likes;
+  final bool isLiked;
+  final String createdAt;
+}

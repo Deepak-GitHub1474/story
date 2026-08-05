@@ -10,6 +10,9 @@ class Routes {
   static const String profile = '/profile';
   static const String settings = '/settings';
 
+  static const String compose = '/compose';
+  static const String story = '/story';
+
   static const String editProfile = '/settings/profile';
   static const String interests = '/settings/interests';
   static const String changePassword = '/settings/password';

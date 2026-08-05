@@ -1,0 +1,103 @@
+import '../../../core/api/api_client.dart';
+import '../../../core/api/endpoints.dart';
+import '../../../core/result.dart';
+import '../models/story_models.dart';
+
+Map<String, dynamic> _patch({String? title, String? body}) {
+  final patch = <String, dynamic>{};
+  if (title != null) patch['title'] = title;
+  if (body != null) patch['body'] = body;
+  return patch;
+}
+
+Map<String, dynamic> _pageQuery({String? cursor, String? visibility, int limit = 20}) {
+  final query = <String, dynamic>{'limit': limit};
+  if (cursor != null) query['cursor'] = cursor;
+  if (visibility != null) query['visibility'] = visibility;
+  return query;
+}
+
+class StoryRepository {
+  const StoryRepository(this._client);
+
+  final ApiClient _client;
+
+  Future<Result<Story>> create({String? title, required String body}) => _client.post(
+    Endpoints.stories,
+    body: {'title': title, 'body': body},
+    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+  );
+
+  Future<Result<Story>> update(String storyId, {String? title, String? body}) => _client.patch(
+    Endpoints.story(storyId),
+    body: _patch(title: title, body: body),
+    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+  );
+
+  Future<Result<Story>> publish(String storyId, {required String visibility}) => _client.post(
+    Endpoints.publishStory(storyId),
+    body: {'visibility': visibility},
+    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+  );
+
+  Future<Result<Story>> unpublish(String storyId) => _client.post(
+    Endpoints.unpublishStory(storyId),
+    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+  );
+
+  Future<Result<bool>> remove(String storyId) => _client.delete(
+    Endpoints.story(storyId),
+    parse: (data) => data['deleted'] as bool? ?? true,
+  );
+
+  Future<Result<Story>> byId(String storyId) => _client.get(
+    Endpoints.story(storyId),
+    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+  );
+
+  Future<Result<StoryPage>> feed({String? cursor}) => _client.get(
+    Endpoints.feed,
+    query: _pageQuery(cursor: cursor),
+    parse: StoryPage.fromJson,
+  );
+
+  Future<Result<StoryPage>> mine({String? visibility, String? cursor}) => _client.get(
+    Endpoints.myStories,
+    query: _pageQuery(cursor: cursor, visibility: visibility),
+    parse: StoryPage.fromJson,
+  );
+
+  Future<Result<StoryPage>> byUser(String username, {String? cursor}) => _client.get(
+    Endpoints.userStories(username),
+    query: _pageQuery(cursor: cursor),
+    parse: StoryPage.fromJson,
+  );
+
+  static int _likes(Map<String, dynamic> data) => data['likes'] as int;
+
+  Future<Result<int>> setLike(String storyId, {required bool liked}) {
+    final path = Endpoints.storyLike(storyId);
+    return liked
+        ? _client.post(path, parse: _likes)
+        : _client.delete(path, parse: _likes);
+  }
+
+  Future<Result<List<Comment>>> comments(String storyId, {String? cursor}) => _client.get(
+    Endpoints.storyComments(storyId),
+    query: _pageQuery(cursor: cursor, limit: 50),
+    parse: (data) => (data['items'] as List<dynamic>)
+        .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+  );
+
+  Future<Result<Comment>> addComment(String storyId, String body) => _client.post(
+    Endpoints.storyComments(storyId),
+    body: {'body': body},
+    parse: (data) => Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
+  );
+
+  Future<Result<bool>> deleteComment(String commentId) => _client.delete(
+    Endpoints.comment(commentId),
+    parse: (data) => data['deleted'] as bool? ?? true,
+  );
+}

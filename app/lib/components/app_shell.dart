@@ -24,11 +24,13 @@ class AppShell extends StatelessWidget {
     required this.child,
     required this.destinations,
     required this.currentIndex,
+    required this.onCompose,
   });
 
   final Widget child;
   final List<ShellDestination> destinations;
   final int currentIndex;
+  final VoidCallback onCompose;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +64,15 @@ class AppShell extends StatelessWidget {
             height: 64,
             child: Row(
               children: [
-                for (var index = 0; index < destinations.length; index++)
+                Expanded(
+                  child: _ShellTab(
+                    destination: destinations[0],
+                    isActive: currentIndex == 0,
+                    onTap: () => context.go(destinations[0].route),
+                  ),
+                ),
+                _ComposeButton(onTap: onCompose),
+                for (var index = 1; index < destinations.length; index++)
                   Expanded(
                     child: _ShellTab(
                       destination: destinations[index],
@@ -121,6 +131,53 @@ class _ShellTab extends StatelessWidget {
             child: Text(destination.label),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _ComposeButton extends StatefulWidget {
+  const _ComposeButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_ComposeButton> createState() => _ComposeButtonState();
+}
+
+class _ComposeButtonState extends State<_ComposeButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.9 : 1,
+          duration: AppMotion.fast,
+          curve: AppMotion.easeOut,
+          child: Container(
+            width: 52,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colors.accent,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(
+              Icons.edit_rounded,
+              color: colors.accentText,
+              size: AppSizes.iconMd,
+            ),
+          ),
+        ),
       ),
     );
   }
