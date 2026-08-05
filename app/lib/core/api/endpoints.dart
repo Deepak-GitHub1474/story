@@ -67,6 +67,18 @@ class Endpoints {
   static const String search = '/search';
   static const String reports = '/reports';
 
+  static const String keys = '/users/me/keys';
+  static const String vaultOverview = '/vault/overview';
+  static const String vaultPasscodes = '/vault/passcodes';
+  static const String vaultItems = '/vault/items';
+  static const String vaultSearch = '/vault/search';
+
+  static String vaultItem(String id) => '/vault/items/$id';
+
+  static String vaultItemComplete(String id) => '/vault/items/$id/complete';
+
+  static String vaultItemDownload(String id) => '/vault/items/$id/download';
+
   static const String email = '/users/me/email';
   static const String emailVerify = '/users/me/email/verify';
   static const String emailResend = '/users/me/email/resend';

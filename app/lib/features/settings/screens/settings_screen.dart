@@ -64,6 +64,16 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 AppSection(
+                  title: 'Vault',
+                  children: [
+                    AppListRow(
+                      label: 'Open vault',
+                      icon: Icons.lock_outline,
+                      onTap: () => context.push(Routes.vault),
+                    ),
+                  ],
+                ),
+                AppSection(
                   title: 'Notifications',
                   children: [
                     AppListRow(

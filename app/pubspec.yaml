@@ -39,6 +39,7 @@ dependencies:
   go_router: ^17.4.0
   flutter_secure_storage: ^10.3.1
   shared_preferences: ^2.5.5
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
