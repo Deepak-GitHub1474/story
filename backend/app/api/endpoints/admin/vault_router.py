@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, status
 from app.api.endpoints.admin import audit
 from app.api.endpoints.tickets.controllers import TICKETS
 from app.api.endpoints.tickets.models import ReleaseEscrowRequest
-from app.core.deps import CurrentClaims, require_role
+from app.api.endpoints.totp import controllers as totp_controllers
+from app.core.deps import AppSettings, CurrentClaims, require_role
 from app.core.errors import ErrorCode, api_error
 from app.core.time import to_wire, utc_now
 from app.db.mongo import MongoDatabase
+from app.db.redis import RedisClient
 from app.responses import ok_response
 
 SUPER_ADMIN = require_role("super_admin")
@@ -90,7 +92,12 @@ async def release_escrow(
     body: ReleaseEscrowRequest,
     claims: CurrentClaims,
     mongo: MongoDatabase,
+    redis: RedisClient,
+    settings: AppSettings,
 ):
+    await totp_controllers.require_code(
+        body.totp_code, claims=claims, mongo=mongo, redis=redis, settings=settings
+    )
     owner = await _owner(username, mongo)
 
     ticket = await mongo[TICKETS].find_one(

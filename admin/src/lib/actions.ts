@@ -76,10 +76,36 @@ export async function releaseEscrow(
   username: string,
   ticketId: string,
   justification: string,
+  totpCode: string,
 ) {
   const result = await backendFetch(`/admin/vault/${username}/release`, {
     method: 'POST',
-    body: { ticket_id: ticketId, justification },
+    body: { ticket_id: ticketId, justification, totp_code: totpCode },
   });
   return result.ok ? { error: null } : { error: result.message };
+}
+
+export async function startTotp() {
+  const result = await backendFetch<{ secret: string; uri: string }>(
+    '/auth/totp/setup',
+    { method: 'POST' },
+  );
+  return result.ok
+    ? { error: null, secret: result.value.secret }
+    : { error: result.message, secret: null };
+}
+
+export async function confirmTotp(code: string) {
+  const result = await backendFetch<{ backup_codes: string[] }>('/auth/totp/confirm', {
+    method: 'POST',
+    body: { code },
+  });
+  if (!result.ok) return { error: result.message, backupCodes: null };
+  revalidatePath('/security');
+  return { error: null, backupCodes: result.value.backup_codes };
+}
+
+export async function disableTotp() {
+  await backendFetch('/auth/totp', { method: 'DELETE' });
+  revalidatePath('/security');
 }

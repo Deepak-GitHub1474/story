@@ -22,6 +22,7 @@ export default async function DashLayout({
             {isAdmin ? <NavLink href="/users" label="Accounts" /> : null}
             {isAdmin ? <NavLink href="/audit" label="Audit" /> : null}
             {isSuperAdmin ? <NavLink href="/vault" label="Vault escrow" /> : null}
+            <NavLink href="/security" label="Security" />
           </nav>
 
           <span className="hidden text-[length:var(--text-caption)] text-text-muted sm:inline">

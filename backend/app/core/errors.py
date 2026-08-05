@@ -24,6 +24,10 @@ class ErrorCode(StrEnum):
     ROLE_REQUIRED = "ROLE_REQUIRED"
     TICKET_NOT_FOUND = "TICKET_NOT_FOUND"
     TICKET_ALREADY_OPEN = "TICKET_ALREADY_OPEN"
+    TOTP_REQUIRED = "TOTP_REQUIRED"
+    TOTP_INVALID = "TOTP_INVALID"
+    TOTP_REUSED = "TOTP_REUSED"
+    TOTP_ALREADY_ENABLED = "TOTP_ALREADY_ENABLED"
 
     EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
     EMAIL_IN_USE = "EMAIL_IN_USE"
@@ -101,6 +105,10 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.ROLE_REQUIRED: (403, "You do not have access to this."),
     ErrorCode.TICKET_NOT_FOUND: (404, "We could not find that ticket."),
     ErrorCode.TICKET_ALREADY_OPEN: (409, "You already have an open request of this kind."),
+    ErrorCode.TOTP_REQUIRED: (403, "Set up an authenticator app before doing this."),
+    ErrorCode.TOTP_INVALID: (403, "That code is not right."),
+    ErrorCode.TOTP_REUSED: (403, "That code has already been used. Wait for the next one."),
+    ErrorCode.TOTP_ALREADY_ENABLED: (409, "An authenticator is already set up on this account."),
     ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
     ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),

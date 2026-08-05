@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     )
 
     APP_NAME: str = "Story API"
+    TOTP_ISSUER: str = "Story"
     APP_VERSION: str = "0.1.0"
     API_ENV: Literal["local", "staging", "production"] = "local"
     API_PREFIX: str = "/v1"

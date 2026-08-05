@@ -251,7 +251,22 @@ The user opens the ticket from **Vault → Recovery** (app: `/vault/recovery`, w
 
 The admin surface exposes this at `/vault`, visible in the nav only to `super_admin`, and the page redirects any other role to `/queue`. That redirect is convenience; the backend role dependency is the control.
 
-**Not built yet, and deliberately named here rather than assumed**: step-up authentication (TOTP) before a release, IP allowlisting for the admin surface, and the 30-minute idle timeout described in §5.2. Until those exist, escrow release is protected by role, ticket, justification, and audit alone.
+#### Step-up authentication
+
+A release also requires a TOTP code, verified against the acting staff member's own authenticator. RFC 6238, SHA-1, 6 digits, 30-second step, ±1 step of drift tolerance. No vendor, no SMS, no cost: the secret is generated and verified by this server, and the staff member holds it in any free authenticator app.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /v1/auth/totp/setup` | Staff only. Generates a secret and returns it once with a provisioning URI. Refused with `TOTP_ALREADY_ENABLED` if one is active. |
+| `POST /v1/auth/totp/confirm` | Verifies the first code, activates, and returns 8 single-use backup codes. Shown once. |
+| `GET /v1/auth/totp` | Status only — never the secret, never the codes. |
+| `DELETE /v1/auth/totp` | Removes the authenticator. |
+
+The code is bound to the release request itself rather than to a step-up session, because a 5-minute step-up window can approve several releases and a code bound to one request cannot. Verified codes are written to `ST:TOTP_USED:{user_id}:{code}` for 90 seconds, so the same code cannot be replayed inside its own validity window. A backup code is deleted from the account the moment it is accepted.
+
+Listing passcode names does **not** require a code. Reading metadata is not the dangerous act; approving a release is.
+
+**Still not built, and deliberately named here rather than assumed**: IP allowlisting for the admin surface and the 30-minute idle timeout described in §5.2.
 
 ## 5. Roles and permissions
 

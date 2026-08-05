@@ -22,3 +22,4 @@ class ReleaseEscrowRequest(BaseModel):
 
     ticket_id: str
     justification: Annotated[str, Field(min_length=50, max_length=1000)]
+    totp_code: Annotated[str, Field(min_length=6, max_length=10)]

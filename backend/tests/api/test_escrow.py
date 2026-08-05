@@ -1,6 +1,9 @@
 import base64
+import time
 
 import pytest
+
+from app.core.totp import code_at
 
 
 async def signup(client, payload):
@@ -18,6 +21,19 @@ def account(name):
 
 def b64(raw: bytes) -> str:
     return base64.b64encode(raw).decode()
+
+
+async def enrolled_super_admin(client, app_instance, name):
+    headers = await make_staff(client, app_instance, account(name), "super_admin")
+    secret = (await client.post("/v1/auth/totp/setup", headers=headers)).json()["data"][
+        "secret"
+    ]
+    await client.post(
+        "/v1/auth/totp/confirm",
+        json={"code": code_at(secret, int(time.time()))},
+        headers=headers,
+    )
+    return headers, secret
 
 
 async def make_staff(client, app_instance, payload, role):
@@ -127,10 +143,14 @@ async def test_releasing_escrow_needs_a_ticket(client, owner, app_instance):
     headers = await auth_headers(client, owner)
     await build_vault(client, headers)
 
-    staff = await make_staff(client, app_instance, account("esc_super4"), "super_admin")
+    staff, secret = await enrolled_super_admin(client, app_instance, "esc_super4")
     response = await client.post(
         f"/v1/admin/vault/{owner['username']}/release",
-        json={"ticket_id": "tkt_nonexistent", "justification": "x" * 60},
+        json={
+            "ticket_id": "tkt_nonexistent",
+            "justification": "x" * 60,
+            "totp_code": code_at(secret, int(time.time())),
+        },
         headers=staff,
     )
     assert response.status_code == 404
@@ -148,10 +168,14 @@ async def test_releasing_escrow_needs_a_long_justification(client, owner, app_in
         )
     ).json()["data"]["ticket"]
 
-    staff = await make_staff(client, app_instance, account("esc_super5"), "super_admin")
+    staff, secret = await enrolled_super_admin(client, app_instance, "esc_super5")
     response = await client.post(
         f"/v1/admin/vault/{owner['username']}/release",
-        json={"ticket_id": ticket["ticket_id"], "justification": "too short"},
+        json={
+            "ticket_id": ticket["ticket_id"],
+            "justification": "too short",
+            "totp_code": code_at(secret, int(time.time())),
+        },
         headers=staff,
     )
     assert response.status_code == 422
@@ -168,12 +192,13 @@ async def test_a_released_passcode_reaches_the_user_not_the_staff(client, owner,
         )
     ).json()["data"]["ticket"]
 
-    staff = await make_staff(client, app_instance, account("esc_super6"), "super_admin")
+    staff, secret = await enrolled_super_admin(client, app_instance, "esc_super6")
     response = await client.post(
         f"/v1/admin/vault/{owner['username']}/release",
         json={
             "ticket_id": ticket["ticket_id"],
             "justification": "Owner verified by email and answered every precondition.",
+            "totp_code": code_at(secret, int(time.time())),
         },
         headers=staff,
     )
@@ -197,12 +222,13 @@ async def test_the_release_is_audited_and_visible_to_the_owner(client, owner, ap
         )
     ).json()["data"]["ticket"]
 
-    staff = await make_staff(client, app_instance, account("esc_super7"), "super_admin")
+    staff, secret = await enrolled_super_admin(client, app_instance, "esc_super7")
     await client.post(
         f"/v1/admin/vault/{owner['username']}/release",
         json={
             "ticket_id": ticket["ticket_id"],
             "justification": "Owner verified by email and answered every precondition.",
+            "totp_code": code_at(secret, int(time.time())),
         },
         headers=staff,
     )

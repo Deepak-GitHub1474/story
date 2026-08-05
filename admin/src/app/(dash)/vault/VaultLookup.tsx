@@ -18,6 +18,7 @@ export function VaultLookup() {
   const [username, setUsername] = useState('');
   const [passcodes, setPasscodes] = useState<TPasscode[] | null>(null);
   const [ticketId, setTicketId] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const [justification, setJustification] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,7 @@ export function VaultLookup() {
                     username.trim().toLowerCase(),
                     ticketId.trim(),
                     justification.trim(),
+                    totpCode.trim(),
                   );
                   if (result.error) {
                     setError(result.error);
@@ -87,6 +89,7 @@ export function VaultLookup() {
                     setNotice('Released to the account owner.');
                     setTicketId('');
                     setJustification('');
+                    setTotpCode('');
                   }
                 });
               }}
@@ -119,11 +122,25 @@ export function VaultLookup() {
                   At least 50 characters. Stored in the audit log the owner can read.
                 </p>
               </div>
+              <Field
+                label="Authenticator code"
+                value={totpCode}
+                onChange={(event) =>
+                  setTotpCode(event.target.value.replace(/[^a-z0-9]/gi, ''))
+                }
+                inputMode="numeric"
+                maxLength={10}
+                hint="From your authenticator app, or one backup code."
+              />
               <Button
                 type="submit"
                 variant="danger"
                 isLoading={isPending}
-                disabled={!ticketId.trim() || justification.trim().length < 50}
+                disabled={
+                  !ticketId.trim() ||
+                  justification.trim().length < 50 ||
+                  totpCode.trim().length < 6
+                }
               >
                 Release
               </Button>

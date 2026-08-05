@@ -47,3 +47,7 @@ def reset_token(token_hash: str) -> str:
 
 def session_epoch(user_id: str) -> str:
     return f"{NAMESPACE}:SESSION_EPOCH:{user_id}"
+
+
+def totp_used(user_id: str, code: str) -> str:
+    return f"{NAMESPACE}:TOTP_USED:{user_id}:{code}"
