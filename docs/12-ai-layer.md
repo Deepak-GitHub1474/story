@@ -173,17 +173,18 @@ Three methods. That is the entire surface, and it is small on purpose — a port
 |---|---|---|---|
 | `RulesAdapter` | Regex, blocklists, perceptual hashes | Free | Tier 1, always on, never disabled |
 | `LocalAdapter` | ONNX Runtime + a small classifier and a sentence-embedding model | Free after download | Tier 2 and all embeddings |
-| `AnthropicAdapter` | Claude (Haiku for the volume path, Sonnet for appeals review assistance) | Per token | Tier 3 |
+| `GeminiAdapter` | Google AI Studio / Gemini API (Flash for the volume path) | Free tier, then per token | Tier 3 — **the chosen provider** |
+| `AnthropicAdapter` | Claude (Haiku for the volume path, Sonnet for appeals review assistance) | Per token | Tier 3 alternative |
 | `OpenAICompatAdapter` | Any OpenAI-shaped endpoint — vLLM, Ollama, Together, Groq | Varies / free self-hosted | Tier 3 alternative, and the local-dev default |
 | `NullAdapter` | Returns `allow` with `tier=0` | Free | Tests and local development |
 
 Selection is per capability, not global, because the right answer differs per job:
 
 ```bash
-AI_CLASSIFY_PROVIDER=anthropic      # or openai_compat | local | null
+AI_CLASSIFY_PROVIDER=gemini         # or anthropic | openai_compat | local | null
 AI_EMBED_PROVIDER=local             # embeddings should never cost money
 AI_EXTRACT_PROVIDER=local
-AI_CLASSIFY_MODEL=claude-haiku-4-5-20251001
+AI_CLASSIFY_MODEL=gemini-flash-latest
 AI_TIER3_ENABLED=true
 AI_TIER3_TIMEOUT_MS=2500
 AI_FAIL_MODE=hold                   # hold | allow  — see §6
@@ -243,6 +244,18 @@ Story text is untrusted input that is fed to a model, which is the textbook inje
 
 Contractual requirements on any hosted provider: no training on submitted content, no retention beyond the request, and a signed data-processing agreement. These are stated in the privacy policy in the same words used here.
 
+### 8.1 The Gemini free-tier rule
+
+Google AI Studio's free tier is the intended development path, and it carries one condition that overrides convenience: **on the free tier Google may use submitted prompts and responses to improve its products.** That is incompatible with the row above and with P8.
+
+The rule, therefore:
+
+- **Free tier is for development and evaluation only**, and only against the golden set and synthetic fixtures in `backend/tests/ai/golden/`. No real user text.
+- **Real user content requires a paid key** (paid Gemini API or Vertex AI), where submitted data is not used for training.
+- `AI_TIER3_ENABLED` defaults to `false`. Turning it on in an environment that serves real users while `AI_BILLING_TIER=free` is a **startup invariant failure**, in the same class as the production checks in `app/config.py`. The process refuses to start.
+
+This is the one place where a free tier is not a saving. It is a disclosure.
+
 The transparency report states, per period: volume checked, verdict distribution, appeal count, appeal overturn rate, and the share of content that reached a hosted provider. Publishing the overturn rate is the accountability mechanism — a rising overturn rate is a public admission that the gate is miscalibrated, which is exactly the pressure that keeps it calibrated.
 
 ## 9. Appeals
@@ -280,7 +293,7 @@ Rough shape at 10,000 stories per day, which is well past MVP:
 |---|---|---|---|
 | 1 — rules | ~55% | 0 | 0 |
 | 2 — local ONNX | ~35% | 0 (CPU already paid for) | 0 |
-| 3 — hosted LLM | ~10%, ≈1,000 calls, ~800 tokens each | Haiku-class pricing | Low single-digit dollars |
+| 3 — hosted LLM | ~10%, ≈1,000 calls, ~800 tokens each | Gemini Flash-class pricing | Cents to low single-digit dollars |
 
 Embeddings are local and therefore free. The nightly recommendation recompute is vector arithmetic over stored embeddings — no inference, no provider call.
 
