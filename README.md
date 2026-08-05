@@ -67,8 +67,29 @@ Use `10.0.2.2` for the Android emulator and `127.0.0.1` for the iOS simulator.
 ## Everything
 
 ```bash
-make check
+make check     # lint, backend tests, analyzer, app unit tests
+make e2e       # starts a test-profile API, runs the app suite against it
 ```
+
+## Secrets
+
+Four values are real secrets: `JWT_SECRET`, `EMAIL_INDEX_KEY`,
+`EMAIL_ENCRYPTION_KEY`, `OTP_HMAC_SECRET`. They live in `backend/.env`, which is
+gitignored. `backend/.env.example` carries placeholders only.
+
+```bash
+make secrets   # generate strong values into backend/.env
+```
+
+Production refuses to boot if any secret is short, low-entropy, reused across
+two settings, or still contains a placeholder marker — and equally if rate
+limiting is off, cookies are insecure, CORS holds a wildcard, the console mailer
+is selected, or the database points at localhost. `backend/tests/test_config.py`
+covers each rule.
+
+Rate limiting is **on** by default, including locally, so development behaves
+like production. `make e2e` is the one place it is disabled, because the
+integration suite creates dozens of accounts in seconds.
 
 ## Reading the logs
 

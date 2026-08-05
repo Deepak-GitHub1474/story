@@ -4,6 +4,32 @@ from typing import Literal
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+SECRET_SETTINGS = (
+    "JWT_SECRET",
+    "EMAIL_INDEX_KEY",
+    "EMAIL_ENCRYPTION_KEY",
+    "OTP_HMAC_SECRET",
+)
+
+PLACEHOLDER_MARKERS = ("change-me", "changeme", "local-dev", "example", "placeholder")
+LOCAL_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0")
+MIN_SECRET_LENGTH = 32
+MIN_SECRET_ALPHABET = 8
+
+
+def _secret_problems(name: str, value: str) -> list[str]:
+    problems = []
+    lowered = value.lower()
+
+    if any(marker in lowered for marker in PLACEHOLDER_MARKERS):
+        problems.append(f"{name} still holds a placeholder value.")
+    if len(value) < MIN_SECRET_LENGTH:
+        problems.append(f"{name} must be at least {MIN_SECRET_LENGTH} characters.")
+    if len(set(value)) < MIN_SECRET_ALPHABET:
+        problems.append(f"{name} is not random enough.")
+
+    return problems
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -62,16 +88,32 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def enforce_production_invariants(self) -> "Settings":
-        if self.API_ENV == "production":
-            if not self.COOKIE_SECURE:
-                raise ValueError("COOKIE_SECURE must be true in production.")
-            if "*" in self.CORS_ORIGINS:
-                raise ValueError("CORS_ORIGINS cannot contain a wildcard in production.")
-            if len(self.JWT_SECRET) < 32 or "change-me" in self.JWT_SECRET:
-                raise ValueError("JWT_SECRET must be a real secret of 32+ characters.")
-            for name in ("EMAIL_INDEX_KEY", "EMAIL_ENCRYPTION_KEY", "OTP_HMAC_SECRET"):
-                if "change-me" in getattr(self, name):
-                    raise ValueError(f"{name} must be a real secret in production.")
+        if self.API_ENV != "production":
+            return self
+
+        problems: list[str] = []
+
+        for name in SECRET_SETTINGS:
+            problems.extend(_secret_problems(name, getattr(self, name)))
+
+        values = [getattr(self, name) for name in SECRET_SETTINGS]
+        if len(set(values)) != len(values):
+            problems.append("Every secret must be distinct from the others.")
+
+        if not self.COOKIE_SECURE:
+            problems.append("COOKIE_SECURE must be true in production.")
+        if "*" in self.CORS_ORIGINS:
+            problems.append("CORS_ORIGINS cannot contain a wildcard in production.")
+        if not self.RATE_LIMIT_ENABLED:
+            problems.append("RATE_LIMIT_ENABLED must be true in production.")
+        if self.MAIL_PROVIDER == "console":
+            problems.append("MAIL_PROVIDER cannot be console in production.")
+        for name in ("MONGODB_URI", "REDIS_URL"):
+            if any(host in getattr(self, name) for host in LOCAL_HOSTS):
+                problems.append(f"{name} must not point at localhost in production.")
+
+        if problems:
+            raise ValueError(" ".join(problems))
         return self
 
 

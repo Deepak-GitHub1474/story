@@ -48,4 +48,24 @@ app-test: ## Analyze and test the app
 app-run: ## Run the app on the connected device
 	cd app && flutter run
 
+backend-dev-testing: ## Run the API with rate limits off, for the e2e suite
+	cd backend && RATE_LIMIT_ENABLED=false uv run uvicorn app.main:app --host 127.0.0.1 --port 9000
+
+e2e: ## Start a test-profile API, run the app suite against it, tear down
+	@cd backend && RATE_LIMIT_ENABLED=false uv run uvicorn app.main:app \
+		--host 127.0.0.1 --port 9000 > /tmp/story-e2e.log 2>&1 & \
+		echo $$! > /tmp/story-e2e.pid
+	@until curl -sf --max-time 2 http://127.0.0.1:9000/v1/health/ready >/dev/null; do sleep 1; done
+	@cd app && flutter test; status=$$?; \
+		kill `cat /tmp/story-e2e.pid` 2>/dev/null; rm -f /tmp/story-e2e.pid; \
+		exit $$status
+
 check: backend-check app-test ## Everything CI runs
+
+secrets: ## Generate strong secrets into backend/.env
+	@cd backend && python3 -c "import re,secrets,string,pathlib; \
+a=string.ascii_letters+string.digits; \
+p=pathlib.Path('.env'); t=p.read_text(); \
+[t := re.sub(rf'^{n}=.*$$', n+'='+''.join(secrets.choice(a) for _ in range(48)), t, flags=re.M) \
+ for n in ('JWT_SECRET','EMAIL_INDEX_KEY','EMAIL_ENCRYPTION_KEY','OTP_HMAC_SECRET')]; \
+p.write_text(t); print('secrets rotated in backend/.env')"
