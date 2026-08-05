@@ -26,6 +26,9 @@ class ErrorCode(StrEnum):
     KEYS_ALREADY_INITIALIZED = "KEYS_ALREADY_INITIALIZED"
 
     USER_NOT_FOUND = "USER_NOT_FOUND"
+    BIO_LINK_NOT_ALLOWED = "BIO_LINK_NOT_ALLOWED"
+    INTEREST_UNKNOWN = "INTEREST_UNKNOWN"
+    SESSION_NOT_FOUND = "SESSION_NOT_FOUND"
 
     STORY_NOT_FOUND = "STORY_NOT_FOUND"
 
@@ -59,6 +62,9 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.KEYS_NOT_INITIALIZED: (400, "Finish setting up your account first."),
     ErrorCode.KEYS_ALREADY_INITIALIZED: (409, "Your keys are already set up."),
     ErrorCode.USER_NOT_FOUND: (404, "We could not find that account."),
+    ErrorCode.BIO_LINK_NOT_ALLOWED: (422, "Your bio cannot contain a link."),
+    ErrorCode.INTEREST_UNKNOWN: (422, "That interest does not exist."),
+    ErrorCode.SESSION_NOT_FOUND: (404, "We could not find that session."),
     ErrorCode.STORY_NOT_FOUND: (404, "We could not find that story."),
     ErrorCode.VALIDATION_FAILED: (422, "Some of that information is not valid."),
     ErrorCode.RATE_LIMITED: (429, "Too many attempts. Try again shortly."),

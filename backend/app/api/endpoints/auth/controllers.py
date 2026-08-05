@@ -27,7 +27,7 @@ from app.core.password import (
     validate_password_strength,
     verify_password,
 )
-from app.core.time import utc_now
+from app.core.time import to_wire, utc_now
 from app.core.tokens import (
     create_access_token,
     hash_refresh_token,
@@ -319,3 +319,36 @@ async def me(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
         raise api_error(ErrorCode.USER_NOT_FOUND)
     _ensure_usable(user)
     return {"user": serialize_user(user)}
+
+
+async def list_sessions(*, claims, mongo: AsyncIOMotorDatabase, redis: Redis) -> dict[str, Any]:
+    family_ids = sorted(await redis.smembers(keys.user_sessions(claims.user_id)))
+    devices = {
+        doc["fingerprint"]: doc async for doc in mongo[c.DEVICES].find({"user_id": claims.user_id})
+    }
+    latest = max(devices.values(), key=lambda d: d["last_seen_at"], default=None)
+
+    items = []
+    for family_id in family_ids:
+        token_count = await redis.scard(keys.refresh_family(family_id))
+        if token_count == 0:
+            continue
+        items.append(
+            {
+                "family_id": family_id,
+                "is_current": family_id == claims.family_id,
+                "label": (latest or {}).get("label", "This device"),
+                "platform": (latest or {}).get("platform", "web"),
+                "last_seen_at": to_wire((latest or {}).get("last_seen_at")),
+            }
+        )
+    return {"items": items}
+
+
+async def revoke_session(family_id: str, *, claims, redis: Redis) -> dict[str, Any]:
+    if not await redis.sismember(keys.user_sessions(claims.user_id), family_id):
+        raise api_error(ErrorCode.SESSION_NOT_FOUND)
+
+    await _revoke_family(family_id, redis=redis)
+    await redis.srem(keys.user_sessions(claims.user_id), family_id)
+    return {"revoked": True, "family_id": family_id}

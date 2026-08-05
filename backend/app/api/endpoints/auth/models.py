@@ -91,3 +91,10 @@ class UserOut(BaseModel):
     login_info: dict | None
     created_at: str
     last_login_at: str | None
+
+
+class ChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: Annotated[str, Field(min_length=1, max_length=128)]
+    new_password: Annotated[str, Field(min_length=10, max_length=128)]

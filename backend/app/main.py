@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.db.indexes import ensure_indexes
 from app.db.mongo import connect_mongo, disconnect_mongo
 from app.db.redis import connect_redis, disconnect_redis
+from app.db.seed import seed_reference_data
 from app.error_handlers import register_exception_handlers
 from app.logging import configure_logging, get_logger
 from app.middleware import RequestContextMiddleware
@@ -25,6 +26,9 @@ async def lifespan(app: FastAPI):
     if settings.ENSURE_INDEXES_ON_BOOT:
         applied = await ensure_indexes(app.state.mongo_db)
         logger.info("startup_indexes", count=sum(applied.values()))
+
+    seeded = await seed_reference_data(app.state.mongo_db)
+    logger.info("startup_seed", count=sum(seeded.values()))
 
     logger.info(
         "startup_complete",

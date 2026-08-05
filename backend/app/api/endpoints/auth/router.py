@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, Request, status
 
 from app.api.endpoints.auth import controllers
 from app.api.endpoints.auth.models import (
+    ChangePasswordRequest,
     RefreshRequest,
     SigninWithDeviceRequest,
     SignupRequest,
     UsernameAvailableRequest,
 )
+from app.api.endpoints.users import controllers as user_controllers
 from app.core.deps import AppSettings, ClientIpPrefix, CurrentClaims, rate_limit_dep
 from app.db.mongo import MongoDatabase
 from app.db.redis import RedisClient
@@ -102,3 +104,21 @@ async def signout_all(claims: CurrentClaims, redis: RedisClient):
 async def me(claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.me(claims=claims, mongo=mongo)
     return ok_response("Profile loaded.", data=data)
+
+
+@router.get("/sessions", status_code=status.HTTP_200_OK)
+async def list_sessions(claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient):
+    data = await controllers.list_sessions(claims=claims, mongo=mongo, redis=redis)
+    return ok_response("Sessions loaded.", data=data)
+
+
+@router.delete("/sessions/{family_id}", status_code=status.HTTP_200_OK)
+async def revoke_session(family_id: str, claims: CurrentClaims, redis: RedisClient):
+    data = await controllers.revoke_session(family_id, claims=claims, redis=redis)
+    return ok_response("Session signed out.", data=data)
+
+
+@router.post("/password/change", status_code=status.HTTP_200_OK)
+async def change_password(body: ChangePasswordRequest, claims: CurrentClaims, mongo: MongoDatabase):
+    data = await user_controllers.change_password(body, claims=claims, mongo=mongo)
+    return ok_response("Password changed.", data=data)
