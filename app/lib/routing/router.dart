@@ -11,6 +11,8 @@ import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
 import '../features/communities/screens/communities_screen.dart';
+import '../features/people/screens/people_list_screen.dart';
+import '../features/search/screens/search_screen.dart';
 import '../features/communities/screens/community_detail_screen.dart';
 import '../features/communities/screens/public_profile_screen.dart';
 import '../features/stories/screens/composer_screen.dart';
@@ -121,6 +123,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => slidePage(
           key: state.pageKey,
           child: PublicProfileScreen(username: state.pathParameters['username']!),
+        ),
+      ),
+      GoRoute(
+        path: Routes.search,
+        pageBuilder: (context, state) =>
+            fadePage(key: state.pageKey, child: const SearchScreen()),
+      ),
+      GoRoute(
+        path: Routes.following,
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: const PeopleListScreen(kind: PeopleKind.following),
+        ),
+      ),
+      GoRoute(
+        path: Routes.followers,
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: const PeopleListScreen(kind: PeopleKind.followers),
+        ),
+      ),
+      GoRoute(
+        path: Routes.blocked,
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: const PeopleListScreen(kind: PeopleKind.blocked),
         ),
       ),
       GoRoute(

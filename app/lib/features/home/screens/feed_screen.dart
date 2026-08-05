@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -27,6 +29,21 @@ class FeedScreen extends ConsumerWidget {
     } else {
       notifier.replace(story);
     }
+  }
+
+  Future<void> _share(BuildContext context, WidgetRef ref, Story story) async {
+    final result = await ref.read(storyRepositoryProvider).share(story.storyId);
+    if (!context.mounted) return;
+
+    final url = result.valueOrNull;
+    if (url == null) {
+      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!context.mounted) return;
+    AppToast.show(context, 'Link copied.', kind: AppToastKind.success);
   }
 
   @override
@@ -57,6 +74,10 @@ class FeedScreen extends ConsumerWidget {
                 ),
                 const Spacer(),
                 IconButton(
+                  icon: Icon(Icons.search, color: colors.textPrimary),
+                  onPressed: () => context.push(Routes.search),
+                ),
+                IconButton(
                   icon: Icon(Icons.groups_outlined, color: colors.textPrimary),
                   onPressed: () => context.push(Routes.communities),
                 ),
@@ -73,6 +94,7 @@ class FeedScreen extends ConsumerWidget {
                 '\${Routes.user}/\${story.author.username}',
               ),
               onLike: (story) => _like(ref, story),
+              onShare: (story) => _share(context, ref, story),
               endLabel: 'You are all caught up',
               emptyTitle: 'Nothing here yet',
               emptyBody:

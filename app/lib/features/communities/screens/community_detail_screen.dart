@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../components/app_toast.dart';
 import '../../../components/skeleton.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
+import '../../stories/providers/story_providers.dart';
 import '../../stories/widgets/story_post.dart';
 import '../models/community_models.dart';
 import '../providers/community_providers.dart';
@@ -168,13 +171,10 @@ class CommunityDetailScreen extends ConsumerWidget {
                     : Column(
                         children: [
                           for (final story in items) ...[
-                            StoryPost(
+                            _InteractiveStory(
                               story: story,
-                              onTap: () =>
-                                  context.push('${Routes.story}/${story.storyId}'),
-                              onAuthorTap: () => context.push(
-                                '${Routes.user}/${story.author.username}',
-                              ),
+                              onChanged: () =>
+                                  ref.invalidate(_communityStoriesProvider(slug)),
                             ),
                             Divider(height: 1, color: colors.border),
                           ],
@@ -186,6 +186,73 @@ class CommunityDetailScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _InteractiveStory extends ConsumerStatefulWidget {
+  const _InteractiveStory({required this.story, required this.onChanged});
+
+  final Story story;
+  final VoidCallback onChanged;
+
+  @override
+  ConsumerState<_InteractiveStory> createState() => _InteractiveStoryState();
+}
+
+class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
+  Story? _override;
+
+  Story get _story => _override ?? widget.story;
+
+  Future<void> _toggleLike() async {
+    final current = _story;
+    final next = !current.isLiked;
+    setState(() {
+      _override = current.copyWith(
+        isLiked: next,
+        likes: current.likes + (next ? 1 : -1),
+      );
+    });
+
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .setLike(current.storyId, liked: next);
+
+    if (!mounted) return;
+    if (result.isSuccess) {
+      setState(() => _override = _override!.copyWith(likes: result.valueOrNull));
+    } else {
+      setState(() => _override = current);
+    }
+  }
+
+  Future<void> _share() async {
+    final result = await ref.read(storyRepositoryProvider).share(_story.storyId);
+    if (!mounted) return;
+
+    final url = result.valueOrNull;
+    if (url == null) {
+      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    AppToast.show(context, 'Link copied.', kind: AppToastKind.success);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StoryPost(
+      story: _story,
+      onTap: () async {
+        await context.push('${Routes.story}/${_story.storyId}');
+        widget.onChanged();
+      },
+      onLike: _toggleLike,
+      onShare: _story.isPublic ? _share : null,
+      onAuthorTap: () => context.push('${Routes.user}/${_story.author.username}'),
     );
   }
 }

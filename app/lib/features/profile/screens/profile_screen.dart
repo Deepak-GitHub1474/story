@@ -197,10 +197,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             _Stat(
                               value: '${user.counts['followers'] ?? 0}',
                               label: 'Readers',
+                              onTap: () => context.push(Routes.followers),
                             ),
                             _Stat(
                               value: '${user.counts['connections'] ?? 0}',
                               label: 'Following',
+                              onTap: () => context.push(Routes.following),
                             ),
                           ],
                         ),
@@ -294,16 +296,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
+  const _Stat({required this.value, required this.label, this.onTap});
 
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Column(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Column(
       children: [
         Text(
           value,
@@ -319,6 +325,7 @@ class _Stat extends StatelessWidget {
           style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
         ),
       ],
+      ),
     );
   }
 }

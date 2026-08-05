@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import '../../../core/cache/feed_cache.dart';
 import '../../../core/prefs/prefs_store.dart';
 
 final prefsStoreProvider = Provider<PrefsStore>(
   (ref) => throw UnimplementedError('PrefsStore must be overridden at startup'),
+);
+
+final feedCacheProvider = Provider<FeedCache>(
+  (ref) => throw UnimplementedError('FeedCache must be overridden at startup'),
 );
 
 final themeProvider = NotifierProvider<ThemeNotifier, String>(ThemeNotifier.new);
@@ -40,5 +43,3 @@ class ReadingSizeNotifier extends Notifier<String> {
   }
 }
 
-Future<PrefsStore> loadPrefsStore() async =>
-    PrefsStore(await SharedPreferences.getInstance());

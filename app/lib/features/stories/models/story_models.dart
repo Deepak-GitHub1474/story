@@ -74,6 +74,26 @@ class Story {
 
   bool get isDraft => visibility == 'draft';
 
+  Map<String, dynamic> toJson() => {
+    'story_id': storyId,
+    'author': {
+      'user_id': author.userId,
+      'display_name': author.displayName,
+      'avatar_seed': author.avatarSeed,
+      'username': author.username,
+    },
+    'title': title,
+    'excerpt': excerpt,
+    'visibility': visibility,
+    'slug': slug,
+    'counts': {'likes': likes, 'comments': comments},
+    'reading_minutes': readingMinutes,
+    'is_liked': isLiked,
+    'published_at': publishedAt,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
+
   bool get isPublic => visibility == 'public';
 
   Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(

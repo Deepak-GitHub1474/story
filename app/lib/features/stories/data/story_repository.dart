@@ -131,6 +131,11 @@ class StoryRepository {
         : _client.delete(path, parse: _likes);
   }
 
+  Future<Result<String>> share(String storyId) => _client.post(
+    Endpoints.storyShare(storyId),
+    parse: (data) => data['url'] as String,
+  );
+
   Future<Result<bool>> deleteComment(String commentId) => _client.delete(
     Endpoints.comment(commentId),
     parse: (data) => data['deleted'] as bool? ?? true,

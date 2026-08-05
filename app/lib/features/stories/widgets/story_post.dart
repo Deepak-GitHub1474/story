@@ -14,6 +14,7 @@ class StoryPost extends StatelessWidget {
     this.onLike,
     this.onComment,
     this.onAuthorTap,
+    this.onShare,
     this.showVisibility = false,
   });
 
@@ -22,6 +23,7 @@ class StoryPost extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onComment;
   final VoidCallback? onAuthorTap;
+  final VoidCallback? onShare;
   final bool showVisibility;
 
   @override
@@ -108,9 +110,21 @@ class StoryPost extends StatelessWidget {
                     color: colors.textPrimary,
                   ),
                 ),
+                if (onShare != null) ...[
+                  const SizedBox(width: AppSpacing.lg),
+                  InkResponse(
+                    onTap: onShare,
+                    radius: 22,
+                    child: Icon(
+                      Icons.ios_share,
+                      size: AppSizes.iconMd,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
-                  'Read',
+                  '${story.readingMinutes} min',
                   style: TextStyle(
                     color: colors.textMuted,
                     fontSize: AppTypeScale.caption,

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/auth_provider.dart';
+import '../../settings/providers/theme_provider.dart';
 import '../data/story_repository.dart';
 import '../models/story_models.dart';
 
@@ -95,11 +98,47 @@ final feedProvider = NotifierProvider<FeedNotifier, StoryListState>(FeedNotifier
 
 class FeedNotifier extends StoryListNotifier {
   @override
+  StoryListState build() {
+    final cached = ref.read(feedCacheProvider).read();
+    Future.microtask(refresh);
+
+    if (cached.isEmpty) return const StoryListState(isLoading: true);
+    return StoryListState(
+      items: cached.map(Story.fromJson).toList(),
+      isLoading: false,
+      hasMore: true,
+    );
+  }
+
+  @override
+  Future<void> refresh() async {
+    if (state.items.isEmpty) {
+      state = state.copyWith(isLoading: true, clearError: true);
+    }
+    await fetch();
+  }
+
+  @override
   Future<void> fetch({String? cursor}) async {
     final result = await ref.read(storyRepositoryProvider).feed(cursor: cursor);
     result.fold(
-      onSuccess: (success) => apply(success.value, append: cursor != null),
-      onFailure: (failure) => fail(failure.message),
+      onSuccess: (success) {
+        apply(success.value, append: cursor != null);
+        if (cursor == null) {
+          unawaited(
+            ref
+                .read(feedCacheProvider)
+                .write(success.value.items.map((item) => item.toJson()).toList()),
+          );
+        }
+      },
+      onFailure: (failure) {
+        if (state.items.isEmpty) {
+          fail(failure.message);
+        } else {
+          state = state.copyWith(isLoading: false, isLoadingMore: false);
+        }
+      },
     );
   }
 }

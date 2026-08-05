@@ -40,6 +40,8 @@ class Endpoints {
 
   static String storyLike(String id) => '/stories/$id/like';
 
+  static String storyShare(String id) => '/stories/$id/share';
+
   static String storyComments(String id) => '/stories/$id/comments';
 
   static String comment(String id) => '/comments/$id';
@@ -61,6 +63,8 @@ class Endpoints {
 
   static const String following = '/connections/following';
   static const String followers = '/connections/followers';
+  static const String blocked = '/connections/blocked';
+  static const String search = '/search';
 
   static const String notifications = '/notifications';
   static const String unreadCount = '/notifications/unread-count';

@@ -16,6 +16,10 @@ class Routes {
   static const String communities = '/communities';
   static const String community = '/community';
   static const String user = '/u';
+  static const String search = '/search';
+  static const String following = '/people/following';
+  static const String followers = '/people/followers';
+  static const String blocked = '/people/blocked';
 
   static const String editProfile = '/settings/profile';
   static const String interests = '/settings/interests';

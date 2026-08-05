@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../components/app_avatar.dart';
+import '../../../components/skeleton.dart';
+import '../../../routing/routes.dart';
+import '../../../theme/app_theme.dart';
+import '../../../theme/tokens.dart';
+import '../../stories/widgets/story_post.dart';
+import '../providers/search_providers.dart';
+
+class SearchScreen extends ConsumerStatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final state = ref.watch(searchProvider);
+    final results = state.results;
+
+    return Scaffold(
+      backgroundColor: colors.bg,
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.pop()),
+        titleSpacing: 0,
+        title: TextField(
+          controller: _controller,
+          autofocus: true,
+          textInputAction: TextInputAction.search,
+          style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
+          onChanged: (value) => ref.read(searchProvider.notifier).query(value),
+          decoration: InputDecoration(
+            hintText: 'People, communities, stories',
+            hintStyle: TextStyle(color: colors.textMuted),
+            border: InputBorder.none,
+          ),
+        ),
+        actions: [
+          if (_controller.text.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.close, color: colors.textMuted),
+              onPressed: () {
+                _controller.clear();
+                ref.read(searchProvider.notifier).query('');
+              },
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: Builder(
+          builder: (context) {
+            if (state.query.isEmpty) return _Hint();
+            if (state.isLoading) return const SkeletonList(count: 4);
+            if (results.isEmpty) {
+              return Center(
+                child: Text(
+                  'Nothing matched “${state.query}”.',
+                  style: TextStyle(color: colors.textSecondary),
+                ),
+              );
+            }
+
+            return ListView(
+              children: [
+                if (results.users.isNotEmpty) ...[
+                  _SectionHeader(label: 'People'),
+                  for (final user in results.users)
+                    ListTile(
+                      leading: AppAvatar(seed: user.avatarSeed, size: 40),
+                      title: Text(
+                        user.displayName,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '@${user.username}',
+                        style: TextStyle(color: colors.textMuted),
+                      ),
+                      onTap: () => context.push('${Routes.user}/${user.username}'),
+                    ),
+                ],
+                if (results.communities.isNotEmpty) ...[
+                  _SectionHeader(label: 'Communities'),
+                  for (final community in results.communities)
+                    ListTile(
+                      leading: Icon(Icons.groups_outlined, color: colors.accent),
+                      title: Text(
+                        community.name,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${community.members} members',
+                        style: TextStyle(color: colors.textMuted),
+                      ),
+                      onTap: () =>
+                          context.push('${Routes.community}/${community.slug}'),
+                    ),
+                ],
+                if (results.stories.isNotEmpty) ...[
+                  _SectionHeader(label: 'Stories'),
+                  for (final story in results.stories) ...[
+                    StoryPost(
+                      story: story,
+                      onTap: () => context.push('${Routes.story}/${story.storyId}'),
+                      onAuthorTap: () =>
+                          context.push('${Routes.user}/${story.author.username}'),
+                    ),
+                    Divider(height: 1, color: colors.border),
+                  ],
+                ],
+                const SizedBox(height: AppSpacing.xxxl),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: colors.textMuted,
+          fontSize: AppTypeScale.caption,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _Hint extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search, size: 44, color: colors.textMuted),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Find your people',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: AppTypeScale.heading,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Search accounts, communities, and public stories. '
+              'Private and draft stories never appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: AppTypeScale.body,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

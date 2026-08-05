@@ -81,6 +81,11 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push(Routes.changePassword),
                     ),
                     AppListRow(
+                      label: 'Blocked accounts',
+                      icon: Icons.block,
+                      onTap: () => context.push(Routes.blocked),
+                    ),
+                    AppListRow(
                       label: 'Active sessions',
                       icon: Icons.devices_outlined,
                       onTap: () => context.push(Routes.sessions),
