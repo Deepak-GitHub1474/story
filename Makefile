@@ -75,6 +75,18 @@ admin-setup: ## Install admin dependencies
 admin-dev: ## Run the admin app
 	cd admin && pnpm dev -p 3200
 
+admin-build: ## Production build of the admin app
+	cd admin && pnpm build
+
+promote: ## Give an account a staff role: make promote USER=name ROLE=admin
+	@cd backend && uv run python -c "\
+import asyncio,sys; from motor.motor_asyncio import AsyncIOMotorClient; \
+async def go(): \
+    c=AsyncIOMotorClient('mongodb://127.0.0.1:27017'); \
+    r=await c['story_local']['users'].update_one({'username_lower':'$(USER)'},{'\$$set':{'role':'$(ROLE)'}}); \
+    print('updated' if r.modified_count else 'no such account'); \
+asyncio.run(go())"
+
 tokens: ## Regenerate design tokens for web and admin
 	python3 tools/generate_tokens.py
 

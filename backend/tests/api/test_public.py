@@ -40,9 +40,9 @@ async def test_the_public_story_names_its_author_without_an_id(client, signup_pa
     headers = await auth_headers(client, signup_payload)
     story = await publish(client, headers)
 
-    author = (await client.get(f"/v1/public/stories/{story['slug']}")).json()["data"][
-        "story"
-    ]["author"]
+    author = (await client.get(f"/v1/public/stories/{story['slug']}")).json()["data"]["story"][
+        "author"
+    ]
     assert author["display_name"] == signup_payload["username"]
     assert "user_id" not in author
 
@@ -67,9 +67,7 @@ async def test_an_unknown_slug_is_404(client):
     assert response.status_code == 404
 
 
-async def test_an_unpublished_story_disappears_from_the_public_page(
-    client, signup_payload
-):
+async def test_an_unpublished_story_disappears_from_the_public_page(client, signup_payload):
     headers = await auth_headers(client, signup_payload)
     story = await publish(client, headers)
     await client.post(f"/v1/stories/{story['story_id']}/unpublish", headers=headers)
@@ -91,9 +89,7 @@ async def test_the_public_story_reports_reading_time_and_counts(client, signup_p
     headers = await auth_headers(client, signup_payload)
     story = await publish(client, headers)
 
-    data = (await client.get(f"/v1/public/stories/{story['slug']}")).json()["data"][
-        "story"
-    ]
+    data = (await client.get(f"/v1/public/stories/{story['slug']}")).json()["data"]["story"]
     assert data["reading_minutes"] >= 1
     assert data["counts"]["likes"] == 0
 
@@ -106,9 +102,7 @@ async def test_the_public_endpoint_never_leaks_the_authors_email(client, signup_
     assert "email" not in response.text.lower()
 
 
-async def test_a_blocked_authors_story_is_not_public(
-    client, signup_payload, app_instance
-):
+async def test_a_blocked_authors_story_is_not_public(client, signup_payload, app_instance):
     headers = await auth_headers(client, signup_payload)
     story = await publish(client, headers)
 

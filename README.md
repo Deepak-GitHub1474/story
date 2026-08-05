@@ -64,6 +64,27 @@ flutter run --dart-define=STORY_API_BASE_URL=http://10.0.2.2:9000/v1
 
 Use `10.0.2.2` for the Android emulator and `127.0.0.1` for the iOS simulator.
 
+## Web
+
+Two separate Next.js apps, one backend. Admin is never a route inside the user app —
+it needs a different origin so it can be IP-restricted at the edge.
+
+```bash
+make web-setup && make web-dev      # users, http://localhost:3100
+make admin-setup && make admin-dev  # staff, http://localhost:3200
+```
+
+Give an account staff access:
+
+```bash
+make promote USER=quiet_fox ROLE=moderator   # queue only
+make promote USER=quiet_fox ROLE=admin       # queue, accounts, audit
+```
+
+`packages/design-tokens/tokens.json` is the single source of colour, spacing, type and
+motion for every surface. `make tokens` regenerates `tokens.css` for both web apps; the
+Flutter app reads the same values.
+
 ## Everything
 
 ```bash

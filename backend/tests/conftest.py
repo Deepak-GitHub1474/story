@@ -40,6 +40,7 @@ MUTABLE_COLLECTIONS = (
     "community_members",
     "devices",
     "reports",
+    "audit_logs",
 )
 
 
