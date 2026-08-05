@@ -66,6 +66,16 @@ class Endpoints {
   static const String blocked = '/connections/blocked';
   static const String search = '/search';
 
+  static const String email = '/users/me/email';
+  static const String emailVerify = '/users/me/email/verify';
+  static const String emailResend = '/users/me/email/resend';
+  static const String resetRequest = '/auth/password-reset/request';
+  static const String resetVerify = '/auth/password-reset/verify';
+  static const String resetComplete = '/auth/password-reset/complete';
+  static const String deactivate = '/users/me/deactivate';
+  static const String deleteAccount = '/users/me/delete';
+  static const String cancelDeletion = '/users/me/delete/cancel';
+
   static const String notifications = '/notifications';
   static const String unreadCount = '/notifications/unread-count';
   static const String markAllNotificationsRead = '/notifications/read-all';

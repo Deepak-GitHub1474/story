@@ -10,6 +10,9 @@ import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
+import '../features/account/screens/danger_zone_screen.dart';
+import '../features/account/screens/email_screen.dart';
+import '../features/account/screens/forgot_password_screen.dart';
 import '../features/communities/screens/communities_screen.dart';
 import '../features/people/screens/people_list_screen.dart';
 import '../features/search/screens/search_screen.dart';
@@ -152,6 +155,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: Routes.forgotPassword,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const ForgotPasswordScreen()),
+      ),
+      GoRoute(
+        path: Routes.email,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const EmailScreen()),
+      ),
+      GoRoute(
+        path: Routes.dangerZone,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const DangerZoneScreen()),
+      ),
+      GoRoute(
         path: Routes.editProfile,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const EditProfileScreen()),
@@ -212,7 +230,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return location == Routes.splash ? null : Routes.splash;
       }
 
-      const publicRoutes = {Routes.welcome, Routes.signup, Routes.signin};
+      const publicRoutes = {
+        Routes.welcome,
+        Routes.signup,
+        Routes.signin,
+        Routes.forgotPassword,
+      };
 
       if (status == AuthStatus.signedOut) {
         return publicRoutes.contains(location) ? null : Routes.welcome;

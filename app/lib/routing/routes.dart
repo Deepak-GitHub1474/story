@@ -25,6 +25,9 @@ class Routes {
   static const String interests = '/settings/interests';
   static const String changePassword = '/settings/password';
   static const String sessions = '/settings/sessions';
+  static const String email = '/settings/email';
+  static const String dangerZone = '/settings/leaving';
+  static const String forgotPassword = '/forgot-password';
 
   static const String home = stories;
 }

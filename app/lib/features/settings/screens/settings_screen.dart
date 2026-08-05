@@ -76,6 +76,12 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push(Routes.interests),
                     ),
                     AppListRow(
+                      label: 'Recovery email',
+                      value: user?.emailMasked ?? 'Not set',
+                      icon: Icons.alternate_email,
+                      onTap: () => context.push(Routes.email),
+                    ),
+                    AppListRow(
                       label: 'Change password',
                       icon: Icons.key_outlined,
                       onTap: () => context.push(Routes.changePassword),
@@ -105,6 +111,12 @@ class SettingsScreen extends ConsumerWidget {
                       icon: Icons.logout,
                       isDanger: true,
                       onTap: () => _confirmSignout(context, ref),
+                    ),
+                    AppListRow(
+                      label: 'Deactivate or delete',
+                      icon: Icons.person_off_outlined,
+                      isDanger: true,
+                      onTap: () => context.push(Routes.dangerZone),
                     ),
                   ],
                 ),

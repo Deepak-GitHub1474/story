@@ -112,7 +112,18 @@ class _SigninScreenState extends ConsumerState<SigninScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.md),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => context.push(Routes.forgotPassword),
+                child: Text(
+                  'Forgot password?',
+                  style: TextStyle(color: colors.accent, fontSize: AppTypeScale.label),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             AppButton(
               label: 'Sign in',
               isLoading: isBusy,
