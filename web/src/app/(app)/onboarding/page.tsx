@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { backendFetch } from '@/lib/server/session';
-import { InterestPicker } from './InterestPicker';
+import { InterestPicker } from '@/components/InterestPicker';
 
 export const metadata: Metadata = { title: 'What are you carrying?' };
 

@@ -15,6 +15,7 @@ export default async function SettingsPage() {
 
       <Section title="Account">
         <Row label="Edit profile" href="/settings/profile" />
+        <Row label="Your interests" href="/settings/interests" />
         <Row
           label="Recovery email"
           value={user.email_masked ?? 'Not set'}

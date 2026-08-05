@@ -10,9 +10,21 @@ const MAX = 12;
 
 type TInterest = { slug: string; name: string; category_id: string };
 
-export function InterestPicker({ interests }: { interests: TInterest[] }) {
+export function InterestPicker({
+  interests,
+  initial = [],
+  doneHref = '/feed',
+  title = 'What are you carrying?',
+  hasSkip = true,
+}: {
+  interests: TInterest[];
+  initial?: string[];
+  doneHref?: string;
+  title?: string;
+  hasSkip?: boolean;
+}) {
   const router = useRouter();
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(initial);
   const [isPending, startTransition] = useTransition();
 
   const grouped = interests.reduce<Record<string, TInterest[]>>((acc, item) => {
@@ -32,9 +44,7 @@ export function InterestPicker({ interests }: { interests: TInterest[] }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">
-        What are you carrying?
-      </h1>
+      <h1 className="text-[length:var(--text-title)] font-semibold">{title}</h1>
       <p className="mt-2 max-w-prose leading-relaxed text-text-secondary">
         Pick up to {MAX}. This shapes what you are shown, and nobody else can see your
         choices.
@@ -74,23 +84,25 @@ export function InterestPicker({ interests }: { interests: TInterest[] }) {
       </div>
 
       <div className="sticky bottom-0 mt-10 flex gap-3 border-t border-border bg-bg py-5">
-        <Button
-          variant="ghost"
-          isFullWidth={false}
-          onClick={() => router.push('/feed')}
-        >
-          Skip
-        </Button>
+        {hasSkip ? (
+          <Button
+            variant="ghost"
+            isFullWidth={false}
+            onClick={() => router.push(doneHref)}
+          >
+            Skip
+          </Button>
+        ) : null}
         <Button
           isLoading={isPending}
           onClick={() =>
             startTransition(async () => {
-              if (selected.length) await updateInterests(selected);
-              router.push('/feed');
+              await updateInterests(selected);
+              router.push(doneHref);
             })
           }
         >
-          {selected.length ? `Save ${selected.length} selected` : 'Continue'}
+          {selected.length ? `Save ${selected.length} selected` : 'Save'}
         </Button>
       </div>
     </div>
