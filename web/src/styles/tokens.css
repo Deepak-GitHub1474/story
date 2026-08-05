@@ -1,0 +1,89 @@
+/* GENERATED FILE — DO NOT EDIT.
+   Source: packages/design-tokens/tokens.json
+   Regenerate: make tokens */
+
+
+:root, [data-theme='midnight'] {
+  --c-bg: #0B0D12;
+  --c-surface: #13161D;
+  --c-surface-raised: #1B1F28;
+  --c-border: #262B36;
+  --c-text-primary: #EDEFF3;
+  --c-text-secondary: #A3AAB8;
+  --c-text-muted: #6B7280;
+  --c-accent: #9B8CFF;
+  --c-accent-text: #0B0D12;
+  --c-danger: #FF8A8A;
+  --c-success: #7BD88F;
+}
+
+[data-theme='paper'] {
+  --c-bg: #FBFAF7;
+  --c-surface: #FFFFFF;
+  --c-surface-raised: #F3F1EC;
+  --c-border: #E2DFD8;
+  --c-text-primary: #1B1A17;
+  --c-text-secondary: #57544D;
+  --c-text-muted: #8A867D;
+  --c-accent: #5B4BD6;
+  --c-accent-text: #FFFFFF;
+  --c-danger: #B3261E;
+  --c-success: #2E7D45;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --c-bg: #FBFAF7;
+    --c-surface: #FFFFFF;
+    --c-surface-raised: #F3F1EC;
+    --c-border: #E2DFD8;
+    --c-text-primary: #1B1A17;
+    --c-text-secondary: #57544D;
+    --c-text-muted: #8A867D;
+    --c-accent: #5B4BD6;
+    --c-accent-text: #FFFFFF;
+    --c-danger: #B3261E;
+    --c-success: #2E7D45;
+  }
+}
+
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-xxxl: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --text-display: 32px;
+  --text-title: 24px;
+  --text-heading: 19px;
+  --text-body: 16px;
+  --text-reading: 17px;
+  --text-label: 14px;
+  --text-caption: 12px;
+  --size-control-height: 52px;
+  --size-icon-sm: 18px;
+  --size-icon-md: 22px;
+  --size-max-content-width: 560px;
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-raised: var(--c-surface-raised);
+  --color-border: var(--c-border);
+  --color-text-primary: var(--c-text-primary);
+  --color-text-secondary: var(--c-text-secondary);
+  --color-text-muted: var(--c-text-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-text: var(--c-accent-text);
+  --color-danger: var(--c-danger);
+  --color-success: var(--c-success);
+}

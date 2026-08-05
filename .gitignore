@@ -9,3 +9,9 @@ app/.dart_tool/
 app/build/
 app/.flutter-plugins-dependencies
 .DS_Store
+web/.next
+web/node_modules
+web/.env.local
+admin/.next
+admin/node_modules
+admin/.env.local

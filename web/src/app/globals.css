@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+html {
+  color-scheme: dark light;
+}
+
+body {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+::selection {
+  background: var(--c-accent);
+  color: var(--c-accent-text);
+}

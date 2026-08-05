@@ -60,6 +60,24 @@ e2e: ## Start a test-profile API, run the app suite against it, tear down
 		kill `cat /tmp/story-e2e.pid` 2>/dev/null; rm -f /tmp/story-e2e.pid; \
 		exit $$status
 
+web-setup: ## Install web dependencies
+	cd web && pnpm install && cp -n .env.example .env.local || true
+
+web-dev: ## Run the user web app
+	cd web && pnpm dev -p 3100
+
+web-build: ## Production build of the user web app
+	cd web && pnpm build
+
+admin-setup: ## Install admin dependencies
+	cd admin && pnpm install
+
+admin-dev: ## Run the admin app
+	cd admin && pnpm dev -p 3200
+
+tokens: ## Regenerate design tokens for web and admin
+	python3 tools/generate_tokens.py
+
 check: backend-check app-test ## Everything CI runs
 
 secrets: ## Generate strong secrets into backend/.env
