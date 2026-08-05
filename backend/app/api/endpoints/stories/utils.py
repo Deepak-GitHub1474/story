@@ -66,5 +66,6 @@ def serialize_comment(doc: dict, *, is_liked: bool = False) -> dict:
         "counts": doc.get("counts", {}),
         "is_liked": is_liked,
         "is_tombstone": doc.get("is_tombstone", False),
+        "edited_at": to_wire(doc.get("edited_at")),
         "created_at": to_wire(doc.get("created_at")),
     }

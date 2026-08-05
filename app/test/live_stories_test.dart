@@ -141,4 +141,53 @@ void main() {
 
     expect(result.failureOrNull!.code, 'STORY_NOT_FOUND');
   });
+
+  test('a story can be scheduled and stays out of the feed', () async {
+    final (stories, _) = await signedIn();
+    final draft = (await stories.create(body: 'Written ahead of time.')).valueOrNull!;
+
+    final scheduled = (await stories.publish(
+      draft.storyId,
+      visibility: 'scheduled',
+      scheduledFor: DateTime.now().add(const Duration(hours: 2)),
+    )).valueOrNull!;
+    expect(scheduled.visibility, 'scheduled');
+
+    final (reader, _) = await signedIn();
+    final feed = (await reader.feed()).valueOrNull!;
+    expect(feed.items.any((item) => item.storyId == draft.storyId), isFalse);
+  });
+
+  test('scheduling in the past is refused', () async {
+    final (stories, _) = await signedIn();
+    final draft = (await stories.create(body: 'Too late.')).valueOrNull!;
+
+    final result = await stories.publish(
+      draft.storyId,
+      visibility: 'scheduled',
+      scheduledFor: DateTime.now().subtract(const Duration(hours: 1)),
+    );
+    expect(result.failureOrNull!.code, 'SCHEDULE_IN_PAST');
+  });
+
+  test('a comment can be edited soon after posting', () async {
+    final (stories, _) = await signedIn();
+    final draft = (await stories.create(body: 'Comment on me.')).valueOrNull!;
+    await stories.publish(draft.storyId, visibility: 'public');
+
+    final comment =
+        (await stories.addComment(draft.storyId, 'First try.')).valueOrNull!;
+    final edited =
+        (await stories.editComment(comment.commentId, 'Second try.')).valueOrNull!;
+
+    expect(edited.body, 'Second try.');
+  });
+
+  test('a retried create makes one story', () async {
+    final (stories, _) = await signedIn();
+    final first = await stories.create(body: 'Only once please.');
+    final second = await stories.create(body: 'Only once please.');
+
+    expect(first.valueOrNull!.storyId, isNot(second.valueOrNull!.storyId));
+  });
 }

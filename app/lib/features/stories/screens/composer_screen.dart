@@ -103,7 +103,32 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
   String? get _titleOrNull => _title.text.trim().isEmpty ? null : _title.text.trim();
 
+  Future<DateTime?> _pickSchedule() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(hours: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return null;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+    );
+    if (time == null) return null;
+
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
   Future<void> _publish(String visibility) async {
+    DateTime? scheduledFor;
+    if (visibility == 'scheduled') {
+      scheduledFor = await _pickSchedule();
+      if (scheduledFor == null) return;
+    }
+
     setState(() => _isPublishing = true);
     _autosave?.cancel();
 
@@ -114,9 +139,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       return;
     }
 
-    final result = await ref
-        .read(storyRepositoryProvider)
-        .publish(storyId, visibility: visibility, communitySlug: _communitySlug);
+    final result = await ref.read(storyRepositoryProvider).publish(
+      storyId,
+      visibility: visibility,
+      communitySlug: _communitySlug,
+      scheduledFor: scheduledFor,
+    );
 
     if (!mounted) return;
     setState(() => _isPublishing = false);
@@ -128,7 +156,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       if (!mounted) return;
       AppToast.show(
         context,
-        visibility == 'public' ? 'Your story is live.' : 'Saved as private.',
+        switch (visibility) {
+          'public' => 'Your story is live.',
+          'scheduled' => 'Scheduled. It publishes on its own.',
+          _ => 'Saved as private.',
+        },
         kind: AppToastKind.success,
       );
       context.pop();
@@ -175,6 +207,13 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 title: 'Private',
                 subtitle: 'Only you. Nobody else can open it, not even by link.',
                 onTap: () => Navigator.of(sheetContext).pop('private'),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _VisibilityOption(
+                icon: Icons.schedule,
+                title: 'Schedule',
+                subtitle: 'Pick a time. It publishes itself, even if you are offline.',
+                onTap: () => Navigator.of(sheetContext).pop('scheduled'),
               ),
             ],
           ),

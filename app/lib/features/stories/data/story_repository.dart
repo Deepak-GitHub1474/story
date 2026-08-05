@@ -23,9 +23,16 @@ Map<String, dynamic> _commentBody(String body, String? parentId) {
   return payload;
 }
 
-Map<String, dynamic> _publishBody(String visibility, String? communitySlug) {
+Map<String, dynamic> _publishBody(
+  String visibility,
+  String? communitySlug,
+  DateTime? scheduledFor,
+) {
   final payload = <String, dynamic>{'visibility': visibility};
   if (communitySlug != null) payload['community_slug'] = communitySlug;
+  if (scheduledFor != null) {
+    payload['scheduled_for'] = scheduledFor.toUtc().toIso8601String();
+  }
   return payload;
 }
 
@@ -50,9 +57,10 @@ class StoryRepository {
     String storyId, {
     required String visibility,
     String? communitySlug,
+    DateTime? scheduledFor,
   }) => _client.post(
     Endpoints.publishStory(storyId),
-    body: _publishBody(visibility, communitySlug),
+    body: _publishBody(visibility, communitySlug, scheduledFor),
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
@@ -104,6 +112,12 @@ class StoryRepository {
     parse: (data) => (data['items'] as List<dynamic>)
         .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList(),
+  );
+
+  Future<Result<Comment>> editComment(String commentId, String body) => _client.patch(
+    Endpoints.comment(commentId),
+    body: {'body': body},
+    parse: (data) => Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
   );
 
   Future<Result<Comment>> addComment(

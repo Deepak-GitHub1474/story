@@ -11,6 +11,7 @@ from app.api.endpoints.stories.models import (
     CreateCommentRequest,
     CreateStoryRequest,
     PublishStoryRequest,
+    UpdateCommentRequest,
     UpdateStoryRequest,
 )
 from app.api.endpoints.stories.utils import (
@@ -22,7 +23,7 @@ from app.api.endpoints.stories.utils import (
 )
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
-from app.core.time import utc_now
+from app.core.time import to_storage, utc_now
 
 
 def _to_minute(value):
@@ -135,6 +136,21 @@ async def publish_story(
         "moderation.state": "allowed",
     }
 
+    if body.visibility == "scheduled":
+        if body.scheduled_for is None:
+            raise api_error(ErrorCode.SCHEDULE_REQUIRED, field="scheduled_for")
+        scheduled_for = to_storage(body.scheduled_for)
+        if scheduled_for <= now:
+            raise api_error(ErrorCode.SCHEDULE_IN_PAST, field="scheduled_for")
+        update["scheduled_for"] = scheduled_for
+    else:
+        update["scheduled_for"] = None
+        if story.get("published_at") is None:
+            update["published_at"] = _to_minute(now)
+
+    if body.visibility in ("public", "scheduled") and not story.get("slug"):
+        update["slug"] = new_slug()
+
     if body.community_slug:
         community = await mongo["communities"].find_one(
             {"slug": body.community_slug, "status": "active"},
@@ -150,14 +166,10 @@ async def publish_story(
             "name": community["name"],
             "category_id": community.get("category_id"),
         }
-    if story.get("published_at") is None:
-        update["published_at"] = _to_minute(now)
-    if body.visibility == "public" and not story.get("slug"):
-        update["slug"] = new_slug()
 
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$set": update})
 
-    if story["visibility"] == "draft":
+    if story["visibility"] == "draft" and body.visibility != "scheduled":
         await mongo[c.USERS].update_one({"_id": claims.user_id}, {"$inc": {"counts.stories": 1}})
         if body.community_slug:
             await mongo["communities"].update_one(
@@ -624,6 +636,28 @@ async def list_replies(
         "next_cursor": page[-1]["_id"] if page and has_more else None,
         "has_more": has_more,
     }
+
+
+async def update_comment(
+    comment_id: str, body: UpdateCommentRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    comment = await mongo[c.COMMENTS].find_one(
+        {"_id": comment_id, "author_id": claims.user_id, "deleted_at": None}
+    )
+    if comment is None:
+        raise api_error(ErrorCode.COMMENT_NOT_FOUND)
+
+    deadline = comment["created_at"] + timedelta(minutes=c.COMMENT_EDIT_WINDOW_MINUTES)
+    if utc_now() > deadline:
+        raise api_error(ErrorCode.COMMENT_NOT_EDITABLE)
+
+    now = utc_now()
+    await mongo[c.COMMENTS].update_one(
+        {"_id": comment_id},
+        {"$set": {"body": body.body, "edited_at": now, "updated_at": now}},
+    )
+    comment.update({"body": body.body, "edited_at": now})
+    return {"comment": serialize_comment(comment)}
 
 
 async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:

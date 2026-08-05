@@ -219,6 +219,7 @@ class VisibilityBadge extends StatelessWidget {
     final (label, color) = switch (visibility) {
       'public' => ('Public', colors.success),
       'private' => ('Private', colors.textSecondary),
+      'scheduled' => ('Scheduled', colors.accent),
       _ => ('Draft', colors.accent),
     };
 

@@ -69,6 +69,11 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_community_feed",
         ),
         IndexSpec(
+            [("visibility", ASCENDING), ("scheduled_for", ASCENDING)],
+            "ix_schedule_sweep",
+            partial={"visibility": "scheduled"},
+        ),
+        IndexSpec(
             [("slug", ASCENDING)],
             "uq_slug",
             unique=True,

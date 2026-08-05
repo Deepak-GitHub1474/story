@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -22,8 +23,15 @@ class UpdateStoryRequest(BaseModel):
 class PublishStoryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    visibility: Literal["public", "private"]
+    visibility: Literal["public", "private", "scheduled"]
     community_slug: str | None = None
+    scheduled_for: datetime | None = None
+
+
+class UpdateCommentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: Annotated[str, Field(min_length=1, max_length=COMMENT_MAX)]
 
 
 class CreateCommentRequest(BaseModel):

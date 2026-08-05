@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.api.endpoints.stories import controllers
 from app.api.endpoints.stories.constants import FEED_DEFAULT_LIMIT
@@ -6,10 +6,13 @@ from app.api.endpoints.stories.models import (
     CreateCommentRequest,
     CreateStoryRequest,
     PublishStoryRequest,
+    UpdateCommentRequest,
     UpdateStoryRequest,
 )
 from app.core.deps import AppSettings, CurrentClaims, rate_limit_dep
+from app.core.idempotency import remember, replay
 from app.db.mongo import MongoDatabase
+from app.db.redis import RedisClient
 from app.responses import ok_response
 
 router = APIRouter(tags=["stories"])
@@ -20,8 +23,19 @@ router = APIRouter(tags=["stories"])
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(rate_limit_dep("story_create", 40, 3600))],
 )
-async def create_story(body: CreateStoryRequest, claims: CurrentClaims, mongo: MongoDatabase):
+async def create_story(
+    request: Request,
+    body: CreateStoryRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
+):
+    cached = await replay(request, user_id=claims.user_id, redis=redis)
+    if cached is not None:
+        return ok_response("Saved to your drafts.", data=cached)
+
     data = await controllers.create_story(body, claims=claims, mongo=mongo)
+    await remember(request, user_id=claims.user_id, redis=redis, payload=data)
     return ok_response("Saved to your drafts.", data=data)
 
 
@@ -127,9 +141,19 @@ async def list_comments(
     dependencies=[Depends(rate_limit_dep("comment_create", 120, 3600))],
 )
 async def create_comment(
-    story_id: str, body: CreateCommentRequest, claims: CurrentClaims, mongo: MongoDatabase
+    request: Request,
+    story_id: str,
+    body: CreateCommentRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
 ):
+    cached = await replay(request, user_id=claims.user_id, redis=redis)
+    if cached is not None:
+        return ok_response("Comment added.", data=cached)
+
     data = await controllers.create_comment(story_id, body, claims=claims, mongo=mongo)
+    await remember(request, user_id=claims.user_id, redis=redis, payload=data)
     return ok_response("Comment added.", data=data)
 
 
@@ -145,6 +169,17 @@ async def list_replies(
         comment_id, claims=claims, mongo=mongo, limit=limit, cursor=cursor
     )
     return ok_response("Replies loaded.", data=data)
+
+
+@router.patch("/comments/{comment_id}", status_code=status.HTTP_200_OK)
+async def update_comment(
+    comment_id: str,
+    body: UpdateCommentRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+):
+    data = await controllers.update_comment(comment_id, body, claims=claims, mongo=mongo)
+    return ok_response("Comment updated.", data=data)
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_200_OK)

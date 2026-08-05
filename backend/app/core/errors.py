@@ -43,6 +43,9 @@ class ErrorCode(StrEnum):
     STORY_NOT_FOUND = "STORY_NOT_FOUND"
     STORY_NOT_EDITABLE = "STORY_NOT_EDITABLE"
     STORY_NOT_SHAREABLE = "STORY_NOT_SHAREABLE"
+    SCHEDULE_REQUIRED = "SCHEDULE_REQUIRED"
+    SCHEDULE_IN_PAST = "SCHEDULE_IN_PAST"
+    COMMENT_NOT_EDITABLE = "COMMENT_NOT_EDITABLE"
     COMMENT_NOT_FOUND = "COMMENT_NOT_FOUND"
     NESTING_TOO_DEEP = "NESTING_TOO_DEEP"
     COMMUNITY_NOT_FOUND = "COMMUNITY_NOT_FOUND"
@@ -105,6 +108,9 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.STORY_NOT_FOUND: (404, "We could not find that story."),
     ErrorCode.STORY_NOT_EDITABLE: (400, "The edit window for this story has closed."),
     ErrorCode.STORY_NOT_SHAREABLE: (400, "Only public stories can be shared."),
+    ErrorCode.SCHEDULE_REQUIRED: (422, "Choose when this should publish."),
+    ErrorCode.SCHEDULE_IN_PAST: (422, "Choose a time in the future."),
+    ErrorCode.COMMENT_NOT_EDITABLE: (400, "The edit window for this comment has closed."),
     ErrorCode.COMMENT_NOT_FOUND: (404, "We could not find that comment."),
     ErrorCode.NESTING_TOO_DEEP: (400, "Replies only go one level deep."),
     ErrorCode.COMMUNITY_NOT_FOUND: (404, "We could not find that community."),

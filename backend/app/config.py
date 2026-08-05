@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     MONGODB_DB_NAME: str = "story_local"
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
     ENSURE_INDEXES_ON_BOOT: bool = True
+    RUN_BACKGROUND_JOBS: bool = True
 
     JWT_SECRET: str = Field(default="local-dev-secret-change-me-0123456789abcdef")
     ACCESS_TOKEN_TTL_MINUTES: int = 30

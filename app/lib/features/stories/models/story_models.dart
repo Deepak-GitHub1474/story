@@ -96,6 +96,8 @@ class Story {
 
   bool get isPublic => visibility == 'public';
 
+  bool get isScheduled => visibility == 'scheduled';
+
   Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(
     storyId: storyId,
     author: author,

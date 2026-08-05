@@ -12,6 +12,7 @@ from app.db.seed import seed_reference_data
 from app.error_handlers import register_exception_handlers
 from app.logging import configure_logging, get_logger
 from app.middleware import RequestContextMiddleware
+from app.workers import scheduler
 
 settings = get_settings()
 configure_logging(env=settings.API_ENV, level=settings.LOG_LEVEL)
@@ -30,6 +31,9 @@ async def lifespan(app: FastAPI):
     seeded = await seed_reference_data(app.state.mongo_db)
     logger.info("startup_seed", count=sum(seeded.values()))
 
+    if settings.RUN_BACKGROUND_JOBS:
+        scheduler.start(app, app.state.mongo_db)
+
     logger.info(
         "startup_complete",
         service=settings.APP_NAME,
@@ -39,6 +43,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        await scheduler.stop(app)
         for name, close in (("redis", disconnect_redis), ("mongodb", disconnect_mongo)):
             try:
                 await close(app)

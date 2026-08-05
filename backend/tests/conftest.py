@@ -9,6 +9,7 @@ os.environ.setdefault("API_ENV", "local")
 os.environ.setdefault("MONGODB_DB_NAME", "story_test")
 os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/15")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+os.environ.setdefault("RUN_BACKGROUND_JOBS", "false")
 
 
 @pytest_asyncio.fixture
