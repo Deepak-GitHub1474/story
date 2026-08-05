@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     PORT: int = 9000
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000"
+    PUBLIC_WEB_URL: str = "https://story.app"
 
     MONGODB_URI: str = "mongodb://127.0.0.1:27017"
     MONGODB_DB_NAME: str = "story_local"

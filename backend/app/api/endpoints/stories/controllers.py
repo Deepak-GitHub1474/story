@@ -190,6 +190,23 @@ async def delete_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) ->
     return {"deleted": True, "story_id": story_id}
 
 
+async def share_story(
+    story_id: str, *, claims, mongo: AsyncIOMotorDatabase, base_url: str
+) -> dict[str, Any]:
+    story = await _readable_story(story_id, claims.user_id, mongo)
+    if story["visibility"] != "public" or not story.get("slug"):
+        raise api_error(ErrorCode.STORY_NOT_SHAREABLE)
+
+    await mongo[c.STORIES].update_one({"_id": story_id}, {"$inc": {"counts.shares": 1}})
+    shares = story.get("counts", {}).get("shares", 0) + 1
+
+    return {
+        "slug": story["slug"],
+        "url": f"{base_url.rstrip('/')}/s/{story['slug']}",
+        "shares": shares,
+    }
+
+
 async def get_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     liked = await _has_liked(claims.user_id, "story", story_id, mongo)

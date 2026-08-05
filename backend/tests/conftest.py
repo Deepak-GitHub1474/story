@@ -28,6 +28,18 @@ async def client(app_instance):
 
 REFERENCE_COLLECTIONS = {"interests", "community_categories", "communities"}
 
+MUTABLE_COLLECTIONS = (
+    "users",
+    "user_keys",
+    "stories",
+    "comments",
+    "reactions",
+    "notifications",
+    "connections",
+    "community_members",
+    "devices",
+)
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def clean_state(app_instance):
@@ -35,9 +47,8 @@ async def clean_state(app_instance):
 
     db = app_instance.state.mongo_db
     redis = app_instance.state.redis
-    for name in await db.list_collection_names():
-        if name not in REFERENCE_COLLECTIONS:
-            await db[name].delete_many({})
+    for name in MUTABLE_COLLECTIONS:
+        await db[name].delete_many({})
     await db["communities"].update_many({}, {"$set": {"counts": {"members": 0, "stories": 0}}})
     await seed_reference_data(db)
     await redis.flushdb()

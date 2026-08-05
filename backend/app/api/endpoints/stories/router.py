@@ -8,7 +8,7 @@ from app.api.endpoints.stories.models import (
     PublishStoryRequest,
     UpdateStoryRequest,
 )
-from app.core.deps import CurrentClaims, rate_limit_dep
+from app.core.deps import AppSettings, CurrentClaims, rate_limit_dep
 from app.db.mongo import MongoDatabase
 from app.responses import ok_response
 
@@ -83,6 +83,16 @@ async def publish_story(
 async def unpublish_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.unpublish_story(story_id, claims=claims, mongo=mongo)
     return ok_response("Moved back to drafts.", data=data)
+
+
+@router.post("/stories/{story_id}/share", status_code=status.HTTP_200_OK)
+async def share_story(
+    story_id: str, claims: CurrentClaims, mongo: MongoDatabase, settings: AppSettings
+):
+    data = await controllers.share_story(
+        story_id, claims=claims, mongo=mongo, base_url=settings.PUBLIC_WEB_URL
+    )
+    return ok_response("Link ready to share.", data=data)
 
 
 @router.post("/stories/{story_id}/like", status_code=status.HTTP_200_OK)
