@@ -26,6 +26,7 @@ import '../features/settings/screens/change_password_screen.dart';
 import '../features/settings/screens/edit_profile_screen.dart';
 import '../features/settings/screens/sessions_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
+import '../features/vault/screens/recovery_screen.dart';
 import '../features/vault/screens/vault_screen.dart';
 import 'routes.dart';
 import 'transitions.dart';
@@ -169,6 +170,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.vault,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const VaultScreen()),
+      ),
+      GoRoute(
+        path: Routes.vaultRecovery,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const RecoveryScreen()),
       ),
       GoRoute(
         path: Routes.dangerZone,

@@ -43,6 +43,7 @@ MUTABLE_COLLECTIONS = (
     "audit_logs",
     "vault_items",
     "user_passcodes",
+    "support_tickets",
 )
 
 

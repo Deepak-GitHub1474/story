@@ -20,6 +20,7 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.suffix,
+    this.maxLines = 1,
   });
 
   final TextEditingController controller;
@@ -35,6 +36,7 @@ class AppTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Widget? suffix;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +58,7 @@ class AppTextField extends StatelessWidget {
         TextField(
           controller: controller,
           obscureText: obscureText,
+          maxLines: obscureText ? 1 : maxLines,
           autofocus: autofocus,
           textInputAction: textInputAction,
           keyboardType: keyboardType,

@@ -33,8 +33,8 @@ export default async function ProfilePage({ searchParams }: Props) {
         <Avatar seed={user.avatar_seed} size={80} />
         <dl className="flex flex-1 justify-around gap-6 text-center">
           <Stat label="Stories" value={user.counts.stories ?? 0} />
-          <Stat label="Readers" value={user.counts.followers ?? 0} />
-          <Stat label="Following" value={user.counts.connections ?? 0} />
+          <Stat label="Readers" value={user.counts.followers ?? 0} href="/people/followers" />
+          <Stat label="Following" value={user.counts.connections ?? 0} href="/people/following" />
         </dl>
       </header>
 
@@ -102,12 +102,28 @@ export default async function ProfilePage({ searchParams }: Props) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
+function Stat({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: number;
+  href?: string;
+}) {
+  const inner = (
+    <>
       <dt className="sr-only">{label}</dt>
       <dd className="text-[length:var(--text-heading)] font-bold">{value}</dd>
       <p className="text-[length:var(--text-caption)] text-text-muted">{label}</p>
-    </div>
+    </>
+  );
+
+  return href ? (
+    <Link href={href} className="transition-opacity hover:opacity-80">
+      {inner}
+    </Link>
+  ) : (
+    <div>{inner}</div>
   );
 }

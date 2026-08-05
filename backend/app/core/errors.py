@@ -22,6 +22,8 @@ class ErrorCode(StrEnum):
     TNC_REQUIRED = "TNC_REQUIRED"
     REFERRAL_CODE_INVALID = "REFERRAL_CODE_INVALID"
     ROLE_REQUIRED = "ROLE_REQUIRED"
+    TICKET_NOT_FOUND = "TICKET_NOT_FOUND"
+    TICKET_ALREADY_OPEN = "TICKET_ALREADY_OPEN"
 
     EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
     EMAIL_IN_USE = "EMAIL_IN_USE"
@@ -97,6 +99,8 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.TNC_REQUIRED: (422, "Accept the terms to continue."),
     ErrorCode.REFERRAL_CODE_INVALID: (422, "That referral code does not exist."),
     ErrorCode.ROLE_REQUIRED: (403, "You do not have access to this."),
+    ErrorCode.TICKET_NOT_FOUND: (404, "We could not find that ticket."),
+    ErrorCode.TICKET_ALREADY_OPEN: (409, "You already have an open request of this kind."),
     ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
     ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),

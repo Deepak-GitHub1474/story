@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/crypto/vault_crypto.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/vault_repository.dart';
+import '../data/vault_transfer.dart';
 import '../models/vault_models.dart';
 
 final vaultRepositoryProvider = Provider<VaultRepository>(
@@ -13,6 +15,10 @@ final vaultRepositoryProvider = Provider<VaultRepository>(
 );
 
 final vaultCryptoProvider = Provider<VaultCrypto>((ref) => const VaultCrypto());
+
+final vaultTransferProvider = Provider<VaultTransfer>(
+  (ref) => VaultTransfer(ref.watch(vaultCryptoProvider), Dio()),
+);
 
 final vaultOverviewProvider = FutureProvider<VaultOverview?>((ref) async {
   final result = await ref.watch(vaultRepositoryProvider).overview();
@@ -156,3 +162,121 @@ final vaultItemsProvider = FutureProvider<List<VaultItem>>((ref) async {
   final result = await ref.watch(vaultRepositoryProvider).items();
   return result.valueOrNull ?? const [];
 });
+
+
+class VaultUploadState {
+  const VaultUploadState({this.progress = 0, this.isBusy = false, this.error});
+
+  final double progress;
+  final bool isBusy;
+  final String? error;
+}
+
+final vaultUploadProvider = NotifierProvider<VaultUploadNotifier, VaultUploadState>(
+  VaultUploadNotifier.new,
+);
+
+class VaultUploadNotifier extends Notifier<VaultUploadState> {
+  @override
+  VaultUploadState build() => const VaultUploadState();
+
+  Future<bool> addFile({
+    required Uint8List bytes,
+    required String filename,
+    required String kind,
+    String? label,
+  }) async {
+    final session = ref.read(vaultSessionProvider);
+    if (!session.isUnlocked) return false;
+
+    state = const VaultUploadState(isBusy: true);
+
+    final repository = ref.read(vaultRepositoryProvider);
+    final transfer = ref.read(vaultTransferProvider);
+    final crypto = ref.read(vaultCryptoProvider);
+
+    final placeholderId = 'pending';
+    final payload = await transfer.encrypt(
+      plaintext: bytes,
+      umk: session.umk!,
+      passcodeKey: session.passcodeKey!,
+      itemId: placeholderId,
+      metadata: {'filename': filename, 'size': bytes.length},
+    );
+
+    final labelHash =
+        label == null || label.trim().isEmpty
+        ? null
+        : await crypto.labelHash(umk: session.umk!, label: label);
+
+    final body = <String, dynamic>{
+      'passcode_id': session.passcodeId,
+      'kind': kind,
+      'size_bytes': payload.ciphertext.length,
+      'chunk_count': payload.chunkCount,
+      'encrypted_metadata': base64Encode(payload.encryptedMetadata),
+      'wrapped_dek': base64Encode(payload.wrappedDek),
+      'salt_item': base64Encode(payload.saltItem),
+      'visibility': labelHash == null ? 'normal' : 'hidden',
+    };
+    if (labelHash != null) body['label_hash'] = labelHash;
+
+    final created = await repository.createItem(body);
+
+    final result = created.valueOrNull;
+    if (result == null) {
+      state = VaultUploadState(error: created.failureOrNull!.message);
+      return false;
+    }
+
+    await transfer.upload(
+      url: result.uploadUrl,
+      ciphertext: payload.ciphertext,
+      onProgress: (progress) =>
+          state = VaultUploadState(progress: progress.fraction, isBusy: true),
+    );
+
+    final completed = await repository.completeItem(
+      result.item.itemId,
+      chunkCount: payload.chunkCount,
+      totalSize: payload.ciphertext.length,
+    );
+
+    if (!completed.isSuccess) {
+      state = VaultUploadState(error: completed.failureOrNull!.message);
+      return false;
+    }
+
+    state = const VaultUploadState();
+    ref.invalidate(vaultItemsProvider);
+    ref.invalidate(vaultOverviewProvider);
+    return true;
+  }
+
+  Future<Uint8List?> openItem(VaultItem item) async {
+    final session = ref.read(vaultSessionProvider);
+    if (!session.isUnlocked || item.wrappedDek == null) return null;
+
+    final repository = ref.read(vaultRepositoryProvider);
+    final transfer = ref.read(vaultTransferProvider);
+
+    final urlResult = await repository.downloadUrl(item.itemId);
+    final url = urlResult.valueOrNull;
+    if (url == null) return null;
+
+    final ciphertext = await transfer.download(url: url);
+
+    try {
+      return await transfer.decrypt(
+        ciphertext: ciphertext,
+        wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
+        saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
+        umk: session.umk!,
+        passcodeKey: session.passcodeKey!,
+        itemId: item.itemId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}

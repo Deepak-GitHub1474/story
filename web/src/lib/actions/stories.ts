@@ -103,3 +103,13 @@ export async function toggleMembership(slug: string, join: boolean) {
   revalidatePath('/communities');
   revalidatePath(`/communities/${slug}`);
 }
+
+export async function unblockUser(username: string) {
+  await backendFetch(`/connections/${username}/block`, { method: 'DELETE' });
+  revalidatePath('/people/blocked');
+}
+
+export async function blockUser(username: string) {
+  await backendFetch(`/connections/${username}/block`, { method: 'POST' });
+  revalidatePath('/feed');
+}

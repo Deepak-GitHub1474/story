@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,7 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../core/security/secure_screen.dart';
+import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/vault_models.dart';
@@ -68,6 +70,48 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       ref.invalidate(vaultItemsProvider);
     }
   }
+
+  Future<void> _addFile() async {
+    final picked = await FilePicker.platform.pickFiles(withData: true);
+    final file = picked?.files.singleOrNull;
+    if (file?.bytes == null || !mounted) return;
+
+    final label = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => _HideSheet(filename: file!.name),
+    );
+
+    if (!mounted) return;
+
+    final ok = await ref.read(vaultUploadProvider.notifier).addFile(
+      bytes: file!.bytes!,
+      filename: file.name,
+      kind: _kindFor(file.extension),
+      label: label,
+    );
+
+    if (!mounted) return;
+    AppToast.show(
+      context,
+      ok
+          ? 'Encrypted on this device and stored.'
+          : ref.read(vaultUploadProvider).error ?? 'Could not store that file.',
+      kind: ok ? AppToastKind.success : AppToastKind.error,
+    );
+  }
+
+  String _kindFor(String? extension) => switch (extension?.toLowerCase()) {
+    'jpg' || 'jpeg' || 'png' || 'gif' || 'heic' || 'webp' => 'image',
+    'mp4' || 'mov' || 'avi' || 'mkv' => 'video',
+    'mp3' || 'm4a' || 'wav' || 'aac' => 'audio',
+    'pdf' || 'doc' || 'docx' || 'txt' => 'document',
+    _ => 'other',
+  };
 
   Future<void> _searchHidden() async {
     final hash = await ref.read(vaultSessionProvider.notifier).hashLabel(_label.text);
@@ -156,6 +200,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
 
     final items = ref.watch(vaultItemsProvider);
+    final upload = ref.watch(vaultUploadProvider);
 
     return AppScaffold(
       title: 'Vault',
@@ -167,16 +212,44 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       ),
       actions: [
         IconButton(
+          icon: Icon(Icons.add, color: colors.textPrimary),
+          onPressed: upload.isBusy ? null : _addFile,
+        ),
+        IconButton(
           icon: Icon(Icons.lock_outline, color: colors.textMuted),
           onPressed: () {
             ref.read(vaultSessionProvider.notifier).lock();
             setState(() => _found = null);
           },
         ),
+        IconButton(
+          icon: Icon(Icons.help_outline, color: colors.textMuted),
+          onPressed: () => context.push(Routes.vaultRecovery),
+        ),
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (upload.isBusy) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: upload.progress == 0 ? null : upload.progress,
+                backgroundColor: colors.surfaceRaised,
+                color: colors.accent,
+                minHeight: 4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Encrypting and uploading. Nothing leaves in plain form.',
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.caption,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           if (overview.valueOrNull != null)
             AppCard(
               child: Row(
@@ -260,6 +333,100 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       itemBuilder: (context, index) => VaultTile(item: list[index]),
                     ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _HideSheet extends StatefulWidget {
+  const _HideSheet({required this.filename});
+
+  final String filename;
+
+  @override
+  State<_HideSheet> createState() => _HideSheetState();
+}
+
+class _HideSheetState extends State<_HideSheet> {
+  final _label = TextEditingController();
+  bool _isHidden = false;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.xl,
+        MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.filename,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.heading,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'The filename is encrypted too. We store neither it nor the contents.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.caption,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          SwitchListTile.adaptive(
+            value: _isHidden,
+            onChanged: (value) => setState(() => _isHidden = value),
+            contentPadding: EdgeInsets.zero,
+            activeThumbColor: colors.accent,
+            title: Text(
+              'Hide this item',
+              style: TextStyle(color: colors.textPrimary),
+            ),
+            subtitle: Text(
+              'It will not appear in any list. Only typing the exact label finds it.',
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.caption,
+              ),
+            ),
+          ),
+          if (_isHidden) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _label,
+              label: 'Label',
+              hint: 'Something only you would type',
+              helperText: 'Forget it and the item is gone for good.',
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Store in vault',
+            onPressed: _isHidden && _label.text.trim().isEmpty
+                ? null
+                : () => Navigator.of(context).pop(_isHidden ? _label.text : null),
           ),
         ],
       ),

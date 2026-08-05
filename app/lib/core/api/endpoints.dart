@@ -68,6 +68,8 @@ class Endpoints {
   static const String reports = '/reports';
 
   static const String keys = '/users/me/keys';
+  static const String tickets = '/tickets';
+  static const String securityActivity = '/security-activity';
   static const String vaultOverview = '/vault/overview';
   static const String vaultPasscodes = '/vault/passcodes';
   static const String vaultItems = '/vault/items';

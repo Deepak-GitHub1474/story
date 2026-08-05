@@ -22,6 +22,7 @@ export default async function SettingsPage() {
         />
         <Row label="Change password" href="/settings/password" />
         <Row label="Active sessions" href="/settings/sessions" />
+        <Row label="Blocked accounts" href="/people/blocked" />
       </Section>
 
       <Section title="Notifications">
@@ -33,6 +34,10 @@ export default async function SettingsPage() {
             />
           }
         />
+      </Section>
+
+      <Section title="Vault">
+        <Row label="Open vault" href="/vault" />
       </Section>
 
       <Section title="Invite">

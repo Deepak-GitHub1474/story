@@ -235,6 +235,24 @@ At every point the user sees a `TicketStatusCard` with the current state, a time
 
 They also receive a notification on every transition. A ticket that sits in `under_review` for three days sends a "still working on it" update on day two, because silence during a security process reads as abandonment.
 
+### 4.6 As built in the MVP
+
+The user opens the ticket from **Vault → Recovery** (app: `/vault/recovery`, web: `/vault/recovery`). Both surfaces show the same three things: what recovery can and cannot do, the state of any request they have opened, and the staff actions that touched their account.
+
+| Endpoint | Role | What it returns |
+|---|---|---|
+| `POST /v1/tickets` | user | Opens one ticket per type. A second open ticket of the same type is `TICKET_ALREADY_OPEN`. |
+| `GET /v1/tickets` | user | Only the caller's own tickets. |
+| `GET /v1/security-activity` | user | Audit entries whose target is the caller and whose `visible_to_target` is true. |
+| `GET /v1/admin/vault/{username}/passcodes` | **super_admin only** | `label`, `scope`, `created_at`, `last_used_at`, `failed_attempts`, `locked_until`. Never the hash, the salt, the KDF params, or the escrow payload. |
+| `POST /v1/admin/vault/{username}/release` | **super_admin only** | Requires an open `passcode_release` ticket belonging to that account and a justification of at least 50 characters. Moves the ticket to `reveal_ready` and writes `passcode_release.approved` to the audit log with the justification attached. |
+
+`moderator` and `admin` both receive `403 ROLE_REQUIRED` on the two admin routes. There is no `/items`, `/keys`, or `/decrypt` route under `/admin/vault` — a test asserts all three are `404`, so adding one is a visible act.
+
+The admin surface exposes this at `/vault`, visible in the nav only to `super_admin`, and the page redirects any other role to `/queue`. That redirect is convenience; the backend role dependency is the control.
+
+**Not built yet, and deliberately named here rather than assumed**: step-up authentication (TOTP) before a release, IP allowlisting for the admin surface, and the 30-minute idle timeout described in §5.2. Until those exist, escrow release is protected by role, ticket, justification, and audit alone.
+
 ## 5. Roles and permissions
 
 Five roles at full scope. A user has exactly one.

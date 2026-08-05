@@ -9,6 +9,7 @@ export default async function DashLayout({
 }) {
   const staff = await requireStaff();
   const isAdmin = staff.role !== 'moderator';
+  const isSuperAdmin = staff.role === 'super_admin';
 
   return (
     <div className="min-h-dvh">
@@ -20,6 +21,7 @@ export default async function DashLayout({
             <NavLink href="/queue" label="Queue" />
             {isAdmin ? <NavLink href="/users" label="Accounts" /> : null}
             {isAdmin ? <NavLink href="/audit" label="Audit" /> : null}
+            {isSuperAdmin ? <NavLink href="/vault" label="Vault escrow" /> : null}
           </nav>
 
           <span className="hidden text-[length:var(--text-caption)] text-text-muted sm:inline">

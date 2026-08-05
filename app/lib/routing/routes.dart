@@ -28,6 +28,7 @@ class Routes {
   static const String email = '/settings/email';
   static const String dangerZone = '/settings/leaving';
   static const String vault = '/vault';
+  static const String vaultRecovery = '/vault/recovery';
   static const String forgotPassword = '/forgot-password';
   static const String onboardingInterests = '/onboarding/interests';
 

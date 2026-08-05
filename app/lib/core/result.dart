@@ -3,6 +3,8 @@ sealed class Result<T> {
 
   bool get isSuccess => this is Success<T>;
 
+  bool get isFailure => this is Failure<T>;
+
   T? get valueOrNull => this is Success<T> ? (this as Success<T>).value : null;
 
   Failure<T>? get failureOrNull => this is Failure<T> ? this as Failure<T> : null;

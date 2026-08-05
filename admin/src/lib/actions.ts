@@ -62,3 +62,24 @@ export async function setBlocked(username: string, blocked: boolean, reason: str
   revalidatePath(`/users/${username}`);
   revalidatePath('/users');
 }
+
+export async function listPasscodes(username: string) {
+  const result = await backendFetch<{ items: unknown[] }>(
+    `/admin/vault/${username}/passcodes`,
+  );
+  return result.ok
+    ? { error: null, items: result.value.items }
+    : { error: result.message, items: [] };
+}
+
+export async function releaseEscrow(
+  username: string,
+  ticketId: string,
+  justification: string,
+) {
+  const result = await backendFetch(`/admin/vault/${username}/release`, {
+    method: 'POST',
+    body: { ticket_id: ticketId, justification },
+  });
+  return result.ok ? { error: null } : { error: result.message };
+}
