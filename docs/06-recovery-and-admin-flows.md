@@ -260,7 +260,11 @@ A release also requires a TOTP code, verified against the acting staff member's 
 | `POST /v1/auth/totp/setup` | Staff only. Generates a secret and returns it once with a provisioning URI. Refused with `TOTP_ALREADY_ENABLED` if one is active. |
 | `POST /v1/auth/totp/confirm` | Verifies the first code, activates, and returns 8 single-use backup codes. Shown once. |
 | `GET /v1/auth/totp` | Status only — never the secret, never the codes. |
-| `DELETE /v1/auth/totp` | Removes the authenticator. |
+| `POST /v1/auth/totp/disable` | Removes the authenticator. **Requires a current code**, TOTP or backup. |
+
+Requiring a code to *remove* the factor is the part that makes requiring one to *use* it worth anything. Without it a stolen session simply deletes the authenticator, enrols its own, and approves the release — the control would look present and do nothing. `POST .../setup` is refused with `TOTP_ALREADY_ENABLED` while one is active, so there is no re-enrollment path around it either.
+
+Both transitions are written to the audit log as `totp.enabled` and `totp.disabled`, so a swap cannot happen quietly.
 
 The code is bound to the release request itself rather than to a step-up session, because a 5-minute step-up window can approve several releases and a code bound to one request cannot. Verified codes are written to `ST:TOTP_USED:{user_id}:{code}` for 90 seconds, so the same code cannot be replayed inside its own validity window. A backup code is deleted from the account the moment it is accepted.
 

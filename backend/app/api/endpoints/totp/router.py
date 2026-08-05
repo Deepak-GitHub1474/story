@@ -1,9 +1,10 @@
 from fastapi import APIRouter, status
 
 from app.api.endpoints.totp import controllers
-from app.api.endpoints.totp.models import ConfirmTotpRequest
+from app.api.endpoints.totp.models import ConfirmTotpRequest, DisableTotpRequest
 from app.core.deps import AppSettings, CurrentClaims
 from app.db.mongo import MongoDatabase
+from app.db.redis import RedisClient
 from app.responses import ok_response
 
 router = APIRouter(prefix="/auth/totp", tags=["totp"])
@@ -40,7 +41,15 @@ async def read_status(claims: CurrentClaims, mongo: MongoDatabase):
     return ok_response("Authenticator status.", data=data)
 
 
-@router.delete("", status_code=status.HTTP_200_OK)
-async def disable(claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.disable(claims=claims, mongo=mongo)
+@router.post("/disable", status_code=status.HTTP_200_OK)
+async def disable(
+    body: DisableTotpRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
+    settings: AppSettings,
+):
+    data = await controllers.disable(
+        body, claims=claims, mongo=mongo, redis=redis, settings=settings
+    )
     return ok_response("Authenticator removed.", data=data)

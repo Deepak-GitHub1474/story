@@ -344,3 +344,84 @@ async def test_the_stored_secret_never_appears_in_any_response(client, app_insta
     assert secret not in status_response.text
     for backup in confirmed.json()["data"]["backup_codes"]:
         assert backup not in status_response.text
+
+
+async def test_a_stolen_session_cannot_swap_the_authenticator(client, app_instance):
+    owner_name, ticket_id = await owner_with_ticket(client, "swap_target")
+
+    staff = await make_staff(client, app_instance, account("totp_victim"), "super_admin")
+    await enrol(client, staff)
+
+    removed = await client.post("/v1/auth/totp/disable", json={}, headers=staff)
+    assert removed.status_code == 422
+
+    still_on = await client.get("/v1/auth/totp", headers=staff)
+    assert still_on.json()["data"]["enabled"] is True
+
+    fresh = await client.post("/v1/auth/totp/setup", headers=staff)
+    assert fresh.status_code == 409
+
+    denied = await client.post(
+        f"/v1/admin/vault/{owner_name}/release",
+        json={
+            "ticket_id": ticket_id,
+            "justification": "Owner verified by email and answered every precondition.",
+            "totp_code": "000000",
+        },
+        headers=staff,
+    )
+    assert denied.status_code == 403
+
+
+async def test_removing_the_authenticator_needs_the_current_code(client, app_instance):
+    staff = await make_staff(client, app_instance, account("totp_off_a"), "super_admin")
+    secret, _ = await enrol(client, staff)
+
+    wrong = await client.post(
+        "/v1/auth/totp/disable", json={"code": "000000"}, headers=staff
+    )
+    assert wrong.status_code == 403
+
+    right = await client.post(
+        "/v1/auth/totp/disable",
+        json={"code": code_at(secret, int(time.time()))},
+        headers=staff,
+    )
+    assert right.status_code == 200
+
+    status_response = await client.get("/v1/auth/totp", headers=staff)
+    assert status_response.json()["data"]["enabled"] is False
+
+
+async def test_a_backup_code_can_also_remove_the_authenticator(client, app_instance):
+    staff = await make_staff(client, app_instance, account("totp_off_b"), "super_admin")
+    _, confirmed = await enrol(client, staff)
+    backup = confirmed.json()["data"]["backup_codes"][0]
+
+    response = await client.post(
+        "/v1/auth/totp/disable", json={"code": backup}, headers=staff
+    )
+    assert response.status_code == 200
+
+
+async def test_enrolling_and_removing_are_both_audited(client, app_instance):
+    staff = await make_staff(client, app_instance, account("totp_audit"), "super_admin")
+    secret, _ = await enrol(client, staff)
+    await client.post(
+        "/v1/auth/totp/disable",
+        json={"code": code_at(secret, int(time.time()))},
+        headers=staff,
+    )
+
+    entries = (await client.get("/v1/admin/audit", headers=staff)).json()["data"]["items"]
+    actions = [entry["action"] for entry in entries]
+    assert "totp.enabled" in actions
+    assert "totp.disabled" in actions
+
+
+async def test_the_old_delete_route_is_gone(client, app_instance):
+    staff = await make_staff(client, app_instance, account("totp_off_c"), "super_admin")
+    await enrol(client, staff)
+
+    response = await client.delete("/v1/auth/totp", headers=staff)
+    assert response.status_code in (404, 405)

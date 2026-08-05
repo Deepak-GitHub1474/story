@@ -47,26 +47,44 @@ export function TotpSetup({
         <p className="mt-2 text-[length:var(--text-label)] text-text-secondary">
           {backupsLeft} backup {backupsLeft === 1 ? 'code' : 'codes'} left.
         </p>
-        <div className="mt-4">
+
+        <form
+          className="mt-5 flex flex-col gap-4 border-t border-border pt-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            startTransition(async () => {
+              if (
+                !confirm(
+                  'Remove your authenticator? You will not be able to approve a passcode release until you set one up again.',
+                )
+              ) {
+                return;
+              }
+              const result = await disableTotp(code.trim());
+              if (result.error) setError(result.error);
+              else setCode('');
+            });
+          }}
+        >
+          <Field
+            label="Current code"
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/[^a-z0-9]/gi, ''))}
+            inputMode="numeric"
+            maxLength={10}
+            error={error}
+            hint="Removing the authenticator needs a code from it, or one backup code."
+          />
           <Button
+            type="submit"
             variant="danger"
             isFullWidth={false}
             isLoading={isPending}
-            onClick={() =>
-              startTransition(async () => {
-                if (
-                  confirm(
-                    'Remove your authenticator? You will not be able to approve a passcode release until you set one up again.',
-                  )
-                ) {
-                  await disableTotp();
-                }
-              })
-            }
+            disabled={code.trim().length < 6}
           >
             Remove authenticator
           </Button>
-        </div>
+        </form>
       </div>
     );
   }

@@ -2,6 +2,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.api.endpoints.admin import audit
 from app.config import Settings
 from app.core.errors import ErrorCode, api_error
 from app.core.time import to_wire, utc_now
@@ -83,6 +84,17 @@ async def confirm_setup(
         },
     )
 
+    await audit.record(
+        mongo=mongo,
+        actor_id=claims.user_id,
+        actor_role=user["role"],
+        actor_username=user["username"],
+        action="totp.enabled",
+        target_kind="user",
+        target_id=claims.user_id,
+        details={},
+    )
+
     return {"enabled": True, "backup_codes": codes}
 
 
@@ -97,9 +109,25 @@ async def read_status(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     }
 
 
-async def disable(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
-    await _staff_or_refuse(claims, mongo)
+async def disable(
+    body, *, claims, mongo: AsyncIOMotorDatabase, redis, settings: Settings
+) -> dict[str, Any]:
+    user = await _staff_or_refuse(claims, mongo)
+    await require_code(
+        body.code, claims=claims, mongo=mongo, redis=redis, settings=settings
+    )
+
     await mongo[USERS].update_one({"_id": claims.user_id}, {"$unset": {"totp": ""}})
+    await audit.record(
+        mongo=mongo,
+        actor_id=claims.user_id,
+        actor_role=user["role"],
+        actor_username=user["username"],
+        action="totp.disabled",
+        target_kind="user",
+        target_id=claims.user_id,
+        details={},
+    )
     return {"enabled": False}
 
 

@@ -105,7 +105,12 @@ export async function confirmTotp(code: string) {
   return { error: null, backupCodes: result.value.backup_codes };
 }
 
-export async function disableTotp() {
-  await backendFetch('/auth/totp', { method: 'DELETE' });
+export async function disableTotp(code: string) {
+  const result = await backendFetch('/auth/totp/disable', {
+    method: 'POST',
+    body: { code },
+  });
+  if (!result.ok) return { error: result.message };
   revalidatePath('/security');
+  return { error: null };
 }
