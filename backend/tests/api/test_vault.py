@@ -374,3 +374,21 @@ async def test_a_duplicate_label_is_refused(client, signup_payload):
 
     assert response.status_code == 409
     assert response.json()["data"]["code"] == "LABEL_TAKEN"
+
+
+async def test_the_vault_takes_only_images_video_and_pdf(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await init_keys(client, headers)
+    passcode_id = await make_passcode(client, headers)
+
+    for kind in ("image", "video", "pdf"):
+        response = await client.post(
+            "/v1/vault/items", json=item_body(passcode_id, kind=kind), headers=headers
+        )
+        assert response.status_code == 201, kind
+
+    for kind in ("document", "audio", "other", "spreadsheet"):
+        response = await client.post(
+            "/v1/vault/items", json=item_body(passcode_id, kind=kind), headers=headers
+        )
+        assert response.status_code == 422, kind

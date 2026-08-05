@@ -12,6 +12,7 @@ import '../../../core/security/secure_screen.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
+import '../data/file_kind.dart';
 import '../models/vault_models.dart';
 import '../providers/vault_providers.dart';
 import '../widgets/vault_tile.dart';
@@ -72,9 +73,27 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   }
 
   Future<void> _addFile() async {
-    final picked = await FilePicker.platform.pickFiles(withData: true);
+    final picked = await FilePicker.platform.pickFiles(
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif',
+        'mp4', 'mov', 'm4v',
+        'pdf',
+      ],
+    );
     final file = picked?.files.singleOrNull;
     if (file?.bytes == null || !mounted) return;
+
+    final kind = detectKind(file!.bytes!, file.name);
+    if (kind == null) {
+      AppToast.show(
+        context,
+        'The vault holds photos, videos, and PDFs. That file is neither.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
 
     final label = await showModalBottomSheet<String?>(
       context: context,
@@ -83,15 +102,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (sheetContext) => _HideSheet(filename: file!.name),
+      builder: (sheetContext) => _HideSheet(filename: file.name),
     );
 
     if (!mounted) return;
 
     final ok = await ref.read(vaultUploadProvider.notifier).addFile(
-      bytes: file!.bytes!,
+      bytes: file.bytes!,
       filename: file.name,
-      kind: _kindFor(file.extension),
+      kind: kind,
       label: label,
     );
 
@@ -104,14 +123,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       kind: ok ? AppToastKind.success : AppToastKind.error,
     );
   }
-
-  String _kindFor(String? extension) => switch (extension?.toLowerCase()) {
-    'jpg' || 'jpeg' || 'png' || 'gif' || 'heic' || 'webp' => 'image',
-    'mp4' || 'mov' || 'avi' || 'mkv' => 'video',
-    'mp3' || 'm4a' || 'wav' || 'aac' => 'audio',
-    'pdf' || 'doc' || 'docx' || 'txt' => 'document',
-    _ => 'other',
-  };
 
   Future<void> _searchHidden() async {
     final hash = await ref.read(vaultSessionProvider.notifier).hashLabel(_label.text);

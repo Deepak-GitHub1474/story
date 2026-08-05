@@ -36,7 +36,7 @@ class CreateItemRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     passcode_id: str
-    kind: Literal["image", "video", "document", "audio", "other"]
+    kind: Literal["image", "video", "pdf"]
     size_bytes: Annotated[int, Field(gt=0)]
     chunk_count: Annotated[int, Field(gt=0, le=100000)]
     encrypted_metadata: Annotated[str, Field(min_length=8, max_length=8192)]
