@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/Avatar';
 import { FollowButton } from '@/components/FollowButton';
+import { UserMenu } from '@/components/UserMenu';
 import { StoryRow } from '@/components/StoryRow';
 import { backendFetch } from '@/lib/server/session';
 import type { TPage, TStory } from '@/lib/types';
@@ -58,7 +59,8 @@ export default async function PublicProfilePage({ params }: Props) {
         </dl>
       </header>
 
-      <div className="mt-6">
+      <div className="mt-6 flex items-start gap-3">
+        <div className="min-w-0 flex-1">
         <h1 className="font-bold">{profile.display_name}</h1>
         <p className="text-[length:var(--text-caption)] text-text-muted">
           @{profile.username}
@@ -66,6 +68,10 @@ export default async function PublicProfilePage({ params }: Props) {
         {profile.bio ? (
           <p className="mt-2 leading-relaxed text-text-secondary">{profile.bio}</p>
         ) : null}
+        </div>
+        {profile.is_me ? null : (
+          <UserMenu username={profile.username} userId={profile.user_id} />
+        )}
       </div>
 
       {!profile.is_me ? (

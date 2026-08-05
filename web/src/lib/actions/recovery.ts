@@ -2,10 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { backendFetch } from '../server/session';
-import { EMPTY, type TFormState } from './account';
-
-export { EMPTY };
-export type { TFormState };
+import type { TFormState } from './state';
 
 export async function openPasscodeRelease(
   _prev: TFormState,

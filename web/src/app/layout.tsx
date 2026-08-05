@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ThemeScript } from '@/components/ThemeScript';
 import { SITE_NAME, SITE_URL } from '@/lib/config';
 import '@/styles/tokens.css';
 import './globals.css';
@@ -21,6 +22,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="min-h-dvh bg-bg text-text-primary antialiased">{children}</body>
     </html>
   );

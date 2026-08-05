@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
+import { AppearanceControls } from '@/components/AppearanceControls';
+import { AsyncButton } from '@/components/AsyncButton';
+import { AvatarButton } from '@/components/AvatarButton';
 import { NotificationToggle } from '@/components/NotificationToggle';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Row, Section } from '@/components/ui/Surface';
+import { signOutEverywhere } from '@/lib/actions/account';
 import { requireUser } from '@/lib/server/guard';
 
 export const metadata: Metadata = { title: 'Settings' };
@@ -16,6 +20,7 @@ export default async function SettingsPage() {
       <Section title="Account">
         <Row label="Edit profile" href="/settings/profile" />
         <Row label="Your interests" href="/settings/interests" />
+        <Row label="New avatar" trailing={<AvatarButton />} />
         <Row
           label="Recovery email"
           value={user.email_masked ?? 'Not set'}
@@ -37,6 +42,10 @@ export default async function SettingsPage() {
         />
       </Section>
 
+      <Section title="Appearance">
+        <AppearanceControls />
+      </Section>
+
       <Section title="Vault">
         <Row label="Open vault" href="/vault" />
       </Section>
@@ -51,6 +60,18 @@ export default async function SettingsPage() {
       <Section title="About">
         <Row label="Version" value="0.1.0" />
         <Row label="Sign out" trailing={<SignOutButton />} />
+        <Row
+          label="Sign out everywhere"
+          trailing={
+            <AsyncButton
+              label="Sign out all"
+              variant="ghost"
+              isFullWidth={false}
+              action={signOutEverywhere}
+              confirmText="Sign out of every device? You will need to sign in again everywhere."
+            />
+          }
+        />
         <Row label="Deactivate or delete" href="/settings/leaving" isDanger />
       </Section>
     </div>

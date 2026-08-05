@@ -8,9 +8,17 @@ import type { TPage, TStory } from '@/lib/types';
 export function LoadMore({
   initialCursor,
   hasMore,
+  query,
+  isMine = false,
+  showVisibility = false,
+  endMessage = 'You are all caught up',
 }: {
   initialCursor: string | null;
   hasMore: boolean;
+  query: string;
+  isMine?: boolean;
+  showVisibility?: boolean;
+  endMessage?: string;
 }) {
   const [stories, setStories] = useState<TStory[]>([]);
   const [cursor, setCursor] = useState(initialCursor);
@@ -22,7 +30,9 @@ export function LoadMore({
     if (!more || !cursor || isLoading) return;
     setIsLoading(true);
 
-    const response = await fetch(`/api/feed?cursor=${encodeURIComponent(cursor)}`);
+    const response = await fetch(
+      `/api/stories?${query}&cursor=${encodeURIComponent(cursor)}`,
+    );
     const page = (await response.json()) as TPage<TStory> | null;
 
     if (page) {
@@ -33,7 +43,7 @@ export function LoadMore({
       setMore(false);
     }
     setIsLoading(false);
-  }, [cursor, more, isLoading]);
+  }, [cursor, more, isLoading, query]);
 
   useEffect(() => {
     const node = sentinel.current;
@@ -54,7 +64,12 @@ export function LoadMore({
       {stories.length > 0 ? (
         <div className="divide-y divide-border border-t border-border">
           {stories.map((story) => (
-            <StoryRow key={story.story_id} story={story} />
+            <StoryRow
+              key={story.story_id}
+              story={story}
+              isMine={isMine}
+              showVisibility={showVisibility}
+            />
           ))}
         </div>
       ) : null}
@@ -67,7 +82,7 @@ export function LoadMore({
         </div>
       ) : (
         <p className="border-t border-border py-10 text-center text-[length:var(--text-caption)] text-text-muted">
-          You are all caught up
+          {endMessage}
         </p>
       )}
     </>

@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Otp } from '@/components/ui/Otp';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
-import { EMPTY, completeReset, requestReset } from '@/lib/actions/account';
+import { completeReset, requestReset } from '@/lib/actions/account';
+import { EMPTY } from '@/lib/actions/state';
 
 export function ForgotPasswordForm() {
   const [requestState, requestAction, isRequesting] = useActionState(requestReset, EMPTY);

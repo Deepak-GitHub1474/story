@@ -4,7 +4,14 @@ import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Otp } from '@/components/ui/Otp';
-import { EMPTY, addEmail, verifyEmail } from '@/lib/actions/account';
+import { AsyncButton } from '@/components/AsyncButton';
+import {
+  addEmail,
+  removeEmail,
+  resendEmailCode,
+  verifyEmail,
+} from '@/lib/actions/account';
+import { EMPTY } from '@/lib/actions/state';
 
 export function EmailForm({
   masked,
@@ -34,6 +41,15 @@ export function EmailForm({
             {verified ? '· Verified' : '· Not verified yet'}
           </span>
         </p>
+      ) : null}
+
+      {masked ? (
+        <AsyncButton
+          label="Remove this email"
+          variant="ghost"
+          action={removeEmail}
+          confirmText="Remove your recovery email? Without one, a forgotten password cannot be recovered and your vault is lost with it."
+        />
       ) : null}
 
       {stage === 'idle' || !masked ? (

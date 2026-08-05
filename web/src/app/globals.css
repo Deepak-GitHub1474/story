@@ -17,3 +17,13 @@ body {
   background: var(--c-accent);
   color: var(--c-accent-text);
 }
+
+.story-body {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+[data-reading='large'] .story-body {
+  font-size: 1.25rem;
+  line-height: 1.85;
+}

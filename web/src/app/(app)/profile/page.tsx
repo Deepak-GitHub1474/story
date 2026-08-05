@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadMore } from '@/components/LoadMore';
 import { StoryRow } from '@/components/StoryRow';
 import { Button } from '@/components/ui/Button';
 import { requireUser } from '@/lib/server/guard';
@@ -25,7 +26,10 @@ export default async function ProfilePage({ searchParams }: Props) {
 
   const query = tab ? `?visibility=${tab}&limit=20` : '?limit=20';
   const result = await backendFetch<TPage<TStory>>(`/stories/mine${query}`);
-  const stories = result.ok ? result.value.items : [];
+  const page = result.ok
+    ? result.value
+    : { items: [], next_cursor: null, has_more: false };
+  const stories = page.items;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -45,6 +49,18 @@ export default async function ProfilePage({ searchParams }: Props) {
         </p>
         {user.bio ? (
           <p className="mt-2 leading-relaxed text-text-secondary">{user.bio}</p>
+        ) : null}
+        {user.interests.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {user.interests.slice(0, 6).map((slug) => (
+              <li
+                key={slug}
+                className="rounded-[length:var(--radius-pill)] border border-border px-3 py-1 text-[length:var(--text-caption)] text-text-secondary"
+              >
+                {slug.replace(/-/g, ' ')}
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
 
@@ -92,11 +108,21 @@ export default async function ProfilePage({ searchParams }: Props) {
           }
         />
       ) : (
-        <div className="divide-y divide-border">
-          {stories.map((story) => (
-            <StoryRow key={story.story_id} story={story} showVisibility />
-          ))}
-        </div>
+        <>
+          <div className="divide-y divide-border">
+            {stories.map((story) => (
+              <StoryRow key={story.story_id} story={story} showVisibility isMine />
+            ))}
+          </div>
+          <LoadMore
+            initialCursor={page.next_cursor}
+            hasMore={page.has_more}
+            query={`source=mine${tab ? `&visibility=${tab}` : ''}`}
+            isMine
+            showVisibility
+            endMessage="That is everything you have written"
+          />
+        </>
       )}
     </div>
   );

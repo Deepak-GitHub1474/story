@@ -6,8 +6,7 @@ import { API_BASE_URL } from '../config';
 import { backendFetch, clearSession } from '../server/session';
 import type { TEnvelope } from '../types';
 
-export type TFormState = { error: string | null; ok: string | null };
-export const EMPTY: TFormState = { error: null, ok: null };
+import type { TFormState } from './state';
 
 export async function updateProfile(
   _prev: TFormState,
@@ -137,5 +136,40 @@ export async function completeReset(
   });
   if (!complete.success) return { error: complete.message, ok: null };
 
+  redirect('/signin');
+}
+
+export async function resendEmailCode(): Promise<TFormState> {
+  const result = await backendFetch('/users/me/email/resend', { method: 'POST' });
+  return result.ok
+    ? { error: null, ok: 'Another code is on its way.' }
+    : { error: result.message, ok: null };
+}
+
+export async function removeEmail(): Promise<TFormState> {
+  const result = await backendFetch('/users/me/email', { method: 'DELETE' });
+  if (!result.ok) return { error: result.message, ok: null };
+  revalidatePath('/settings/email');
+  revalidatePath('/settings');
+  return { error: null, ok: 'Recovery email removed.' };
+}
+
+export async function cancelDeletion(): Promise<TFormState> {
+  const result = await backendFetch('/users/me/delete/cancel', { method: 'POST' });
+  if (!result.ok) return { error: result.message, ok: null };
+  revalidatePath('/settings');
+  revalidatePath('/settings/leaving');
+  return { error: null, ok: 'Your account is staying.' };
+}
+
+export async function regenerateAvatar() {
+  await backendFetch('/users/me/avatar/regenerate', { method: 'POST' });
+  revalidatePath('/profile');
+  revalidatePath('/settings');
+}
+
+export async function signOutEverywhere() {
+  await backendFetch('/auth/signout-all', { method: 'POST' });
+  await clearSession();
   redirect('/signin');
 }

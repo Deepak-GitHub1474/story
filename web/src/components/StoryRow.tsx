@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
+import { StoryActions } from '@/components/StoryActions';
+import { StoryMenu } from '@/components/StoryMenu';
 import { Badge } from '@/components/ui/Surface';
 import { relativeTime } from '@/lib/format';
 import type { TStory } from '@/lib/types';
@@ -7,9 +9,11 @@ import type { TStory } from '@/lib/types';
 export function StoryRow({
   story,
   showVisibility = false,
+  isMine = false,
 }: {
   story: TStory;
   showVisibility?: boolean;
+  isMine?: boolean;
 }) {
   const href = story.visibility === 'draft' ? `/compose?id=${story.story_id}` : `/story/${story.story_id}`;
 
@@ -45,6 +49,12 @@ export function StoryRow({
             {story.visibility}
           </Badge>
         ) : null}
+        <StoryMenu
+          storyId={story.story_id}
+          isMine={isMine}
+          isPublic={story.visibility === 'public'}
+          slug={story.slug}
+        />
       </div>
 
       <Link href={href} className="mt-3 block">
@@ -58,11 +68,16 @@ export function StoryRow({
         </p>
       </Link>
 
-      <p className="mt-3 text-[length:var(--text-caption)] font-semibold text-text-muted">
-        {story.counts.likes} {story.counts.likes === 1 ? 'like' : 'likes'} ·{' '}
-        {story.counts.comments}{' '}
-        {story.counts.comments === 1 ? 'comment' : 'comments'}
-      </p>
+      {story.visibility === 'draft' || story.visibility === 'scheduled' ? null : (
+        <StoryActions
+          storyId={story.story_id}
+          slug={story.slug}
+          isLiked={story.is_liked}
+          likes={story.counts.likes}
+          comments={story.counts.comments}
+          isPublic={story.visibility === 'public'}
+        />
+      )}
     </article>
   );
 }

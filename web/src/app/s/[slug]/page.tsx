@@ -86,7 +86,7 @@ export default async function PublicStoryPage({ params }: Props) {
           </div>
         </div>
 
-        <div className="mt-10 space-y-6 text-[1.0625rem] leading-[1.75] text-text-secondary">
+        <div className="story-body mt-10 space-y-6 text-text-secondary">
           {paragraphs(story.body).map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}

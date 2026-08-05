@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { JoinButton } from '@/components/JoinButton';
+import { LoadMore } from '@/components/LoadMore';
 import { StoryRow } from '@/components/StoryRow';
 import { backendFetch } from '@/lib/server/session';
 import type { TCommunity, TPage, TStory } from '@/lib/types';
@@ -24,7 +25,10 @@ export default async function CommunityPage({ params }: Props) {
   if (!communityResult.ok) notFound();
 
   const community = communityResult.value.community;
-  const stories = storiesResult.ok ? storiesResult.value.items : [];
+  const page = storiesResult.ok
+    ? storiesResult.value
+    : { items: [], next_cursor: null, has_more: false };
+  const stories = page.items;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -46,7 +50,17 @@ export default async function CommunityPage({ params }: Props) {
               : 'No stories here yet. Join to write the first one.'}
           </p>
         ) : (
-          stories.map((story) => <StoryRow key={story.story_id} story={story} />)
+          <>
+            {stories.map((story) => (
+              <StoryRow key={story.story_id} story={story} />
+            ))}
+            <LoadMore
+              initialCursor={page.next_cursor}
+              hasMore={page.has_more}
+              query={`source=community&slug=${slug}`}
+              endMessage="That is every story in this room"
+            />
+          </>
         )}
       </div>
     </div>

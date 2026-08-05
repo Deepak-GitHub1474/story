@@ -113,3 +113,26 @@ export async function blockUser(username: string) {
   await backendFetch(`/connections/${username}/block`, { method: 'POST' });
   revalidatePath('/feed');
 }
+
+export async function toggleCommentLike(
+  commentId: string,
+  storyId: string,
+  liked: boolean,
+) {
+  await backendFetch(`/comments/${commentId}/like`, {
+    method: liked ? 'POST' : 'DELETE',
+  });
+  revalidatePath(`/story/${storyId}`);
+}
+
+export async function loadReplies(commentId: string) {
+  const result = await backendFetch<{ items: TComment[] }>(
+    `/comments/${commentId}/replies`,
+  );
+  return result.ok ? result.value.items : [];
+}
+
+export async function shareStory(storyId: string) {
+  await backendFetch(`/stories/${storyId}/share`, { method: 'POST' });
+  revalidatePath(`/story/${storyId}`);
+}

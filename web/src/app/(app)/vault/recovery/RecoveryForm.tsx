@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { EMPTY, openPasscodeRelease } from '@/lib/actions/recovery';
+import { openPasscodeRelease } from '@/lib/actions/recovery';
+import { EMPTY } from '@/lib/actions/state';
 
 export function RecoveryForm() {
   const [state, action, isPending] = useActionState(openPasscodeRelease, EMPTY);

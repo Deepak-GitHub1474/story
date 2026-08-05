@@ -5,7 +5,7 @@ import { StoryRow } from '@/components/StoryRow';
 import { Button } from '@/components/ui/Button';
 import { backendFetch } from '@/lib/server/session';
 import type { TPage, TStory } from '@/lib/types';
-import { LoadMore } from './LoadMore';
+import { LoadMore } from '@/components/LoadMore';
 
 export const metadata: Metadata = { title: 'Stories' };
 
@@ -52,7 +52,11 @@ export default async function FeedPage() {
           <StoryRow key={story.story_id} story={story} />
         ))}
       </div>
-      <LoadMore initialCursor={page.next_cursor} hasMore={page.has_more} />
+      <LoadMore
+        initialCursor={page.next_cursor}
+        hasMore={page.has_more}
+        query="source=feed"
+      />
     </div>
   );
 }

@@ -3,7 +3,8 @@
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { EMPTY, deactivate, deleteAccount } from '@/lib/actions/account';
+import { deactivate, deleteAccount } from '@/lib/actions/account';
+import { EMPTY } from '@/lib/actions/state';
 
 const CONFIRM_WORD = 'DELETE';
 
@@ -51,7 +52,7 @@ export function LeavingForms() {
         <ul className="mt-3 space-y-1.5 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           <li>Every story, draft and comment is removed.</li>
           <li>Your username is released for anyone to take.</li>
-          <li>Sign in within 14 days to cancel. After that, nothing brings it back.</li>
+          <li>You have 14 days to cancel. After that, nothing brings it back.</li>
         </ul>
         <div className="mt-5 space-y-4">
           <Field

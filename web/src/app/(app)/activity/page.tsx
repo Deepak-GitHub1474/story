@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
+import { KindBadge } from './KindBadge';
 import { MarkAllRead } from './MarkAllRead';
+import { NotificationLink } from './NotificationLink';
 import { backendFetch } from '@/lib/server/session';
 import { relativeTime } from '@/lib/format';
 import type { TNotification, TPage } from '@/lib/types';
@@ -30,17 +31,17 @@ export default async function ActivityPage() {
         <ul className="mt-6 divide-y divide-border border-y border-border">
           {items.map((item) => (
             <li key={item.notification_id}>
-              <Link
+              <NotificationLink
+                notificationId={item.notification_id}
+                isRead={item.is_read}
                 href={
                   item.target?.kind === 'story' ? `/story/${item.target.id}` : '/activity'
                 }
-                className={
-                  item.is_read
-                    ? 'flex items-start gap-3 py-4 transition-colors hover:bg-surface'
-                    : 'flex items-start gap-3 bg-accent/6 py-4 transition-colors hover:bg-surface'
-                }
               >
-                <Avatar seed={item.actor.avatar_seed} size={40} />
+                <span className="relative shrink-0">
+                  <Avatar seed={item.actor.avatar_seed} size={40} />
+                  <KindBadge kind={item.kind} />
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block leading-relaxed text-text-secondary">
                     <span className="font-semibold text-text-primary">
@@ -58,7 +59,7 @@ export default async function ActivityPage() {
                     className="mt-2 size-2 shrink-0 rounded-full bg-accent"
                   />
                 ) : null}
-              </Link>
+              </NotificationLink>
             </li>
           ))}
         </ul>

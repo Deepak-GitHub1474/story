@@ -24,6 +24,7 @@ export function Composer({
   const [error, setError] = useState<string | null>(null);
   const [isPublishing, startPublish] = useTransition();
   const [showOptions, setShowOptions] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -142,22 +143,30 @@ export function Composer({
             <Button size="sm" variant="secondary" onClick={() => publish('private')}>
               Private
             </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                const when = prompt('Publish at (YYYY-MM-DD HH:MM)');
-                if (!when) return;
-                const parsed = new Date(when.replace(' ', 'T'));
-                if (Number.isNaN(parsed.getTime())) {
-                  setError('That is not a valid date and time.');
-                  return;
-                }
-                publish('scheduled', parsed.toISOString());
-              }}
-            >
-              Schedule
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="datetime-local"
+                value={scheduledFor}
+                onChange={(event) => setScheduledFor(event.target.value)}
+                aria-label="Publish at"
+                className="h-[var(--size-control-height)] rounded-[length:var(--radius-md)] border border-border bg-surface px-3 text-[length:var(--text-label)] outline-none focus:border-accent"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={!scheduledFor}
+                onClick={() => {
+                  const parsed = new Date(scheduledFor);
+                  if (Number.isNaN(parsed.getTime()) || parsed <= new Date()) {
+                    setError('Pick a time in the future.');
+                    return;
+                  }
+                  publish('scheduled', parsed.toISOString());
+                }}
+              >
+                Schedule
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}

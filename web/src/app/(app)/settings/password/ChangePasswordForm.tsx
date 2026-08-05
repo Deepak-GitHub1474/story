@@ -4,7 +4,8 @@ import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
-import { EMPTY, changePassword } from '@/lib/actions/account';
+import { changePassword } from '@/lib/actions/account';
+import { EMPTY } from '@/lib/actions/state';
 
 export function ChangePasswordForm() {
   const [state, action, isPending] = useActionState(changePassword, EMPTY);

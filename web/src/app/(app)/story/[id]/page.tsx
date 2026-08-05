@@ -63,7 +63,7 @@ export default async function StoryPage({ params }: Props) {
           </h1>
         ) : null}
 
-        <div className="mt-8 space-y-6 text-[1.0625rem] leading-[1.75] text-text-secondary">
+        <div className="story-body mt-8 space-y-6 text-text-secondary">
           {paragraphs(story.body ?? story.excerpt).map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}

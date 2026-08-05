@@ -1,17 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { deleteStory, reportTarget, unpublishStory } from '@/lib/actions/stories';
+import { ReportMenu } from '@/components/ReportMenu';
+import { deleteStory, shareStory, unpublishStory } from '@/lib/actions/stories';
 import { SITE_URL } from '@/lib/config';
-
-const REASONS = [
-  ['harassment', 'Harassment'],
-  ['spam', 'Spam'],
-  ['self_harm', 'Someone at risk'],
-  ['illegal', 'Illegal'],
-  ['impersonation', 'Impersonation'],
-  ['other', 'Something else'],
-] as const;
 
 export function StoryMenu({
   storyId,
@@ -58,33 +50,28 @@ export function StoryMenu({
       {isOpen ? (
         <div className="absolute right-0 z-30 mt-2 w-60 overflow-hidden rounded-[length:var(--radius-md)] border border-border bg-surface shadow-lg">
           {showReasons ? (
-            REASONS.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() =>
-                  startTransition(async () => {
-                    await reportTarget('story', storyId, value);
-                    setIsOpen(false);
-                    setShowReasons(false);
-                    setNotice('Reported. Thank you.');
-                  })
-                }
-                className="block w-full px-4 py-3 text-left text-[length:var(--text-label)] transition-colors hover:bg-surface-raised"
-              >
-                {label}
-              </button>
-            ))
+            <ReportMenu
+              kind="story"
+              targetId={storyId}
+              onDone={(message) => {
+                setIsOpen(false);
+                setShowReasons(false);
+                setNotice(message);
+              }}
+            />
           ) : (
             <>
               {isPublic && slug ? (
                 <button
                   type="button"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(`${SITE_URL}/s/${slug}`);
-                    setIsOpen(false);
-                    setNotice('Link copied.');
-                  }}
+                  onClick={() =>
+                    startTransition(async () => {
+                      await navigator.clipboard.writeText(`${SITE_URL}/s/${slug}`);
+                      await shareStory(storyId);
+                      setIsOpen(false);
+                      setNotice('Link copied.');
+                    })
+                  }
                   className="block w-full px-4 py-3 text-left text-[length:var(--text-label)] transition-colors hover:bg-surface-raised"
                 >
                   Copy link

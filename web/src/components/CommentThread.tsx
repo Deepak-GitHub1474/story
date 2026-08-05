@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
-import { addComment, deleteComment, reportTarget } from '@/lib/actions/stories';
+import { ReportMenu } from '@/components/ReportMenu';
+import {
+  addComment,
+  deleteComment,
+  loadReplies,
+  toggleCommentLike,
+} from '@/lib/actions/stories';
 import { relativeTime } from '@/lib/format';
 import type { TComment } from '@/lib/types';
 
@@ -161,7 +167,20 @@ function CommentItem({
   isReply?: boolean;
 }) {
   const [, startTransition] = useTransition();
+  const [isReporting, setIsReporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [extraReplies, setExtraReplies] = useState<TComment[] | null>(null);
+  const [like, setLike] = useOptimistic(
+    { isLiked: comment.is_liked, count: comment.counts.likes },
+    (current, next: boolean) => ({
+      isLiked: next,
+      count: current.count + (next ? 1 : -1),
+    }),
+  );
+
   const canDelete = comment.author.user_id === currentUserId || isStoryAuthor;
+  const shown = extraReplies ?? comment.replies ?? [];
+  const hidden = comment.counts.replies - shown.length;
 
   return (
     <li className={cn(isReply && 'ml-8')}>
@@ -174,11 +193,36 @@ function CommentItem({
             </span>{' '}
             {renderBody(comment.body)}
           </p>
-          <div className="mt-1 flex flex-wrap gap-4 text-[length:var(--text-caption)] text-text-muted">
+          <div className="mt-1 flex flex-wrap items-center gap-4 text-[length:var(--text-caption)] text-text-muted">
             <span>{relativeTime(comment.created_at)}</span>
-            {comment.counts.likes > 0 ? (
-              <span className="font-semibold">{comment.counts.likes} likes</span>
-            ) : null}
+            <button
+              type="button"
+              aria-pressed={like.isLiked}
+              aria-label={like.isLiked ? 'Unlike comment' : 'Like comment'}
+              onClick={() =>
+                startTransition(async () => {
+                  const next = !like.isLiked;
+                  setLike(next);
+                  await toggleCommentLike(comment.comment_id, storyId, next);
+                })
+              }
+              className={cn(
+                'inline-flex items-center gap-1 font-semibold transition-colors',
+                like.isLiked ? 'text-danger' : 'hover:text-text-secondary',
+              )}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="size-3.5"
+                fill={like.isLiked ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 20.5 4.4 13a4.6 4.6 0 0 1 6.5-6.5l1.1 1.1 1.1-1.1A4.6 4.6 0 0 1 19.6 13Z" />
+              </svg>
+              {like.count > 0 ? like.count : ''}
+            </button>
             <button
               type="button"
               onClick={() => onReply(comment)}
@@ -186,28 +230,48 @@ function CommentItem({
             >
               Reply
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                startTransition(async () => {
-                  if (canDelete) {
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={() =>
+                  startTransition(async () => {
                     await deleteComment(comment.comment_id, storyId);
-                  } else {
-                    await reportTarget('comment', comment.comment_id, 'harassment');
-                  }
-                })
-              }
-              className="hover:text-text-secondary"
-            >
-              {canDelete ? 'Delete' : 'Report'}
-            </button>
+                  })
+                }
+                className="hover:text-text-secondary"
+              >
+                Delete
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsReporting((value) => !value)}
+                className="hover:text-text-secondary"
+              >
+                Report
+              </button>
+            )}
+            {notice ? <span role="status">{notice}</span> : null}
           </div>
+
+          {isReporting ? (
+            <div className="mt-3 overflow-hidden rounded-[length:var(--radius-md)] border border-border bg-surface">
+              <ReportMenu
+                kind="comment"
+                targetId={comment.comment_id}
+                onDone={(message) => {
+                  setIsReporting(false);
+                  setNotice(message);
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {comment.replies && comment.replies.length > 0 ? (
+      {shown.length > 0 ? (
         <ul className="mt-4 space-y-4">
-          {comment.replies.map((reply) => (
+          {shown.map((reply) => (
             <CommentItem
               key={reply.comment_id}
               comment={reply}
@@ -219,6 +283,20 @@ function CommentItem({
             />
           ))}
         </ul>
+      ) : null}
+
+      {hidden > 0 ? (
+        <button
+          type="button"
+          onClick={() =>
+            startTransition(async () => {
+              setExtraReplies(await loadReplies(comment.comment_id));
+            })
+          }
+          className="mt-3 ml-8 text-[length:var(--text-caption)] font-semibold text-text-muted hover:text-text-secondary"
+        >
+          View {hidden} more {hidden === 1 ? 'reply' : 'replies'}
+        </button>
       ) : null}
     </li>
   );

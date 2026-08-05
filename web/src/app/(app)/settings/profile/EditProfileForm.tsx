@@ -3,7 +3,8 @@
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { EMPTY, updateProfile } from '@/lib/actions/account';
+import { updateProfile } from '@/lib/actions/account';
+import { EMPTY } from '@/lib/actions/state';
 
 export function EditProfileForm({
   displayName,
