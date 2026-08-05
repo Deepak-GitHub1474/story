@@ -49,6 +49,43 @@ INDEXES: dict[str, list[IndexSpec]] = {
     "user_keys": [
         IndexSpec([("user_id", ASCENDING)], "uq_user_keys_user", unique=True),
     ],
+    "stories": [
+        IndexSpec(
+            [("author_id", ASCENDING), ("_id", DESCENDING)],
+            "ix_author_recent",
+            partial={"deleted_at": None},
+        ),
+        IndexSpec(
+            [("author_id", ASCENDING), ("visibility", ASCENDING), ("_id", DESCENDING)],
+            "ix_author_visibility",
+        ),
+        IndexSpec(
+            [("visibility", ASCENDING), ("_id", DESCENDING)],
+            "ix_feed",
+            partial={"visibility": "public", "deleted_at": None},
+        ),
+        IndexSpec(
+            [("slug", ASCENDING)],
+            "uq_slug",
+            unique=True,
+            partial={"slug": {"$type": "string"}},
+        ),
+    ],
+    "comments": [
+        IndexSpec(
+            [("story_id", ASCENDING), ("_id", ASCENDING)],
+            "ix_story_thread",
+            partial={"deleted_at": None},
+        ),
+        IndexSpec([("author_id", ASCENDING), ("_id", DESCENDING)], "ix_author_comments"),
+    ],
+    "reactions": [
+        IndexSpec(
+            [("target_kind", ASCENDING), ("target_id", ASCENDING), ("_id", DESCENDING)],
+            "ix_target",
+        ),
+        IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_reactions"),
+    ],
     "devices": [
         IndexSpec(
             [("user_id", ASCENDING), ("fingerprint", ASCENDING)],
