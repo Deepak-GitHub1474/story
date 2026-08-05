@@ -131,7 +131,7 @@ async def _revoke_all_sessions(user_id: str, redis) -> None:
             await redis.delete(keys.refresh_token(token_hash))
         await redis.delete(keys.refresh_family(family_id))
     await redis.delete(keys.user_sessions(user_id))
-    await redis.set(keys.reset_marker(user_id), "1", ex=1800)
+    await redis.set(keys.session_epoch(user_id), int(utc_now().timestamp() * 1000), ex=1800)
 
 
 async def _verify_password(user_id: str, password: str, mongo: AsyncIOMotorDatabase) -> dict:

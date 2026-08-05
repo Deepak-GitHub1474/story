@@ -5,7 +5,7 @@ from fastapi import Depends, Request
 from app.config import Settings, get_settings
 from app.core.errors import ErrorCode, api_error
 from app.core.tokens import AccessClaims, TokenError, decode_access_token
-from app.db.keys import access_denylist, rate_limit, reset_marker
+from app.db.keys import access_denylist, rate_limit, session_epoch
 from app.db.redis import RedisClient
 
 AppSettings = Annotated[Settings, Depends(get_settings)]
@@ -39,7 +39,8 @@ async def get_current_claims(
     if await redis.exists(access_denylist(claims.jti)):
         raise api_error(ErrorCode.TOKEN_REVOKED)
 
-    if await redis.exists(reset_marker(claims.user_id)):
+    epoch = await redis.get(session_epoch(claims.user_id))
+    if epoch is not None and claims.issued_at_ms < int(epoch):
         raise api_error(ErrorCode.TOKEN_REVOKED)
 
     request.state.user_id = claims.user_id

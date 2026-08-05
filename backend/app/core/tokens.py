@@ -23,6 +23,7 @@ class AccessClaims(BaseModel):
     family_id: str
     jti: str
     issued_at: datetime
+    issued_at_ms: int
     expires_at: datetime
 
 
@@ -41,6 +42,7 @@ def create_access_token(
         "fam": family_id,
         "jti": secrets.token_urlsafe(16),
         "iat": issued_at,
+        "ims": int(issued_at.timestamp() * 1000),
         "exp": issued_at + ttl,
     }
     return jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)
@@ -60,6 +62,7 @@ def decode_access_token(token: str, *, secret: str) -> AccessClaims:
         family_id=payload["fam"],
         jti=payload["jti"],
         issued_at=to_storage(datetime.fromtimestamp(payload["iat"], tz=UTC)),
+        issued_at_ms=int(payload.get("ims", payload["iat"] * 1000)),
         expires_at=to_storage(datetime.fromtimestamp(payload["exp"], tz=UTC)),
     )
 

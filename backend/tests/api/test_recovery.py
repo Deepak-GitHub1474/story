@@ -319,3 +319,62 @@ async def test_a_reset_signs_out_every_session(client, signup_payload):
     )
 
     assert (await client.get("/v1/auth/me", headers=headers)).status_code == 401
+
+
+async def test_a_pre_reset_token_stays_dead_after_the_owner_signs_in_again(client, signup_payload):
+    stolen = await auth_headers(client, signup_payload)
+    await add_email(client, stolen)
+    await client.post("/v1/users/me/email/verify", json={"otp": last_otp()}, headers=stolen)
+    outbox.clear()
+
+    await client.post(
+        "/v1/auth/password-reset/request", json={"username": signup_payload["username"]}
+    )
+    verify = await client.post(
+        "/v1/auth/password-reset/verify",
+        json={"username": signup_payload["username"], "otp": last_otp()},
+    )
+    await client.post(
+        "/v1/auth/password-reset/complete",
+        json={
+            "reset_token": verify.json()["data"]["reset_token"],
+            "new_password": "a-brand-new-long-password",
+            "acknowledged_vault_loss": True,
+        },
+    )
+
+    assert (await client.get("/v1/auth/me", headers=stolen)).status_code == 401
+
+    signin = await client.post(
+        "/v1/auth/signin",
+        json={
+            "username": signup_payload["username"],
+            "password": "a-brand-new-long-password",
+        },
+    )
+    fresh = {"authorization": f"Bearer {signin.json()['data']['tokens']['access_token']}"}
+
+    assert (await client.get("/v1/auth/me", headers=fresh)).status_code == 200
+    assert (await client.get("/v1/auth/me", headers=stolen)).status_code == 401
+
+
+async def test_a_pre_deactivation_token_stays_dead_after_reactivating(client, signup_payload):
+    stolen = await auth_headers(client, signup_payload)
+    await client.post(
+        "/v1/users/me/deactivate",
+        json={"password": signup_payload["password"]},
+        headers=stolen,
+    )
+    assert (await client.get("/v1/auth/me", headers=stolen)).status_code == 401
+
+    signin = await client.post(
+        "/v1/auth/signin",
+        json={
+            "username": signup_payload["username"],
+            "password": signup_payload["password"],
+        },
+    )
+    fresh = {"authorization": f"Bearer {signin.json()['data']['tokens']['access_token']}"}
+
+    assert (await client.get("/v1/auth/me", headers=fresh)).status_code == 200
+    assert (await client.get("/v1/auth/me", headers=stolen)).status_code == 401

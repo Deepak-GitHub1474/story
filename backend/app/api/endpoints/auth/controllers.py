@@ -216,7 +216,6 @@ async def signin(
     user.update(update)
 
     await _record_device(user_id=user["_id"], login_info=login_info, mongo=mongo, now=now)
-    await redis.delete(keys.reset_marker(user["_id"]))
 
     tokens = await _issue_session(user=user, settings=settings, redis=redis)
     return {"user": serialize_user(user), "tokens": tokens}

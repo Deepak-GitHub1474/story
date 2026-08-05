@@ -242,6 +242,10 @@ async def complete_reset(
             await redis.delete(keys.refresh_token(token_hash))
         await redis.delete(keys.refresh_family(family_id))
     await redis.delete(keys.user_sessions(user_id))
-    await redis.set(keys.reset_marker(user_id), "1", ex=settings.ACCESS_TOKEN_TTL_MINUTES * 60)
+    await redis.set(
+        keys.session_epoch(user_id),
+        int(utc_now().timestamp() * 1000),
+        ex=settings.ACCESS_TOKEN_TTL_MINUTES * 60,
+    )
 
     return {"password_reset": True}

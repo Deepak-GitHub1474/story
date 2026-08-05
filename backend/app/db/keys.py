@@ -45,5 +45,5 @@ def reset_token(token_hash: str) -> str:
     return f"{NAMESPACE}:RESET_TOKEN:{token_hash}"
 
 
-def reset_marker(user_id: str) -> str:
-    return f"{NAMESPACE}:RESET_MARK:{user_id}"
+def session_epoch(user_id: str) -> str:
+    return f"{NAMESPACE}:SESSION_EPOCH:{user_id}"
