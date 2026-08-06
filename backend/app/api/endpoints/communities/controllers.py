@@ -49,7 +49,9 @@ async def joined_slugs(user_id: str, mongo: AsyncIOMotorDatabase) -> list[str]:
 
 
 async def _require(slug: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
-    community = await mongo[COMMUNITIES].find_one({"slug": slug, "status": "active"}, PROJECTION)
+    community = await mongo[COMMUNITIES].find_one(
+        {"slug": slug, "status": {"$ne": "deleted"}}, PROJECTION
+    )
     if community is None:
         raise api_error(ErrorCode.COMMUNITY_NOT_FOUND)
     return community
@@ -71,7 +73,7 @@ async def list_communities(
     docs = (
         await mongo[COMMUNITIES]
         .find(selector, PROJECTION)
-        .sort([("counts.members", -1), ("slug", 1)])
+        .sort([("category_order", 1), ("counts.members", -1), ("name", 1)])
         .limit(LIST_LIMIT)
         .to_list(length=LIST_LIMIT)
     )
@@ -85,7 +87,7 @@ async def my_communities(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, An
         return {"items": []}
     docs = (
         await mongo[COMMUNITIES]
-        .find({"slug": {"$in": slugs}, "status": "active"}, PROJECTION)
+        .find({"slug": {"$in": slugs}, "status": {"$ne": "deleted"}}, PROJECTION)
         .to_list(length=len(slugs))
     )
     return {"items": [serialize(doc, is_member=True) for doc in docs]}

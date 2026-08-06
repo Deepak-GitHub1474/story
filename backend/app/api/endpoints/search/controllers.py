@@ -87,7 +87,7 @@ async def search(*, query: str, kind: str, claims, mongo: AsyncIOMotorDatabase) 
                 },
                 COMMUNITY_PROJECTION,
             )
-            .sort("counts.members", -1)
+            .sort([("category_order", 1), ("counts.members", -1), ("name", 1)])
             .limit(RESULT_LIMIT)
             .to_list(length=RESULT_LIMIT)
         )

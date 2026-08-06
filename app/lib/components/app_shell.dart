@@ -221,14 +221,23 @@ class _ComposeButtonState extends State<_ComposeButton> {
           scale: _isPressed ? 0.9 : 1,
           duration: AppMotion.fast,
           curve: AppMotion.easeOut,
-          child: SizedBox(
-            width: 52,
-            height: 40,
-            child: Icon(
-              Icons.add_box_outlined,
-              color: colors.textPrimary,
-              size: AppSizes.iconMd + 4,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_box_outlined,
+                color: colors.textPrimary,
+                size: AppSizes.iconMd,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Write',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: AppTypeScale.caption,
+                ),
+              ),
+            ],
           ),
         ),
       ),

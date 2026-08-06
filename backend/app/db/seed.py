@@ -171,6 +171,19 @@ async def seed_reference_data(db: AsyncIOMotorDatabase) -> dict[str, int]:
             upsert=True,
         )
 
+    category_order = {slug: order for slug, _, _, _, order in CATEGORIES}
+
+    await db["communities"].update_many(
+        {"is_curated": True, "_id": {"$nin": [slug for slug, _, _, _ in COMMUNITIES]}},
+        {"$set": {"status": "retired", "updated_at": now}},
+    )
+    await db["interests"].delete_many(
+        {"_id": {"$nin": [slug for slug, _, _ in INTERESTS]}}
+    )
+    await db["community_categories"].delete_many(
+        {"_id": {"$nin": [slug for slug, _, _, _, _ in CATEGORIES]}}
+    )
+
     for slug, name, category_id, description in COMMUNITIES:
         await db["communities"].update_one(
             {"_id": slug},
@@ -179,6 +192,7 @@ async def seed_reference_data(db: AsyncIOMotorDatabase) -> dict[str, int]:
                     "slug": slug,
                     "name": name,
                     "category_id": category_id,
+                    "category_order": category_order.get(category_id, 999),
                     "description": description,
                     "icon": category_id,
                     "accent_token": "accent",
