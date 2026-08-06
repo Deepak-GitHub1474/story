@@ -502,3 +502,25 @@ The server stores `salt`, `wrapped_private_key` and the public key. It never see
 **Password reset destroys chat history**, for the same reason it destroys the vault: the new password derives a different key, and the old wrap cannot be opened. The reset warning must say so.
 
 **Still no forward secrecy.** One key per conversation, no Double Ratchet. A compromised conversation key opens the whole thread, past and future. A ratchet is the correct fix and is a large build; it also complicates multi-device, because each device needs its own ratchet state. Named here rather than implied.
+
+
+## Email OTP handling
+
+One Redis hash per account holds the code and its attempt count. Every rule below is enforced there, so there is no second place to keep in step.
+
+| Rule | How |
+|---|---|
+| Ten minute life | `EXPIRE` on the hash at issue, 600s |
+| Single use | The hash is `DEL`eted the moment a code verifies |
+| Five wrong tries locks | `HINCRBY attempts`, refused at 5 |
+| Locked for thirty seconds | The lock reply reports the hash's live TTL |
+| No new code while locked | `issue` checks the attempt count before anything else |
+| Thirty second resend cooldown | A separate key, so it survives independently |
+
+Two of these are subtle and worth stating.
+
+**The attempt counter is written with `HSETNX`, so asking for a new code does not reset it.** Without that, the lockout is decorative — five wrong guesses, request a fresh code, five more, forever. Refusing the request outright is the second half of the same defence.
+
+**Nothing about the reply distinguishes a real address from an unknown one.** A locked account and a wrong code both come back through the same generic shape used elsewhere in recovery, because a lockout that only ever happens to real accounts is an enumeration oracle.
+
+**A failed send never raises.** If SMTP is down the code is still stored and the endpoint still answers normally, for the same reason: only real addresses would hang, and the hang would be the answer.
