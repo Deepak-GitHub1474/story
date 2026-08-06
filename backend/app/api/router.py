@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.endpoints.admin.router import router as admin_router
 from app.api.endpoints.admin.vault_router import router as admin_vault_router
 from app.api.endpoints.auth.router import router as auth_router
+from app.api.endpoints.chat.router import router as chat_router
 from app.api.endpoints.communities.router import router as communities_router
 from app.api.endpoints.connections.router import router as connections_router
 from app.api.endpoints.email.router import router as email_router
@@ -24,6 +25,7 @@ api_router.include_router(health_router)
 api_router.include_router(auth_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_vault_router)
+api_router.include_router(chat_router)
 api_router.include_router(tickets_router)
 api_router.include_router(totp_router)
 api_router.include_router(email_router)

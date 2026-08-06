@@ -30,6 +30,11 @@ async def client(app_instance):
 REFERENCE_COLLECTIONS = {"interests", "community_categories", "communities"}
 
 MUTABLE_COLLECTIONS = (
+    "chat_identities",
+    "chat_conversations",
+    "chat_conversation_keys",
+    "chat_messages",
+    "chat_reads",
     "users",
     "user_keys",
     "stories",

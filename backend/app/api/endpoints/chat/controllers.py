@@ -1,0 +1,453 @@
+from typing import Any
+
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from app.api.endpoints.chat import constants as c
+from app.api.endpoints.connections import controllers as connection_controllers
+from app.core.errors import ErrorCode, api_error
+from app.core.ids import new_id
+from app.core.time import to_wire, utc_now
+
+
+def pair_key(first: str, second: str) -> str:
+    return ":".join(sorted((first, second)))
+
+
+async def _user_by_username(username: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    user = await mongo[c.USERS].find_one(
+        {"username_lower": username.lower(), "deleted_at": None},
+        {"_id": 1, "username": 1, "display_name": 1, "avatar_seed": 1, "blocked": 1},
+    )
+    if user is None or user.get("blocked"):
+        raise api_error(ErrorCode.USER_NOT_FOUND)
+    return user
+
+
+async def _blocked_between(first: str, second: str, mongo: AsyncIOMotorDatabase) -> bool:
+    found = await mongo[c.CONNECTIONS].find_one(
+        {
+            "status": "blocked",
+            "$or": [
+                {"follower_id": first, "followee_id": second},
+                {"follower_id": second, "followee_id": first},
+            ],
+        },
+        {"_id": 1},
+    )
+    return found is not None
+
+
+async def _follows(follower: str, followee: str, mongo: AsyncIOMotorDatabase) -> bool:
+    return await connection_controllers.is_following(follower, followee, mongo)
+
+
+async def publish_identity(body, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    now = utc_now()
+    await mongo[c.IDENTITIES].update_one(
+        {"_id": claims.user_id},
+        {
+            "$set": {"public_key": body.public_key, "updated_at": now},
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
+    return {"public_key": body.public_key}
+
+
+async def read_identity(
+    username: str | None, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    user_id = claims.user_id
+    if username is not None:
+        user_id = (await _user_by_username(username, mongo))["_id"]
+
+    identity = await mongo[c.IDENTITIES].find_one({"_id": user_id}, {"public_key": 1})
+    if identity is None:
+        raise api_error(ErrorCode.CHAT_NO_IDENTITY)
+    return {"public_key": identity["public_key"], "user_id": user_id}
+
+
+def _other_id(conversation: dict[str, Any], user_id: str) -> str:
+    return next(
+        participant
+        for participant in conversation["participant_ids"]
+        if participant != user_id
+    )
+
+
+async def _serialize_conversation(
+    conversation: dict[str, Any], *, user_id: str, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    other_id = _other_id(conversation, user_id)
+    other = await mongo[c.USERS].find_one(
+        {"_id": other_id}, {"username": 1, "display_name": 1, "avatar_seed": 1}
+    )
+
+    key = await mongo[c.KEYS].find_one(
+        {"_id": f"{conversation['_id']}:{user_id}"},
+        {"wrapped_cek": 1, "sender_public_key": 1},
+    )
+    mine = await mongo[c.READS].find_one({"_id": f"{conversation['_id']}:{user_id}"})
+    theirs = await mongo[c.READS].find_one({"_id": f"{conversation['_id']}:{other_id}"})
+
+    unread = await mongo[c.MESSAGES].count_documents(
+        {
+            "conversation_id": conversation["_id"],
+            "sender_id": {"$ne": user_id},
+            "_id": {"$gt": (mine or {}).get("last_read_message_id", "")},
+        }
+    )
+
+    return {
+        "conversation_id": conversation["_id"],
+        "state": conversation["state"],
+        "is_requester": conversation.get("requested_by") == user_id,
+        "other": {
+            "user_id": other_id,
+            "username": (other or {}).get("username", ""),
+            "display_name": (other or {}).get("display_name", ""),
+            "avatar_seed": (other or {}).get("avatar_seed", ""),
+        },
+        "wrapped_cek": (key or {}).get("wrapped_cek"),
+        "sender_public_key": (key or {}).get("sender_public_key"),
+        "unread_count": unread,
+        "their_last_read_message_id": (theirs or {}).get("last_read_message_id"),
+        "last_message_at": to_wire(conversation.get("last_message_at")),
+        "created_at": to_wire(conversation.get("created_at")),
+    }
+
+
+async def start_conversation(body, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    other = await _user_by_username(body.username, mongo)
+    if other["_id"] == claims.user_id:
+        raise api_error(ErrorCode.CHAT_SELF, field="username")
+
+    if await _blocked_between(claims.user_id, other["_id"], mongo):
+        raise api_error(ErrorCode.CHAT_BLOCKED)
+
+    key = pair_key(claims.user_id, other["_id"])
+    existing = await mongo[c.CONVERSATIONS].find_one({"pair_key": key})
+    if existing is not None:
+        return {
+            "conversation": await _serialize_conversation(
+                existing, user_id=claims.user_id, mongo=mongo
+            ),
+            "created": False,
+        }
+
+    mutual = await _follows(claims.user_id, other["_id"], mongo) and await _follows(
+        other["_id"], claims.user_id, mongo
+    )
+
+    now = utc_now()
+    conversation = {
+        "_id": new_id("cnv"),
+        "pair_key": key,
+        "participant_ids": sorted((claims.user_id, other["_id"])),
+        "state": c.ACCEPTED if mutual else c.PENDING,
+        "requested_by": None if mutual else claims.user_id,
+        "last_message_at": now,
+        "created_at": now,
+        "updated_at": now,
+    }
+    await mongo[c.CONVERSATIONS].insert_one(conversation)
+
+    await mongo[c.KEYS].insert_many(
+        [
+            {
+                "_id": f"{conversation['_id']}:{claims.user_id}",
+                "conversation_id": conversation["_id"],
+                "user_id": claims.user_id,
+                "wrapped_cek": body.wrapped_cek_for_me,
+                "sender_public_key": body.sender_public_key,
+                "created_at": now,
+            },
+            {
+                "_id": f"{conversation['_id']}:{other['_id']}",
+                "conversation_id": conversation["_id"],
+                "user_id": other["_id"],
+                "wrapped_cek": body.wrapped_cek_for_them,
+                "sender_public_key": body.sender_public_key,
+                "created_at": now,
+            },
+        ]
+    )
+
+    return {
+        "conversation": await _serialize_conversation(
+            conversation, user_id=claims.user_id, mongo=mongo
+        ),
+        "created": True,
+    }
+
+
+async def list_conversations(
+    *, claims, mongo: AsyncIOMotorDatabase, state: str | None
+) -> dict[str, Any]:
+    query: dict[str, Any] = {
+        "participant_ids": claims.user_id,
+        "deleted_by": {"$ne": claims.user_id},
+    }
+
+    if state == c.PENDING:
+        query["state"] = c.PENDING
+        query["requested_by"] = {"$ne": claims.user_id}
+    else:
+        query["$or"] = [{"state": c.ACCEPTED}, {"requested_by": claims.user_id}]
+
+    docs = (
+        await mongo[c.CONVERSATIONS]
+        .find(query)
+        .sort("last_message_at", -1)
+        .limit(c.CONVERSATION_LIMIT)
+        .to_list(length=c.CONVERSATION_LIMIT)
+    )
+
+    return {
+        "items": [
+            await _serialize_conversation(doc, user_id=claims.user_id, mongo=mongo)
+            for doc in docs
+        ]
+    }
+
+
+async def _member_conversation(
+    conversation_id: str, user_id: str, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await mongo[c.CONVERSATIONS].find_one(
+        {"_id": conversation_id, "participant_ids": user_id}
+    )
+    if conversation is None:
+        raise api_error(ErrorCode.CONVERSATION_NOT_FOUND)
+    return conversation
+
+
+async def get_conversation(
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+    return {
+        "conversation": await _serialize_conversation(
+            conversation, user_id=claims.user_id, mongo=mongo
+        )
+    }
+
+
+async def accept_conversation(
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+    if conversation.get("requested_by") == claims.user_id:
+        raise api_error(ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT)
+
+    await mongo[c.CONVERSATIONS].update_one(
+        {"_id": conversation_id},
+        {"$set": {"state": c.ACCEPTED, "requested_by": None, "updated_at": utc_now()}},
+    )
+    return {"conversation_id": conversation_id, "state": c.ACCEPTED}
+
+
+async def delete_conversation(
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    await mongo[c.CONVERSATIONS].update_one(
+        {"_id": conversation_id}, {"$addToSet": {"deleted_by": claims.user_id}}
+    )
+    return {"conversation_id": conversation_id, "deleted": True}
+
+
+def _serialize_message(doc: dict[str, Any]) -> dict[str, Any]:
+    is_deleted = doc.get("deleted_at") is not None
+    return {
+        "message_id": doc["_id"],
+        "conversation_id": doc["conversation_id"],
+        "sender_id": doc["sender_id"],
+        "ciphertext": None if is_deleted else doc["ciphertext"],
+        "reply_to": doc.get("reply_to"),
+        "is_deleted": is_deleted,
+        "reactions": [
+            {"user_id": user_id, "emoji": emoji}
+            for user_id, emoji in (doc.get("reactions") or {}).items()
+        ],
+        "created_at": to_wire(doc.get("created_at")),
+    }
+
+
+async def send_message(
+    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+
+    other_id = _other_id(conversation, claims.user_id)
+    if await _blocked_between(claims.user_id, other_id, mongo):
+        raise api_error(ErrorCode.CHAT_BLOCKED)
+
+    now = utc_now()
+    message = {
+        "_id": new_id("msg"),
+        "conversation_id": conversation_id,
+        "sender_id": claims.user_id,
+        "ciphertext": body.ciphertext,
+        "reply_to": body.reply_to,
+        "reactions": {},
+        "created_at": now,
+        "deleted_at": None,
+    }
+    await mongo[c.MESSAGES].insert_one(message)
+    await mongo[c.CONVERSATIONS].update_one(
+        {"_id": conversation_id},
+        {"$set": {"last_message_at": now, "updated_at": now}, "$pull": {"deleted_by": other_id}},
+    )
+
+    return {"message": _serialize_message(message)}
+
+
+async def list_messages(
+    conversation_id: str,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    limit: int,
+    cursor: str | None,
+    after: str | None,
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    limit = max(1, min(limit, c.MESSAGE_MAX_LIMIT))
+
+    query: dict[str, Any] = {"conversation_id": conversation_id}
+
+    if after:
+        query["_id"] = {"$gt": after}
+        docs = (
+            await mongo[c.MESSAGES]
+            .find(query)
+            .sort("_id", 1)
+            .limit(limit)
+            .to_list(length=limit)
+        )
+        return {
+            "items": [_serialize_message(doc) for doc in docs],
+            "next_cursor": None,
+            "has_more": False,
+        }
+
+    if cursor:
+        query["_id"] = {"$lt": cursor}
+
+    docs = (
+        await mongo[c.MESSAGES]
+        .find(query)
+        .sort("_id", -1)
+        .limit(limit + 1)
+        .to_list(length=limit + 1)
+    )
+    has_more = len(docs) > limit
+    page = docs[:limit]
+
+    return {
+        "items": [_serialize_message(doc) for doc in page],
+        "next_cursor": page[-1]["_id"] if page and has_more else None,
+        "has_more": has_more,
+    }
+
+
+async def unsend_message(
+    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+
+    message = await mongo[c.MESSAGES].find_one(
+        {"_id": message_id, "conversation_id": conversation_id}, {"sender_id": 1}
+    )
+    if message is None:
+        raise api_error(ErrorCode.MESSAGE_NOT_FOUND)
+    if message["sender_id"] != claims.user_id:
+        raise api_error(ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT)
+
+    await mongo[c.MESSAGES].update_one(
+        {"_id": message_id},
+        {"$set": {"deleted_at": utc_now(), "ciphertext": None, "reactions": {}}},
+    )
+    return {"message_id": message_id, "deleted": True}
+
+
+async def set_reaction(
+    conversation_id: str, message_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    result = await mongo[c.MESSAGES].update_one(
+        {"_id": message_id, "conversation_id": conversation_id, "deleted_at": None},
+        {"$set": {f"reactions.{claims.user_id}": body.emoji}},
+    )
+    if result.matched_count == 0:
+        raise api_error(ErrorCode.MESSAGE_NOT_FOUND)
+    return {"message_id": message_id, "emoji": body.emoji}
+
+
+async def clear_reaction(
+    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    await mongo[c.MESSAGES].update_one(
+        {"_id": message_id, "conversation_id": conversation_id},
+        {"$unset": {f"reactions.{claims.user_id}": ""}},
+    )
+    return {"message_id": message_id, "emoji": None}
+
+
+async def mark_read(
+    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    now = utc_now()
+    await mongo[c.READS].update_one(
+        {"_id": f"{conversation_id}:{claims.user_id}"},
+        {
+            "$set": {
+                "conversation_id": conversation_id,
+                "user_id": claims.user_id,
+                "last_read_message_id": body.message_id,
+                "updated_at": now,
+            }
+        },
+        upsert=True,
+    )
+    return {"conversation_id": conversation_id, "last_read_message_id": body.message_id}
+
+
+async def unread_count(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    conversations = (
+        await mongo[c.CONVERSATIONS]
+        .find(
+            {
+                "participant_ids": claims.user_id,
+                "deleted_by": {"$ne": claims.user_id},
+                "$or": [{"state": c.ACCEPTED}, {"requested_by": claims.user_id}],
+            },
+            {"_id": 1},
+        )
+        .to_list(length=c.CONVERSATION_LIMIT)
+    )
+
+    unread = 0
+    for conversation in conversations:
+        mine = await mongo[c.READS].find_one({"_id": f"{conversation['_id']}:{claims.user_id}"})
+        unread += await mongo[c.MESSAGES].count_documents(
+            {
+                "conversation_id": conversation["_id"],
+                "sender_id": {"$ne": claims.user_id},
+                "_id": {"$gt": (mine or {}).get("last_read_message_id", "")},
+            }
+        )
+
+    requests = await mongo[c.CONVERSATIONS].count_documents(
+        {
+            "participant_ids": claims.user_id,
+            "state": c.PENDING,
+            "requested_by": {"$ne": claims.user_id},
+            "deleted_by": {"$ne": claims.user_id},
+        }
+    )
+
+    return {"unread": unread, "requests": requests}
