@@ -85,7 +85,7 @@ class AppShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 64,
+            height: 56,
             child: Row(
               children: [
                 Expanded(
@@ -135,11 +135,15 @@ class _ShellTab extends StatelessWidget {
     final colors = context.colors;
     final color = isActive ? colors.accent : colors.textMuted;
 
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return Semantics(
+      label: destination.label,
+      button: true,
+      selected: isActive,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           AnimatedScale(
             scale: isActive ? 1.1 : 1,
             duration: AppMotion.fast,
@@ -177,17 +181,8 @@ class _ShellTab extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          AnimatedDefaultTextStyle(
-            duration: AppMotion.fast,
-            style: TextStyle(
-              color: color,
-              fontSize: AppTypeScale.caption,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            ),
-            child: Text(destination.label),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -221,23 +216,18 @@ class _ComposeButtonState extends State<_ComposeButton> {
           scale: _isPressed ? 0.9 : 1,
           duration: AppMotion.fast,
           curve: AppMotion.easeOut,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
+          child: Semantics(
+            label: 'Write',
+            button: true,
+            child: SizedBox(
+              width: 52,
+              height: 40,
+              child: Icon(
                 Icons.add_box_outlined,
                 color: colors.textPrimary,
-                size: AppSizes.iconMd,
+                size: AppSizes.iconMd + 4,
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Write',
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: AppTypeScale.caption,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
