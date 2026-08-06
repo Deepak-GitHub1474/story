@@ -44,6 +44,7 @@ class SecureStore {
 
   static const _accessTokenKey = 'story.access_token';
   static const _refreshTokenKey = 'story.refresh_token';
+  static const _chatKeyPrefix = 'story.chat_key.';
 
   Future<String?> readAccessToken() => _store.read(_accessTokenKey);
 
@@ -56,6 +57,11 @@ class SecureStore {
     await _store.write(_accessTokenKey, accessToken);
     await _store.write(_refreshTokenKey, refreshToken);
   }
+
+  Future<String?> readChatKey(String userId) => _store.read('$_chatKeyPrefix$userId');
+
+  Future<void> saveChatKey(String userId, String privateKey) =>
+      _store.write('$_chatKeyPrefix$userId', privateKey);
 
   Future<void> clear() async {
     await _store.delete(_accessTokenKey);

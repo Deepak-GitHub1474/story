@@ -68,6 +68,26 @@ class Endpoints {
   static const String reports = '/reports';
 
   static const String keys = '/users/me/keys';
+  static const String chatIdentity = '/chat/identity';
+  static const String chatUnread = '/chat/unread-count';
+  static const String chatConversations = '/chat/conversations';
+
+  static String chatIdentityOf(String username) => '/chat/identity/$username';
+
+  static String chatConversation(String id) => '/chat/conversations/$id';
+
+  static String chatAccept(String id) => '/chat/conversations/$id/accept';
+
+  static String chatMessages(String id) => '/chat/conversations/$id/messages';
+
+  static String chatRead(String id) => '/chat/conversations/$id/read';
+
+  static String chatMessage(String id, String messageId) =>
+      '/chat/conversations/$id/messages/$messageId';
+
+  static String chatReaction(String id, String messageId) =>
+      '/chat/conversations/$id/messages/$messageId/reaction';
+
   static const String tickets = '/tickets';
   static const String securityActivity = '/security-activity';
   static const String vaultOverview = '/vault/overview';

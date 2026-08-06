@@ -26,6 +26,8 @@ import '../features/settings/screens/change_password_screen.dart';
 import '../features/settings/screens/edit_profile_screen.dart';
 import '../features/settings/screens/sessions_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
+import '../features/chat/screens/chat_list_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
 import '../features/vault/screens/recovery_screen.dart';
 import '../features/vault/screens/vault_setup_screen.dart';
 import '../features/vault/screens/vault_screen.dart';
@@ -44,6 +46,12 @@ const shellDestinations = [
     label: 'Activity',
     icon: Icons.favorite_border,
     activeIcon: Icons.favorite,
+  ),
+  ShellDestination(
+    route: Routes.chats,
+    label: 'Chat',
+    icon: Icons.chat_bubble_outline,
+    activeIcon: Icons.chat_bubble,
   ),
   ShellDestination(
     route: Routes.profile,
@@ -229,11 +237,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: Routes.chats,
+            pageBuilder: (context, state) =>
+                NoTransitionPage(key: state.pageKey, child: const ChatListScreen()),
+          ),
+          GoRoute(
             path: Routes.profile,
             pageBuilder: (context, state) =>
                 NoTransitionPage(key: state.pageKey, child: const ProfileScreen()),
           ),
         ],
+      ),
+      GoRoute(
+        path: '${Routes.chat}/:conversationId',
+        pageBuilder: (context, state) => slidePage(
+          key: state.pageKey,
+          child: ChatScreen(
+            conversationId: state.pathParameters['conversationId']!,
+          ),
+        ),
       ),
       GoRoute(
         path: Routes.settings,

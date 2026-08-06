@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,7 @@ import '../../../core/api/endpoints.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
@@ -35,6 +38,25 @@ class PublicProfileScreen extends ConsumerStatefulWidget {
 
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   PublicProfile? _override;
+
+  bool _isOpeningChat = false;
+
+  Future<void> _openChat(String username) async {
+    setState(() => _isOpeningChat = true);
+    final id = await ref.read(chatStarterProvider).open(username);
+    if (!mounted) return;
+    setState(() => _isOpeningChat = false);
+
+    if (id == null) {
+      AppToast.show(
+        context,
+        'They have not opened chat on their device yet.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+    unawaited(context.push('${Routes.chat}/$id'));
+  }
 
   Future<void> _toggleFollow(PublicProfile profile) async {
     final next = !profile.isFollowing;
@@ -201,8 +223,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       ],
                       if (!profile.isMe) ...[
                         const SizedBox(height: AppSpacing.lg),
-                        SizedBox(
-                          width: double.infinity,
+                        Row(
+                          children: [
+                        Expanded(
                           child: Material(
                             color: profile.isFollowing
                                 ? Colors.transparent
@@ -236,6 +259,37 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                               ),
                             ),
                           ),
+                        ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                child: InkWell(
+                                  onTap: _isOpeningChat
+                                      ? null
+                                      : () => _openChat(profile.username),
+                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                  child: Container(
+                                    height: 42,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: colors.border),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                    ),
+                                    child: Text(
+                                      _isOpeningChat ? 'Opening' : 'Message',
+                                      style: TextStyle(
+                                        color: colors.textPrimary,
+                                        fontSize: AppTypeScale.body,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
