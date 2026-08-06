@@ -23,9 +23,11 @@ class SettingsScreen extends ConsumerWidget {
     final readingSize = ref.watch(readingSizeProvider);
     final user = ref.watch(authProvider).user;
 
-    return SafeArea(
-      child: CustomScrollView(
-        slivers: [
+    return Scaffold(
+      backgroundColor: colors.bg,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
           SliverAppBar(
             pinned: true,
             backgroundColor: colors.bg,
@@ -183,7 +185,8 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
