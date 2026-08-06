@@ -524,3 +524,28 @@ Two of these are subtle and worth stating.
 **Nothing about the reply distinguishes a real address from an unknown one.** A locked account and a wrong code both come back through the same generic shape used elsewhere in recovery, because a lockout that only ever happens to real accounts is an enumeration oracle.
 
 **A failed send never raises.** If SMTP is down the code is still stored and the endpoint still answers normally, for the same reason: only real addresses would hang, and the hang would be the answer.
+
+
+## Sealed vault files
+
+Every vault file is stored the same way. What differs is whether it is listed.
+
+| | Listed in the tabs | Found by |
+|---|---|---|
+| **Open** | Yes | Browsing Photos, Videos or PDFs |
+| **Sealed** | **No** | Typing its secret word, exactly |
+
+A sealed file's secret word is never stored. What is stored is `label_hash`:
+
+```
+label_key  = HKDF-SHA256(UMK, info = "story.vault.label.v1")
+label_hash = HMAC-SHA256(label_key, trim(secret_word))
+```
+
+Search sends only the hash. The server compares hashes and knows nothing about the word, and because `label_key` comes from the account's own UMK, the same word under two accounts produces two different hashes — nobody can build a rainbow table across users.
+
+**The match is exact and case-sensitive.** `DeV`, `dev` and `Dev` are three different files. Only surrounding whitespace is forgiven, because a trailing space is invisible and would otherwise lock someone out of their own file forever. Internal spacing counts: `my key` and `my  key` differ.
+
+The earlier version lowercased and collapsed whitespace before hashing. That made a secret word roughly as strong as its lowercase form and quietly shrank the search space; it is now exact.
+
+**There is no list of sealed files anywhere.** Not in the API, not in the admin surface, not in the database in a readable form. Forget the word and the file is unreachable — by the owner and by everyone else. That is the property being bought.

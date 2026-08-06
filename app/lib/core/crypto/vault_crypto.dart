@@ -137,6 +137,5 @@ class VaultCrypto {
     return mac.bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  static String normalizeLabel(String label) =>
-      label.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  static String normalizeLabel(String label) => label.trim();
 }

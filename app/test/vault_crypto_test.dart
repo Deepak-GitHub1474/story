@@ -189,11 +189,13 @@ void main() {
     expect(a, equals(b));
   });
 
-  test('a label hash normalises case and spacing', () async {
+  test('a label hash forgives surrounding space but nothing else', () async {
     final umk = await crypto.randomBytes(32);
-    final a = await crypto.labelHash(umk: umk, label: 'Wedding Photos');
-    final b = await crypto.labelHash(umk: umk, label: '  wedding   photos ');
-    expect(a, equals(b));
+    final exact = await crypto.labelHash(umk: umk, label: 'Wedding Photos');
+
+    expect(await crypto.labelHash(umk: umk, label: ' Wedding Photos '), exact);
+    expect(await crypto.labelHash(umk: umk, label: 'wedding photos'), isNot(exact));
+    expect(await crypto.labelHash(umk: umk, label: 'Wedding  Photos'), isNot(exact));
   });
 
   test('the same label under a different master key hashes differently', () async {
@@ -213,5 +215,54 @@ void main() {
     final hash = await crypto.labelHash(umk: umk, label: 'wedding');
     expect(hash, isNot(contains('wedding')));
     expect(hash.length, 64);
+  });
+
+  group('a sealed label must be typed exactly', () {
+    test('a different case does not find it', () async {
+      final umk = await crypto.randomBytes(VaultCrypto.keyLength);
+
+      final sealed = await crypto.labelHash(umk: umk, label: 'DeV');
+
+      expect(await crypto.labelHash(umk: umk, label: 'dev'), isNot(sealed));
+      expect(await crypto.labelHash(umk: umk, label: 'Dev'), isNot(sealed));
+      expect(await crypto.labelHash(umk: umk, label: 'DEV'), isNot(sealed));
+    });
+
+    test('the exact word finds it', () async {
+      final umk = await crypto.randomBytes(VaultCrypto.keyLength);
+
+      expect(
+        await crypto.labelHash(umk: umk, label: 'DeV'),
+        await crypto.labelHash(umk: umk, label: 'DeV'),
+      );
+    });
+
+    test('spacing inside the label matters', () async {
+      final umk = await crypto.randomBytes(VaultCrypto.keyLength);
+
+      expect(
+        await crypto.labelHash(umk: umk, label: 'my key'),
+        isNot(await crypto.labelHash(umk: umk, label: 'my  key')),
+      );
+    });
+
+    test('surrounding whitespace is forgiven', () async {
+      final umk = await crypto.randomBytes(VaultCrypto.keyLength);
+
+      expect(
+        await crypto.labelHash(umk: umk, label: '  DeV  '),
+        await crypto.labelHash(umk: umk, label: 'DeV'),
+      );
+    });
+
+    test('another account cannot find your label', () async {
+      final mine = await crypto.randomBytes(VaultCrypto.keyLength);
+      final theirs = await crypto.randomBytes(VaultCrypto.keyLength);
+
+      expect(
+        await crypto.labelHash(umk: mine, label: 'DeV'),
+        isNot(await crypto.labelHash(umk: theirs, label: 'DeV')),
+      );
+    });
   });
 }

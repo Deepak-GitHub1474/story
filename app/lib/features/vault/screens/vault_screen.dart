@@ -34,6 +34,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   bool _isBusy = false;
   String? _error;
   VaultItem? _found;
+  String? _kindFilter;
 
   @override
   void initState() {
@@ -274,9 +275,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           const SizedBox(height: AppSpacing.lg),
           AppTextField(
             controller: _label,
-            label: 'Find a hidden item',
-            hint: 'Type the exact label',
-            helperText: 'Exact match only. There is no list of hidden items.',
+            label: 'Find a sealed file',
+            hint: 'Type its secret word',
+            helperText: 'Exact match, capitals included. Sealed files are in no list.',
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _searchHidden(),
           ),
@@ -284,7 +285,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             const SizedBox(height: AppSpacing.md),
             VaultTile(item: _found!, isHiddenResult: true),
           ],
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.lg),
+          _KindTabs(
+            selected: _kindFilter,
+            onSelect: (kind) => setState(() => _kindFilter = kind),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: items.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -294,7 +300,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   style: TextStyle(color: colors.textSecondary),
                 ),
               ),
-              data: (list) => list.isEmpty
+              data: (list) {
+                final shown = _kindFilter == null
+                    ? list
+                    : list.where((item) => item.kind == _kindFilter).toList();
+                return shown.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -332,11 +342,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       ),
                     )
                   : ListView.separated(
-                      itemCount: list.length,
+                      itemCount: shown.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) => VaultTile(item: list[index]),
-                    ),
+                      itemBuilder: (context, index) => VaultTile(item: shown[index]),
+                    );
+              },
             ),
           ),
         ],
@@ -406,11 +417,12 @@ class _HideSheetState extends State<_HideSheet> {
             contentPadding: EdgeInsets.zero,
             activeThumbColor: colors.accent,
             title: Text(
-              'Hide this item',
+              'Seal this file',
               style: TextStyle(color: colors.textPrimary),
             ),
             subtitle: Text(
-              'It will not appear in any list. Only typing the exact label finds it.',
+              'A sealed file never appears in any tab. It is found only by '
+              'typing its secret word exactly, capitals and all.',
               style: TextStyle(
                 color: colors.textMuted,
                 fontSize: AppTypeScale.caption,
@@ -421,9 +433,9 @@ class _HideSheetState extends State<_HideSheet> {
             const SizedBox(height: AppSpacing.md),
             AppTextField(
               controller: _label,
-              label: 'Label',
+              label: 'Secret word',
               hint: 'Something only you would type',
-              helperText: 'Forget it and the item is gone for good.',
+              helperText: 'Case matters. Forget it and the file is gone for good.',
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
@@ -435,6 +447,73 @@ class _HideSheetState extends State<_HideSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+class _KindTabs extends StatelessWidget {
+  const _KindTabs({required this.selected, required this.onSelect});
+
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+
+  static const _tabs = [
+    (null, 'All', Icons.grid_view_outlined),
+    ('image', 'Photos', Icons.image_outlined),
+    ('video', 'Videos', Icons.videocam_outlined),
+    ('pdf', 'PDFs', Icons.picture_as_pdf_outlined),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      children: [
+        for (final (kind, label, icon) in _tabs) ...[
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onSelect(kind),
+              child: AnimatedContainer(
+                duration: AppMotion.fast,
+                curve: AppMotion.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: selected == kind ? colors.accent : colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: selected == kind ? colors.accent : colors.border,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      icon,
+                      size: AppSizes.iconSm,
+                      color: selected == kind
+                          ? colors.accentText
+                          : colors.textSecondary,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: selected == kind
+                            ? colors.accentText
+                            : colors.textSecondary,
+                        fontSize: AppTypeScale.caption,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (kind != 'pdf') const SizedBox(width: AppSpacing.sm),
+        ],
+      ],
     );
   }
 }
