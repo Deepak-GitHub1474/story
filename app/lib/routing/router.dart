@@ -51,12 +51,6 @@ const shellDestinations = [
     icon: Icons.person_outline,
     activeIcon: Icons.person,
   ),
-  ShellDestination(
-    route: Routes.settings,
-    label: 'Settings',
-    icon: Icons.settings_outlined,
-    activeIcon: Icons.settings,
-  ),
 ];
 
 int _shellIndex(String location) {
@@ -239,12 +233,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 NoTransitionPage(key: state.pageKey, child: const ProfileScreen()),
           ),
-          GoRoute(
-            path: Routes.settings,
-            pageBuilder: (context, state) =>
-                NoTransitionPage(key: state.pageKey, child: const SettingsScreen()),
-          ),
         ],
+      ),
+      GoRoute(
+        path: Routes.settings,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const SettingsScreen()),
       ),
     ],
     redirect: (context, state) {

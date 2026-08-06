@@ -24,6 +24,17 @@ async def create_story(client, headers, **overrides):
     return await client.post("/v1/stories", json=body, headers=headers)
 
 
+async def published(client, headers, **overrides):
+    story = (await create_story(client, headers, **overrides)).json()["data"]["story"]
+    return (
+        await client.post(
+            f"/v1/stories/{story['story_id']}/publish",
+            json={"visibility": "public"},
+            headers=headers,
+        )
+    ).json()["data"]["story"]
+
+
 async def test_create_returns_a_draft(client, signup_payload):
     headers = await auth_headers(client, signup_payload)
     response = await create_story(client, headers)
@@ -444,3 +455,49 @@ async def test_story_counts_update_on_the_author_profile(client, signup_payload)
     )
     user = (await client.get("/v1/auth/me", headers=headers)).json()["data"]["user"]
     assert user["counts"]["stories"] == 1
+
+
+async def test_a_story_i_liked_shows_as_liked_in_my_feed(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=headers)
+
+    feed = (await client.get("/v1/stories/feed", headers=headers)).json()["data"]["items"]
+    mine = next(item for item in feed if item["story_id"] == story["story_id"])
+
+    assert mine["is_liked"] is True
+
+
+async def test_a_story_i_liked_shows_as_liked_on_my_profile(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=headers)
+
+    items = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is True
+
+
+async def test_a_story_i_did_not_like_stays_unliked(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await published(client, headers)
+
+    items = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is False
+
+
+async def test_someone_elses_like_is_not_mine(client, signup_payload, app_instance):
+    author = await auth_headers(client, signup_payload)
+    story = await published(client, author)
+
+    other = await auth_headers(
+        client,
+        {"username": "like_watcher", "password": "another-long-password", "tnc_accepted": True},
+    )
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=other)
+
+    items = (await client.get("/v1/stories/mine", headers=author)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is False
+    assert items[0]["counts"]["likes"] == 1

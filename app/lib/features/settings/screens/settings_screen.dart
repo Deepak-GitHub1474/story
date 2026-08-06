@@ -30,6 +30,7 @@ class SettingsScreen extends ConsumerWidget {
             pinned: true,
             backgroundColor: colors.bg,
             surfaceTintColor: Colors.transparent,
+            leading: BackButton(onPressed: () => context.pop()),
             title: const Text('Settings'),
           ),
           SliverPadding(

@@ -30,3 +30,8 @@ FEED_PROJECTION = {
     "created_at": 1,
     "updated_at": 1,
 }
+
+UPLIFTING_TONES = ("joyful", "open")
+COMMUNITY_CATEGORIES = "community_categories"
+COMMUNITIES = "communities"
+INTERESTS = "interests"

@@ -131,7 +131,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 ),
                 IconButton(
                   icon: Icon(Icons.settings_outlined, color: colors.textMuted),
-                  onPressed: () => context.go(Routes.settings),
+                  onPressed: () => context.push(Routes.settings),
                 ),
               ],
             ),
