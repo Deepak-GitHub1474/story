@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/Avatar';
 import { FollowButton } from '@/components/FollowButton';
+import { MessageButton } from '@/components/MessageButton';
 import { UserMenu } from '@/components/UserMenu';
 import { StoryRow } from '@/components/StoryRow';
+import { requireUser } from '@/lib/server/guard';
 import { backendFetch } from '@/lib/server/session';
 import type { TPage, TStory } from '@/lib/types';
 
@@ -29,9 +31,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params;
 
-  const [profileResult, storiesResult] = await Promise.all([
+  const [profileResult, storiesResult, viewer] = await Promise.all([
     backendFetch<{ user: TProfile }>(`/users/${username}`),
     backendFetch<TPage<TStory>>(`/users/${username}/stories?limit=20`),
+    requireUser(),
   ]);
 
   if (!profileResult.ok) notFound();
@@ -76,7 +79,13 @@ export default async function PublicProfilePage({ params }: Props) {
 
       {!profile.is_me ? (
         <div className="mt-6 max-w-xs">
-          <FollowButton username={profile.username} isFollowing={profile.is_following} />
+          <div className="flex gap-3">
+            <FollowButton
+              username={profile.username}
+              isFollowing={profile.is_following}
+            />
+            <MessageButton username={profile.username} viewerId={viewer.user_id} />
+          </div>
         </div>
       ) : null}
 

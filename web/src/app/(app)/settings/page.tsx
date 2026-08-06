@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { AppearanceControls } from '@/components/AppearanceControls';
 import { AsyncButton } from '@/components/AsyncButton';
-import { AvatarButton } from '@/components/AvatarButton';
 import { NotificationToggle } from '@/components/NotificationToggle';
+import { OnlineToggle } from '@/components/OnlineToggle';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Row, Section } from '@/components/ui/Surface';
 import { signOutEverywhere } from '@/lib/actions/account';
@@ -19,9 +19,9 @@ export default async function SettingsPage() {
 
       <Section title="Account">
         <Row label="Edit profile" href="/settings/profile" />
+        <Row label="Your avatar" href="/settings/avatar" />
         <Row label="Your interests" href="/settings/interests" />
-        <Row label="New avatar" trailing={<AvatarButton />} />
-        <Row
+                <Row
           label="Recovery email"
           value={user.email_masked ?? 'Not set'}
           href="/settings/email"
@@ -48,6 +48,18 @@ export default async function SettingsPage() {
 
       <Section title="Vault">
         <Row label="Open vault" href="/vault" />
+      </Section>
+
+      <Section title="Chat">
+        <Row label="Messages" href="/chats" />
+        <Row
+          label="Show when I am online"
+          trailing={
+            <OnlineToggle
+              enabled={(user.prefs.show_online_status as boolean | undefined) ?? true}
+            />
+          }
+        />
       </Section>
 
       <Section title="Invite">
