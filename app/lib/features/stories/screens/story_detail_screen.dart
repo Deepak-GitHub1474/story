@@ -21,6 +21,8 @@ import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 import '../widgets/comment_composer.dart';
 import '../widgets/comment_tile.dart';
+import '../widgets/share_sheet.dart';
+import '../widgets/shared_story_card.dart';
 import '../widgets/story_post.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
@@ -391,14 +393,24 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                     ],
-                    SelectableText(
-                      story.body ?? story.excerpt,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: bodySize,
-                        height: 1.75,
+                    if ((story.body ?? story.excerpt).isNotEmpty)
+                      SelectableText(
+                        story.body ?? story.excerpt,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: bodySize,
+                          height: 1.75,
+                        ),
                       ),
-                    ),
+                    if (story.shared != null) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      SharedStoryCard(
+                        shared: story.shared!,
+                        onTap: () => context.push(
+                          '${Routes.story}/${story.shared!.storyId}',
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
@@ -428,6 +440,22 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             fontSize: AppTypeScale.label,
                           ),
                         ),
+                        if (story.isPublic) ...[
+                          const SizedBox(width: AppSpacing.xl),
+                          InkResponse(
+                            radius: 22,
+                            onTap: () => showShareSheet(
+                              context: context,
+                              ref: ref,
+                              story: story,
+                            ),
+                            child: Icon(
+                              Icons.ios_share,
+                              size: AppSizes.iconMd,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     Divider(color: colors.border, height: AppSpacing.xxl),

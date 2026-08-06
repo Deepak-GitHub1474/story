@@ -21,7 +21,6 @@ void main() {
       plaintext: plaintext,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
       metadata: {'filename': 'wedding.jpg', 'mime': 'image/jpeg'},
     );
 
@@ -31,7 +30,6 @@ void main() {
       saltItem: payload.saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
     );
 
     expect(opened, equals(plaintext));
@@ -44,7 +42,6 @@ void main() {
       plaintext: marker,
       umk: await crypto.randomBytes(32),
       passcodeKey: await crypto.randomBytes(32),
-      itemId: 'vit_1',
       metadata: const {},
     );
 
@@ -59,7 +56,6 @@ void main() {
       plaintext: file(64),
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
       metadata: {'filename': 'divorce-papers.pdf'},
     );
 
@@ -74,7 +70,6 @@ void main() {
       saltItem: payload.saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
     );
     expect(metadata['filename'], 'divorce-papers.pdf');
   });
@@ -85,7 +80,6 @@ void main() {
       plaintext: file(256),
       umk: umk,
       passcodeKey: await crypto.randomBytes(32),
-      itemId: 'vit_1',
       metadata: const {},
     );
     final wrongPasscode = await crypto.randomBytes(32);
@@ -97,7 +91,6 @@ void main() {
         saltItem: payload.saltItem,
         umk: umk,
         passcodeKey: wrongPasscode,
-        itemId: 'vit_1',
       ),
       throwsA(isA<Exception>()),
     );
@@ -109,7 +102,6 @@ void main() {
       plaintext: file(256),
       umk: await crypto.randomBytes(32),
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
       metadata: const {},
     );
 
@@ -122,7 +114,6 @@ void main() {
         saltItem: payload.saltItem,
         umk: wrongUmk,
         passcodeKey: passcodeKey,
-        itemId: 'vit_1',
       ),
       throwsA(isA<Exception>()),
     );
@@ -136,18 +127,22 @@ void main() {
       plaintext: file(256),
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_1',
+      metadata: const {},
+    );
+    final other = await transfer.encrypt(
+      plaintext: file(256),
+      umk: umk,
+      passcodeKey: passcodeKey,
       metadata: const {},
     );
 
     expect(
       () => transfer.decrypt(
         ciphertext: payload.ciphertext,
-        wrappedDek: payload.wrappedDek,
-        saltItem: payload.saltItem,
+        wrappedDek: other.wrappedDek,
+        saltItem: other.saltItem,
         umk: umk,
         passcodeKey: passcodeKey,
-        itemId: 'vit_2',
       ),
       throwsA(isA<Exception>()),
     );
@@ -169,7 +164,6 @@ void main() {
       plaintext: plaintext,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_big',
       metadata: const {},
     );
     final opened = await transfer.decrypt(
@@ -178,7 +172,6 @@ void main() {
       saltItem: payload.saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_big',
     );
 
     expect(opened.length, plaintext.length);

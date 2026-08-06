@@ -13,8 +13,8 @@ import '../models/chat_models.dart';
 final chatCryptoProvider = Provider<ChatCrypto>((ref) => const ChatCrypto());
 
 final realtimeProvider = Provider<RealtimeClient>((ref) {
-  final store = ref.watch(secureStoreProvider);
-  final client = RealtimeClient(store.readAccessToken);
+  final repository = ref.watch(chatRepositoryProvider);
+  final client = RealtimeClient(repository.realtimeTicket);
   unawaited(client.connect());
   ref.onDispose(client.dispose);
   return client;

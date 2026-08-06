@@ -1,27 +1,34 @@
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
-from app.config import get_settings
-from app.core.tokens import decode_access_token
+from app.api.endpoints.realtime import controllers
+from app.core.deps import CurrentClaims
+from app.db.redis import RedisClient
 from app.logging import get_logger
 from app.realtime.hub import hub
+from app.responses import ok_response
 
 logger = get_logger("story.realtime.ws")
 
 router = APIRouter(tags=["realtime"])
 
 
-@router.websocket("/ws")
-async def realtime(websocket: WebSocket, token: str = Query(default="")):
-    settings = get_settings()
+@router.post("/realtime/ticket", status_code=status.HTTP_201_CREATED)
+async def issue_ticket(claims: CurrentClaims, redis: RedisClient):
+    data = await controllers.issue_ticket(claims.user_id, redis=redis)
+    return ok_response("Socket ticket. It lasts seconds and is used once.", data=data)
 
-    try:
-        claims = decode_access_token(token, secret=settings.JWT_SECRET)
-    except Exception:
+
+@router.websocket("/ws")
+async def realtime(websocket: WebSocket, ticket: str = Query(default="")):
+    user_id = await controllers.claim_ticket(
+        ticket, redis=websocket.app.state.redis
+    )
+    if user_id is None:
         await websocket.close(code=4401)
         return
 
     await websocket.accept()
-    hub.attach(claims.user_id, websocket)
+    hub.attach(user_id, websocket)
 
     try:
         while True:
@@ -29,4 +36,4 @@ async def realtime(websocket: WebSocket, token: str = Query(default="")):
     except WebSocketDisconnect:
         pass
     finally:
-        hub.detach(claims.user_id, websocket)
+        hub.detach(user_id, websocket)

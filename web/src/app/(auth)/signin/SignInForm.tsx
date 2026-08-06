@@ -23,7 +23,7 @@ export function SignInForm() {
   return (
     <form action={action} className="flex flex-col gap-6">
       <header>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Welcome back</h1>
+        <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">Welcome back</h1>
         <p className="mt-2 text-text-secondary">
           Your username and password are the only things we know about you.
         </p>

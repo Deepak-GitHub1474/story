@@ -142,26 +142,23 @@ void main() {
       umk: umk,
       kekPasscode: passcodeKey,
       saltItem: salt,
-      itemId: 'vit_1',
     );
     final withoutUmk = await crypto.deriveItemKey(
       umk: await crypto.randomBytes(32),
       kekPasscode: passcodeKey,
       saltItem: salt,
-      itemId: 'vit_1',
     );
     final withoutPasscode = await crypto.deriveItemKey(
       umk: umk,
       kekPasscode: await crypto.randomBytes(32),
       saltItem: salt,
-      itemId: 'vit_1',
     );
 
     expect(correct, isNot(equals(withoutUmk)));
     expect(correct, isNot(equals(withoutPasscode)));
   });
 
-  test('two items with the same secrets get different keys', () async {
+  test('the same secrets and salt always give the same item key', () async {
     final umk = await crypto.randomBytes(32);
     final passcodeKey = await crypto.randomBytes(32);
     final salt = await crypto.randomBytes(16);
@@ -170,13 +167,29 @@ void main() {
       umk: umk,
       kekPasscode: passcodeKey,
       saltItem: salt,
-      itemId: 'vit_1',
+    );
+    final again = await crypto.deriveItemKey(
+      umk: umk,
+      kekPasscode: passcodeKey,
+      saltItem: salt,
+    );
+
+    expect(first, equals(again));
+  });
+
+  test('two items with the same secrets get different keys', () async {
+    final umk = await crypto.randomBytes(32);
+    final passcodeKey = await crypto.randomBytes(32);
+
+    final first = await crypto.deriveItemKey(
+      umk: umk,
+      kekPasscode: passcodeKey,
+      saltItem: await crypto.randomBytes(16),
     );
     final second = await crypto.deriveItemKey(
       umk: umk,
       kekPasscode: passcodeKey,
-      saltItem: salt,
-      itemId: 'vit_2',
+      saltItem: await crypto.randomBytes(16),
     );
 
     expect(first, isNot(equals(second)));

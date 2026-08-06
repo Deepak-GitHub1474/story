@@ -167,3 +167,44 @@ async def test_a_reshare_of_a_reshare_points_at_the_original(client, signup_payl
     ).json()["data"]["story"]
 
     assert story["shared"]["story_id"] == original["story_id"]
+
+
+async def test_a_feed_of_reshares_reads_the_sources_in_one_query(
+    client, signup_payload, app_instance, monkeypatch
+):
+    author = await auth_headers(client, signup_payload)
+    originals = [await published(client, author, body=f"Original {i}.") for i in range(4)]
+
+    reader = await auth_headers(client, account("resharer_page"))
+    for original in originals:
+        draft = (
+            await client.post(
+                "/v1/stories",
+                json={"body": "Worth reading.", "shared_story_id": original["story_id"]},
+                headers=reader,
+            )
+        ).json()["data"]["story"]
+        await client.post(
+            f"/v1/stories/{draft['story_id']}/publish",
+            json={"visibility": "public"},
+            headers=reader,
+        )
+
+    from motor.motor_asyncio import AsyncIOMotorCollection
+
+    reads = []
+    original_find_one = AsyncIOMotorCollection.find_one
+
+    async def counting_find_one(self, *args, **kwargs):
+        if self.name == "stories":
+            reads.append(args[0] if args else kwargs.get("filter"))
+        return await original_find_one(self, *args, **kwargs)
+
+    monkeypatch.setattr(AsyncIOMotorCollection, "find_one", counting_find_one)
+
+    response = await client.get("/v1/stories/mine?limit=20", headers=reader)
+
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+    assert len([item for item in items if item.get("shared")]) == 4
+    assert reads == []

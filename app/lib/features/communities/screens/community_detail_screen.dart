@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../components/app_toast.dart';
 import '../../../components/skeleton.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/story_post.dart';
 import '../models/community_models.dart';
 import '../providers/community_providers.dart';
@@ -229,17 +228,7 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
   }
 
   Future<void> _share() async {
-    final result = await ref.read(storyRepositoryProvider).share(_story.storyId);
-    if (!mounted) return;
-
-    final url = result.valueOrNull;
-    if (url == null) {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
-      return;
-    }
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!mounted) return;
-    AppToast.show(context, 'Link copied.', kind: AppToastKind.success);
+    await showShareSheet(context: context, ref: ref, story: _story);
   }
 
   @override
@@ -253,6 +242,9 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
       onLike: _toggleLike,
       onShare: _story.isPublic ? _share : null,
       onAuthorTap: () => context.push('${Routes.user}/${_story.author.username}'),
+      onSharedTap: _story.shared == null
+          ? null
+          : () => context.push('${Routes.story}/${_story.shared!.storyId}'),
     );
   }
 }

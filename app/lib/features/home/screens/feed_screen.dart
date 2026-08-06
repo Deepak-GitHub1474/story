@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/story_list_view.dart';
 
 class FeedScreen extends ConsumerWidget {
@@ -32,18 +31,8 @@ class FeedScreen extends ConsumerWidget {
   }
 
   Future<void> _share(BuildContext context, WidgetRef ref, Story story) async {
-    final result = await ref.read(storyRepositoryProvider).share(story.storyId);
-    if (!context.mounted) return;
-
-    final url = result.valueOrNull;
-    if (url == null) {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
-      return;
-    }
-
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!context.mounted) return;
-    AppToast.show(context, 'Link copied.', kind: AppToastKind.success);
+    final posted = await showShareSheet(context: context, ref: ref, story: story);
+    if (posted) await ref.read(feedProvider.notifier).refresh();
   }
 
   @override
@@ -95,6 +84,7 @@ class FeedScreen extends ConsumerWidget {
               ),
               onLike: (story) => _like(ref, story),
               onShare: (story) => _share(context, ref, story),
+              onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),
               endLabel: 'You are all caught up',
               emptyTitle: 'Nothing here yet',
               emptyBody:

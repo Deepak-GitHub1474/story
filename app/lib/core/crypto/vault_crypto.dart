@@ -67,17 +67,18 @@ class VaultCrypto {
     return Uint8List.fromList(await key.extractBytes());
   }
 
+  static String itemBinding(Uint8List saltItem) => base64Encode(saltItem);
+
   Future<Uint8List> deriveItemKey({
     required Uint8List umk,
     required Uint8List kekPasscode,
     required Uint8List saltItem,
-    required String itemId,
   }) async {
     final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: keyLength);
     final key = await hkdf.deriveKey(
       secretKey: SecretKey([...umk, ...kekPasscode]),
       nonce: saltItem,
-      info: utf8.encode('$itemInfoPrefix$itemId'),
+      info: utf8.encode('$itemInfoPrefix${itemBinding(saltItem)}'),
     );
     return Uint8List.fromList(await key.extractBytes());
   }

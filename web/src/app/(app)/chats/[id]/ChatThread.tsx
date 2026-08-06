@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRealtime } from '@/lib/chat/useRealtime';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ChatUnlock } from '@/components/ChatUnlock';
@@ -21,8 +22,11 @@ import {
   markConversationRead,
   peerIdentity,
   sendMessage,
+  setReaction,
   unsendMessage,
 } from '@/lib/actions/chat';
+
+const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '🙏', '🔥'];
 
 export function ChatThread({
   conversationId,
@@ -35,9 +39,14 @@ export function ChatThread({
   const [conversation, setConversation] = useState<TConversation | null>(null);
   const [messages, setMessages] = useState<TChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<TChatMessage | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cek = useRef<Uint8Array | null>(null);
   const lastTyping = useRef(0);
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
+
+  const refresh = useCallback(() => refreshRef.current(), []);
 
   const decorate = useCallback(
     async (raw: TChatMessage[]) => {
@@ -99,6 +108,18 @@ export function ChatThread({
     };
   }, [conversationId, identity, userId]);
 
+  useRealtime((event) => {
+    if (event.conversation_id !== conversationId) return;
+
+    if (event.type === 'unsent') {
+      setMessages((current) =>
+        current.filter((m) => m.message_id !== event.message_id),
+      );
+      return;
+    }
+    void refresh();
+  });
+
   useEffect(() => {
     let cancelled = false;
 
@@ -124,8 +145,9 @@ export function ChatThread({
       }
     }
 
+    refreshRef.current = poll;
     void poll();
-    const timer = setInterval(poll, 3000);
+    const timer = setInterval(poll, 20000);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -139,8 +161,17 @@ export function ChatThread({
 
     setDraft('');
     const ciphertext = await encryptMessage(key, text, conversationId);
-    const ok = await sendMessage(conversationId, ciphertext);
+    const ok = await sendMessage(conversationId, ciphertext, replyTo?.message_id);
+    setReplyTo(null);
     if (!ok) setError('That did not send.');
+  }
+
+  async function react(message: TChatMessage, emoji: string) {
+    const mine = message.reactions.some(
+      (r) => r.emoji === emoji && r.user_id === userId,
+    );
+    await setReaction(conversationId, message.message_id, mine ? null : emoji);
+    void refresh();
   }
 
   const other = conversation?.other;
@@ -194,29 +225,93 @@ export function ChatThread({
           return (
             <li
               key={message.message_id}
+              id={`m-${message.message_id}`}
               className={cn('flex flex-col', isMine ? 'items-end' : 'items-start')}
             >
-              <div
+              <button
+                type="button"
+                onDoubleClick={() => react(message, '❤️')}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setMenuFor(menuFor === message.message_id ? null : message.message_id);
+                }}
                 className={cn(
-                  'max-w-[76%] rounded-[length:var(--radius-lg)] px-4 py-2.5 leading-relaxed',
+                  'max-w-[76%] rounded-[length:var(--radius-lg)] px-4 py-2.5 text-left leading-relaxed',
                   isMine
                     ? 'bg-accent text-accent-text'
                     : 'border border-border bg-surface',
                 )}
               >
-                {message.is_deleted ? (
-                  <span className="text-text-muted italic">Unsent</span>
-                ) : (
-                  (message.text ?? 'Cannot be opened in this browser')
-                )}
-              </div>
+                {message.reply_to ? (
+                  <span
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      document
+                        .getElementById(`m-${message.reply_to}`)
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={cn(
+                      'mb-2 block truncate rounded-[length:var(--radius-sm)] px-2 py-1 text-[length:var(--text-caption)]',
+                      isMine ? 'bg-black/15' : 'bg-surface-raised',
+                    )}
+                  >
+                    {messages.find((m) => m.message_id === message.reply_to)?.text ??
+                      'Message'}
+                  </span>
+                ) : null}
+                {message.text ?? 'Cannot be opened in this browser'}
+              </button>
+
+              {message.reactions.length > 0 ? (
+                <span className="-mt-1 rounded-[length:var(--radius-pill)] border border-border bg-surface-raised px-1.5 text-[length:var(--text-caption)]">
+                  {message.reactions.map((r) => r.emoji).join('')}
+                </span>
+              ) : null}
+
+              {menuFor === message.message_id ? (
+                <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[length:var(--radius-md)] border border-border bg-surface px-2 py-1.5">
+                  {QUICK_REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        react(message, emoji);
+                        setMenuFor(null);
+                      }}
+                      className={cn(
+                        'rounded-full px-1 text-lg transition-transform hover:scale-125',
+                        message.reactions.some(
+                          (r) => r.emoji === emoji && r.user_id === userId,
+                        ) && 'bg-accent/20',
+                      )}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyTo(message);
+                      setMenuFor(null);
+                    }}
+                    className="text-[length:var(--text-caption)] font-semibold text-accent"
+                  >
+                    Reply
+                  </button>
+                </div>
+              ) : null}
               <div className="mt-1 flex items-center gap-2 text-[length:var(--text-caption)] text-text-muted">
                 <span>{relativeTime(message.created_at)}</span>
                 {seen ? <span className="text-accent">Seen</span> : null}
-                {isMine && !message.is_deleted ? (
+                {isMine ? (
                   <button
                     type="button"
-                    onClick={() => unsendMessage(conversationId, message.message_id)}
+                    onClick={() => {
+                      setMessages((current) =>
+                        current.filter((m) => m.message_id !== message.message_id),
+                      );
+                      void unsendMessage(conversationId, message.message_id);
+                    }}
                     className="hover:text-text-secondary"
                   >
                     Unsend
@@ -237,12 +332,28 @@ export function ChatThread({
         </div>
       ) : canWrite ? (
         <form
-          className="flex items-end gap-3 border-t border-border pt-4"
+          className="flex flex-col gap-2 border-t border-border pt-4"
           onSubmit={(event) => {
             event.preventDefault();
             void send();
           }}
         >
+          {replyTo ? (
+            <div className="flex items-center gap-2 rounded-[length:var(--radius-sm)] bg-surface-raised px-3 py-2 text-[length:var(--text-caption)]">
+              <span className="w-0.5 self-stretch bg-accent" />
+              <span className="flex-1 truncate text-text-secondary">
+                {replyTo.text ?? 'Message'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReplyTo(null)}
+                className="text-text-muted hover:text-text-primary"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+          <div className="flex items-end gap-3">
           <textarea
             value={draft}
             rows={1}
@@ -261,6 +372,7 @@ export function ChatThread({
           <Button type="submit" isFullWidth={false} disabled={!draft.trim()}>
             Send
           </Button>
+          </div>
         </form>
       ) : null}
     </div>

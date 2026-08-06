@@ -120,6 +120,22 @@ async def create_story(
     }
 
 
+def _shared_payload(source: dict[str, Any]) -> dict[str, Any]:
+    snapshot = source.get("author_snapshot") or {}
+    return {
+        "story_id": source["_id"],
+        "title": source.get("title"),
+        "excerpt": source.get("excerpt", ""),
+        "slug": source.get("slug"),
+        "author": {
+            "user_id": source.get("author_id"),
+            "username": snapshot.get("username", ""),
+            "display_name": snapshot.get("display_name", "Someone"),
+            "avatar_seed": snapshot.get("avatar_seed", ""),
+        },
+    }
+
+
 async def _with_shared(payload, story, mongo) -> dict[str, Any]:
     shared_id = story.get("shared_story_id")
     if shared_id is None:
@@ -129,19 +145,27 @@ async def _with_shared(payload, story, mongo) -> dict[str, Any]:
     if source is None:
         return payload
 
-    snapshot = source.get("author_snapshot") or {}
-    payload["shared"] = {
-        "story_id": source["_id"],
-        "title": source.get("title"),
-        "excerpt": source.get("excerpt", ""),
-        "slug": source.get("slug"),
-        "author": {
-            "username": snapshot.get("username", ""),
-            "display_name": snapshot.get("display_name", "Someone"),
-            "avatar_seed": snapshot.get("avatar_seed", ""),
-        },
-    }
+    payload["shared"] = _shared_payload(source)
     return payload
+
+
+async def _attach_shared(payloads, docs, mongo) -> list[dict[str, Any]]:
+    wanted = {doc["shared_story_id"] for doc in docs if doc.get("shared_story_id")}
+    if not wanted:
+        return payloads
+
+    sources = (
+        await mongo[c.STORIES]
+        .find({"_id": {"$in": list(wanted)}, "deleted_at": None}, c.FEED_PROJECTION)
+        .to_list(length=len(wanted))
+    )
+    by_id = {source["_id"]: source for source in sources}
+
+    for payload, doc in zip(payloads, docs, strict=True):
+        source = by_id.get(doc.get("shared_story_id"))
+        if source is not None:
+            payload["shared"] = _shared_payload(source)
+    return payloads
 
 
 async def update_story(
@@ -489,14 +513,14 @@ async def _fetch(query: dict[str, Any], *, mongo, limit: int) -> list[dict[str, 
 async def _page(docs, next_cursor, has_more, *, viewer_id=None, mongo=None) -> dict[str, Any]:
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in docs], mongo)
     return {
-        "items": [
-            await _with_shared(
-                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked),
-                doc,
-                mongo,
-            )
-            for doc in docs
-        ],
+        "items": await _attach_shared(
+            [
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                for doc in docs
+            ],
+            docs,
+            mongo,
+        ),
         "next_cursor": next_cursor if has_more else None,
         "has_more": has_more,
     }
@@ -562,14 +586,14 @@ async def _paginate(
     page = docs[:limit]
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in page], mongo)
     return {
-        "items": [
-            await _with_shared(
-                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked),
-                doc,
-                mongo,
-            )
-            for doc in page
-        ],
+        "items": await _attach_shared(
+            [
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                for doc in page
+            ],
+            page,
+            mongo,
+        ),
         "next_cursor": page[-1]["_id"] if page and has_more else None,
         "has_more": has_more,
     }

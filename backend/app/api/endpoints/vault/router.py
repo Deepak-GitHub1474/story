@@ -58,8 +58,10 @@ async def create_passcode(body: CreatePasscodeRequest, claims: CurrentClaims, mo
 
 
 @router.get("/vault/items", status_code=status.HTTP_200_OK)
-async def list_items(claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.list_items(claims=claims, mongo=mongo)
+async def list_items(
+    claims: CurrentClaims, mongo: MongoDatabase, passcode_id: str | None = None
+):
+    data = await controllers.list_items(claims=claims, mongo=mongo, passcode_id=passcode_id)
     return ok_response("Vault items.", data=data)
 
 

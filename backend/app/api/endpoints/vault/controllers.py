@@ -281,13 +281,16 @@ async def complete_item(
     return {"item": serialize_item(item)}
 
 
-async def list_items(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def list_items(
+    *, claims, mongo: AsyncIOMotorDatabase, passcode_id: str | None = None
+) -> dict[str, Any]:
+    query = {"user_id": claims.user_id, "visibility": "normal", "deleted_at": None}
+    if passcode_id is not None:
+        query["passcode_id"] = passcode_id
+
     docs = (
         await mongo[c.VAULT_ITEMS]
-        .find(
-            {"user_id": claims.user_id, "visibility": "normal", "deleted_at": None},
-            c.LIST_PROJECTION,
-        )
+        .find(query, c.LIST_PROJECTION)
         .sort("_id", -1)
         .limit(c.LIST_LIMIT)
         .to_list(length=c.LIST_LIMIT)

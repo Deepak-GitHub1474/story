@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/Avatar';
 import { CommentThread } from '@/components/CommentThread';
 import { LikeButton } from '@/components/LikeButton';
+import { ShareControl } from '@/components/ShareControl';
+import { SharedStoryCard } from '@/components/SharedStoryCard';
 import { StoryMenu } from '@/components/StoryMenu';
 import { requireUser } from '@/lib/server/guard';
 import { backendFetch } from '@/lib/server/session';
@@ -43,6 +45,7 @@ export default async function StoryPage({ params }: Props) {
             {story.author.display_name}
           </Link>
           <p className="text-[length:var(--text-caption)] text-text-muted">
+            {story.shared ? `Shared ${story.shared.author.display_name}'s story · ` : ''}
             {formatDate(story.published_at ?? story.created_at)} ·{' '}
             {story.reading_minutes} min read
             {story.community ? ` · ${story.community.name}` : ''}
@@ -68,6 +71,8 @@ export default async function StoryPage({ params }: Props) {
             <p key={index}>{paragraph}</p>
           ))}
         </div>
+
+        {story.shared ? <SharedStoryCard shared={story.shared} /> : null}
       </article>
 
       <div className="mt-10 flex items-center gap-6 border-y border-border py-4">
@@ -79,6 +84,7 @@ export default async function StoryPage({ params }: Props) {
         <span className="text-[length:var(--text-label)] text-text-muted">
           {story.counts.comments} comments
         </span>
+        {story.visibility === 'public' ? <ShareControl story={story} /> : null}
       </div>
 
       <CommentThread

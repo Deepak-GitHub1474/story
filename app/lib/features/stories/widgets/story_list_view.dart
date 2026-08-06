@@ -19,6 +19,7 @@ class StoryListView extends StatefulWidget {
     this.onLike,
     this.onAuthorTap,
     this.onShare,
+    this.onOpenShared,
     this.onSwipe,
     this.emptyTitle = 'Nothing here yet',
     this.emptyBody = '',
@@ -34,6 +35,7 @@ class StoryListView extends StatefulWidget {
   final void Function(Story story)? onLike;
   final void Function(Story story)? onAuthorTap;
   final void Function(Story story)? onShare;
+  final void Function(String storyId)? onOpenShared;
   final Future<bool> Function(Story story, SwipeAction action)? onSwipe;
   final String emptyTitle;
   final String emptyBody;
@@ -129,6 +131,9 @@ class _StoryListViewState extends State<StoryListView> {
       onShare: widget.onShare == null || !story.isPublic
           ? null
           : () => widget.onShare!(story),
+      onSharedTap: story.shared == null
+          ? null
+          : () => widget.onOpenShared?.call(story.shared!.storyId),
     );
 
     if (widget.onSwipe == null) return post;

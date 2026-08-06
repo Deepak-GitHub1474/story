@@ -7,9 +7,9 @@ import '../api/endpoints.dart';
 typedef RealtimeEvent = Map<String, dynamic>;
 
 class RealtimeClient {
-  RealtimeClient(this._token);
+  RealtimeClient(this._ticket);
 
-  final Future<String?> Function() _token;
+  final Future<String?> Function() _ticket;
 
   WebSocket? _socket;
   StreamSubscription<dynamic>? _listener;
@@ -26,12 +26,15 @@ class RealtimeClient {
   Future<void> connect() async {
     if (_closed || isConnected) return;
 
-    final token = await _token();
-    if (token == null) return;
+    final ticket = await _ticket();
+    if (ticket == null) {
+      _scheduleRetry();
+      return;
+    }
 
     try {
       final url = Endpoints.baseUrl.replaceFirst(RegExp(r'^http'), 'ws');
-      final socket = await WebSocket.connect('$url/ws?token=$token');
+      final socket = await WebSocket.connect('$url/ws?ticket=$ticket');
       if (_closed) {
         await socket.close();
         return;

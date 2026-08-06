@@ -26,7 +26,7 @@ export function ForgotPasswordForm() {
         className="flex flex-col gap-6"
       >
         <header>
-          <h1 className="text-[length:var(--text-title)] font-semibold">
+          <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">
             Forgot password
           </h1>
           <p className="mt-2 leading-relaxed text-text-secondary">
@@ -53,7 +53,7 @@ export function ForgotPasswordForm() {
   return (
     <form action={resetAction} className="flex flex-col gap-6">
       <header>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Enter your code</h1>
+        <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">Enter your code</h1>
         <p className="mt-2 text-text-secondary">{requestState.ok}</p>
       </header>
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { StoryActions } from '@/components/StoryActions';
+import { SharedStoryCard } from '@/components/SharedStoryCard';
 import { StoryMenu } from '@/components/StoryMenu';
 import { Badge } from '@/components/ui/Surface';
 import { relativeTime } from '@/lib/format';
@@ -31,6 +32,7 @@ export function StoryRow({
             {story.author.display_name}
           </Link>
           <p className="text-[length:var(--text-caption)] text-text-muted">
+            {story.shared ? `Shared ${story.shared.author.display_name}'s story · ` : ''}
             {relativeTime(story.published_at ?? story.created_at)} ·{' '}
             {story.reading_minutes} min
             {story.community ? ` · ${story.community.name}` : ''}
@@ -63,20 +65,17 @@ export function StoryRow({
             {story.title}
           </h2>
         ) : null}
-        <p className="mt-2 line-clamp-4 leading-relaxed text-text-secondary">
-          {story.excerpt}
-        </p>
+        {story.excerpt ? (
+          <p className="mt-2 line-clamp-4 leading-relaxed text-text-secondary">
+            {story.excerpt}
+          </p>
+        ) : null}
       </Link>
 
+      {story.shared ? <SharedStoryCard shared={story.shared} /> : null}
+
       {story.visibility === 'draft' || story.visibility === 'scheduled' ? null : (
-        <StoryActions
-          storyId={story.story_id}
-          slug={story.slug}
-          isLiked={story.is_liked}
-          likes={story.counts.likes}
-          comments={story.counts.comments}
-          isPublic={story.visibility === 'public'}
-        />
+        <StoryActions story={story} />
       )}
     </article>
   );

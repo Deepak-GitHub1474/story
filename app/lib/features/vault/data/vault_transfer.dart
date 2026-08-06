@@ -71,7 +71,6 @@ class VaultTransfer {
     required Uint8List plaintext,
     required Uint8List umk,
     required Uint8List passcodeKey,
-    required String itemId,
     required Map<String, dynamic> metadata,
     String kind = 'other',
   }) async {
@@ -79,23 +78,23 @@ class VaultTransfer {
     final saltItem = await _crypto.randomBytes(VaultCrypto.saltLength);
     final dek = await _crypto.randomBytes(VaultCrypto.keyLength);
 
+    final binding = VaultCrypto.itemBinding(saltItem);
     final itemKey = await _crypto.deriveItemKey(
       umk: umk,
       kekPasscode: passcodeKey,
       saltItem: saltItem,
-      itemId: itemId,
     );
 
     final wrappedDek = await _crypto.wrap(
       key: itemKey,
       plaintext: dek,
-      aad: '${VaultCrypto.dekAadPrefix}$itemId',
+      aad: '${VaultCrypto.dekAadPrefix}$binding',
     );
 
     final ciphertext = await _crypto.wrap(
       key: dek,
       plaintext: packed.bytes,
-      aad: '${VaultCrypto.dekAadPrefix}$itemId',
+      aad: '${VaultCrypto.dekAadPrefix}$binding',
     );
 
     final encryptedMetadata = await _crypto.wrap(
@@ -103,7 +102,7 @@ class VaultTransfer {
       plaintext: Uint8List.fromList(
         utf8.encode(jsonEncode({...metadata, 'compression': packed.compression})),
       ),
-      aad: '${VaultCrypto.dekAadPrefix}$itemId',
+      aad: '${VaultCrypto.dekAadPrefix}$binding',
     );
 
     return EncryptedPayload(
@@ -122,26 +121,25 @@ class VaultTransfer {
     required Uint8List saltItem,
     required Uint8List umk,
     required Uint8List passcodeKey,
-    required String itemId,
     String compression = 'none',
   }) async {
+    final binding = VaultCrypto.itemBinding(saltItem);
     final itemKey = await _crypto.deriveItemKey(
       umk: umk,
       kekPasscode: passcodeKey,
       saltItem: saltItem,
-      itemId: itemId,
     );
 
     final dek = await _crypto.unwrap(
       key: itemKey,
       sealed: wrappedDek,
-      aad: '${VaultCrypto.dekAadPrefix}$itemId',
+      aad: '${VaultCrypto.dekAadPrefix}$binding',
     );
 
     final packed = await _crypto.unwrap(
       key: dek,
       sealed: ciphertext,
-      aad: '${VaultCrypto.dekAadPrefix}$itemId',
+      aad: '${VaultCrypto.dekAadPrefix}$binding',
     );
 
     return unpack(packed, compression);
@@ -153,7 +151,6 @@ class VaultTransfer {
     required Uint8List saltItem,
     required Uint8List umk,
     required Uint8List passcodeKey,
-    required String itemId,
   }) async {
     final plaintext = await decrypt(
       ciphertext: encryptedMetadata,
@@ -161,7 +158,6 @@ class VaultTransfer {
       saltItem: saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: itemId,
     );
     return Map<String, dynamic>.from(jsonDecode(utf8.decode(plaintext)) as Map);
   }

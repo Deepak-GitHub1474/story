@@ -17,6 +17,24 @@ export async function createDraft(form: FormData): Promise<void> {
   redirect(`/compose?id=${result.value.story.story_id}`);
 }
 
+export async function reshareStory(storyId: string, note: string) {
+  const created = await backendFetch<{ story: TStory }>('/stories', {
+    method: 'POST',
+    body: { title: null, body: note.trim(), shared_story_id: storyId },
+  });
+  if (!created.ok) return { error: created.message };
+
+  const published = await backendFetch<{ story: TStory }>(
+    `/stories/${created.value.story.story_id}/publish`,
+    { method: 'POST', body: { visibility: 'public' } },
+  );
+  if (!published.ok) return { error: published.message };
+
+  revalidatePath('/feed');
+  revalidatePath('/profile');
+  return { error: null };
+}
+
 export async function saveStory(storyId: string, title: string, body: string) {
   const result = await backendFetch<{ story: TStory }>(`/stories/${storyId}`, {
     method: 'PATCH',

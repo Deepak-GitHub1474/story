@@ -45,6 +45,14 @@ export type TMe = {
   created_at: string;
 };
 
+export type TSharedStory = {
+  story_id: string;
+  title: string | null;
+  excerpt: string;
+  slug: string | null;
+  author: TStoryAuthor & { user_id: string | null };
+};
+
 export type TStory = {
   story_id: string;
   author: TStoryAuthor & { user_id: string | null };
@@ -59,6 +67,7 @@ export type TStory = {
   is_liked: boolean;
   published_at: string | null;
   created_at: string;
+  shared?: TSharedStory | null;
 };
 
 export type TPage<T> = { items: T[]; next_cursor: string | null; has_more: boolean };
@@ -96,3 +105,29 @@ export type TNotification = {
 };
 
 export type TTokens = { access_token: string; refresh_token: string };
+
+export type TVaultKeys = {
+  salt_pw: string;
+  wrapped_umk: string;
+  kdf: Record<string, number | string>;
+};
+
+export type TVaultPasscode = {
+  passcode_id: string;
+  label: string;
+  scope: string;
+  salt_pc: string;
+  kdf: Record<string, number | string>;
+};
+
+export type TVaultItem = {
+  item_id: string;
+  kind: string;
+  size_bytes: number;
+  encrypted_metadata: string;
+  visibility: string;
+  status: string;
+  created_at: string;
+  wrapped_dek?: string;
+  salt_item?: string;
+};

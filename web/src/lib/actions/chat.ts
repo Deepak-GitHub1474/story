@@ -97,3 +97,13 @@ export async function storeChatBackup(body: {
 }) {
   await backendFetch('/chat/backup', { method: 'POST', body });
 }
+
+export async function setReaction(
+  conversationId: string,
+  messageId: string,
+  emoji: string | null,
+) {
+  const path = `/chat/conversations/${conversationId}/messages/${messageId}/reaction`;
+  await backendFetch(path, emoji ? { method: 'POST', body: { emoji } } : { method: 'DELETE' });
+  revalidatePath(`/chats/${conversationId}`);
+}

@@ -158,4 +158,12 @@ class ChatRepository {
     body: {'message_id': messageId},
     parse: (_) => true,
   );
+
+  Future<String?> realtimeTicket() async {
+    final result = await _client.post<String>(
+      Endpoints.realtimeTicket,
+      parse: (data) => data['ticket'] as String,
+    );
+    return result.valueOrNull;
+  }
 }

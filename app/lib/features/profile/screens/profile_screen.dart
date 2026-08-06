@@ -159,6 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               onSwipe: _onSwipe,
               onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
               onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
+              onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),
               onOpen: (story) => story.isDraft
                   ? context.push('${Routes.compose}?id=${story.storyId}')
                   : context.push('${Routes.story}/${story.storyId}'),
