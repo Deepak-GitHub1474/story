@@ -1,7 +1,53 @@
 USERS = "users"
 DEVICES = "devices"
 
-USERNAME_PATTERN = r"^[a-z0-9_]{3,20}$"
+USERNAME_PATTERN = r"^[a-z0-9]+([_-][a-z0-9]+)*$"
+USERNAME_MIN_LENGTH = 2
+USERNAME_MAX_LENGTH = 30
+
+RESERVED_USERNAMES = frozenset(
+    {
+        "admin",
+        "administrator",
+        "moderator",
+        "mod",
+        "staff",
+        "support",
+        "help",
+        "helpdesk",
+        "security",
+        "official",
+        "story",
+        "storyapp",
+        "team",
+        "root",
+        "system",
+        "api",
+        "www",
+        "mail",
+        "email",
+        "settings",
+        "login",
+        "signin",
+        "signup",
+        "logout",
+        "vault",
+        "chat",
+        "search",
+        "explore",
+        "about",
+        "terms",
+        "privacy",
+        "legal",
+        "billing",
+        "me",
+        "you",
+        "null",
+        "undefined",
+        "anonymous",
+    }
+)
+
 REFERRAL_CODE_ATTEMPTS = 8
 
 DEFAULT_PREFS = {

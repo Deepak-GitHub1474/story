@@ -191,7 +191,7 @@ class CommentTile extends StatelessWidget {
 
   List<InlineSpan> _bodySpans(BuildContext context, String body) {
     final colors = context.colors;
-    final pattern = RegExp(r'(@[a-z0-9_]{3,20})');
+    final pattern = RegExp(r'(@[a-z0-9]+(?:[_-][a-z0-9]+)*)');
     final spans = <InlineSpan>[];
     var index = 0;
 

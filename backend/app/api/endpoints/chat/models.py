@@ -14,7 +14,7 @@ class PublishIdentityRequest(BaseModel):
 class StartConversationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    username: Annotated[str, Field(min_length=3, max_length=20)]
+    username: Annotated[str, Field(min_length=2, max_length=30)]
     wrapped_cek_for_me: Annotated[str, Field(min_length=16, max_length=512)]
     wrapped_cek_for_them: Annotated[str, Field(min_length=16, max_length=512)]
     sender_public_key: Annotated[str, Field(min_length=16, max_length=256)]

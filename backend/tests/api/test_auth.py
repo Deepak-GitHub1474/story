@@ -49,7 +49,7 @@ async def test_signup_rejects_a_duplicate_username(client, signup_payload):
 
 
 async def test_signup_rejects_an_invalid_username(client, signup_payload):
-    response = await signup(client, {**signup_payload, "username": "AB"})
+    response = await signup(client, {**signup_payload, "username": "_ab"})
     assert response.status_code in (422,)
     assert response.json()["data"]["code"] in ("USERNAME_INVALID", "VALIDATION_FAILED")
 

@@ -67,7 +67,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   bool get _canSubmit =>
-      _username.text.length >= 3 &&
+      _username.text.length >= 2 &&
       _password.text.length >= 10 &&
       _tncAccepted &&
       _usernameAvailable != false;
@@ -140,8 +140,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   : _usernameError,
               helperText: _usernameAvailable == true ? 'Available.' : null,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9_]')),
-                LengthLimitingTextInputFormatter(20),
+                FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9_-]')),
+                LengthLimitingTextInputFormatter(30),
               ],
               onChanged: _onUsernameChanged,
               suffix: _checkingUsername

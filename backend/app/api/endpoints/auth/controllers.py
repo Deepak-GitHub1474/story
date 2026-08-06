@@ -92,6 +92,8 @@ def _ensure_usable(user: dict[str, Any]) -> None:
 
 
 async def username_available(username: str, *, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    if username in c.RESERVED_USERNAMES:
+        return {"available": False}
     if not is_valid_username(username):
         raise api_error(ErrorCode.USERNAME_INVALID, field="username")
     existing = await mongo[c.USERS].find_one({"username_lower": username}, {"_id": 1})

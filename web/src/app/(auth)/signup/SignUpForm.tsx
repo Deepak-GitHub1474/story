@@ -7,7 +7,9 @@ import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { EMPTY_FORM, checkUsername, signUp } from '@/lib/actions/auth';
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
+const USERNAME_PATTERN = /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/;
+const USERNAME_MIN = 2;
+const USERNAME_MAX = 30;
 
 export function SignUpForm() {
   const [state, action, isPending] = useActionState(signUp, EMPTY_FORM);
@@ -16,8 +18,13 @@ export function SignUpForm() {
   const [accepted, setAccepted] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
 
+  const isWellFormed =
+    username.length >= USERNAME_MIN &&
+    username.length <= USERNAME_MAX &&
+    USERNAME_PATTERN.test(username);
+
   useEffect(() => {
-    if (!USERNAME_PATTERN.test(username)) {
+    if (!isWellFormed) {
       setAvailable(null);
       return;
     }
@@ -32,10 +39,10 @@ export function SignUpForm() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [username]);
+  }, [username, isWellFormed]);
 
   const canSubmit =
-    USERNAME_PATTERN.test(username) &&
+    isWellFormed &&
     password.length >= 10 &&
     accepted &&
     available !== false;

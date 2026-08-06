@@ -2,13 +2,18 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-USERNAME_PATTERN = r"^[a-z0-9_]{3,20}$"
+from app.api.endpoints.auth.constants import (
+    USERNAME_MAX_LENGTH,
+    USERNAME_MIN_LENGTH,
+)
 
 
 class SignupRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    username: Annotated[str, Field(min_length=3, max_length=20)]
+    username: Annotated[
+        str, Field(min_length=USERNAME_MIN_LENGTH, max_length=USERNAME_MAX_LENGTH)
+    ]
     password: Annotated[str, Field(min_length=10, max_length=128)]
     tnc_accepted: bool
     referral_code: Annotated[str | None, Field(default=None, max_length=6)] = None
@@ -27,7 +32,7 @@ class SignupRequest(BaseModel):
 class SigninRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    username: Annotated[str, Field(min_length=1, max_length=20)]
+    username: Annotated[str, Field(min_length=1, max_length=USERNAME_MAX_LENGTH)]
     password: Annotated[str, Field(min_length=1, max_length=128)]
 
     @field_validator("username")
@@ -39,7 +44,7 @@ class SigninRequest(BaseModel):
 class UsernameAvailableRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    username: Annotated[str, Field(min_length=1, max_length=20)]
+    username: Annotated[str, Field(min_length=1, max_length=USERNAME_MAX_LENGTH)]
 
     @field_validator("username")
     @classmethod
