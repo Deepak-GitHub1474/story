@@ -52,7 +52,12 @@ class CommentTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppAvatar(seed: comment.author.avatarSeed, size: isReply ? 24 : 30),
+              AppAvatar(
+                seed: comment.author.avatarSeed,
+                size: isReply ? 24 : 30,
+                displayName: comment.author.displayName,
+                username: comment.author.username,
+              ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -191,7 +196,7 @@ class CommentTile extends StatelessWidget {
 
   List<InlineSpan> _bodySpans(BuildContext context, String body) {
     final colors = context.colors;
-    final pattern = RegExp(r'(@[a-z0-9]+(?:[_-][a-z0-9]+)*)');
+    final pattern = RegExp(r'(@[a-z0-9][a-z0-9_-]*)');
     final spans = <InlineSpan>[];
     var index = 0;
 

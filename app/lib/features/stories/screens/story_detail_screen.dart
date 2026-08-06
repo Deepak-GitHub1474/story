@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -154,13 +156,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   Future<void> _editComment(Comment comment, String storyId) async {
     final controller = TextEditingController(text: comment.body);
 
-    final next = await showModalBottomSheet<String?>(
+    final next = await showAppSheet<String?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
           left: AppSpacing.xl,
@@ -234,12 +231,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   Future<void> _openStoryMenu(Story story, {required bool isMine}) async {
     final colors = context.colors;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -343,7 +336,12 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        AppAvatar(seed: story.author.avatarSeed, size: 38),
+                        AppAvatar(
+                          seed: story.author.avatarSeed,
+                          size: 38,
+                          displayName: story.author.displayName,
+                          username: story.author.username,
+                        ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(

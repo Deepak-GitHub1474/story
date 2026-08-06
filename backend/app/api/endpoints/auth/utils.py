@@ -6,6 +6,7 @@ from typing import Any
 from app.api.endpoints.auth.constants import (
     PUBLIC_USER_PROJECTION,
     RESERVED_USERNAMES,
+    USERNAME_FORBIDDEN,
     USERNAME_MAX_LENGTH,
     USERNAME_MIN_LENGTH,
     USERNAME_PATTERN,
@@ -23,6 +24,8 @@ def is_valid_username(username: str) -> bool:
     if not USERNAME_MIN_LENGTH <= len(username) <= USERNAME_MAX_LENGTH:
         return False
     if username in RESERVED_USERNAMES:
+        return False
+    if any(run in username for run in USERNAME_FORBIDDEN):
         return False
     return bool(_USERNAME_RE.fullmatch(username))
 

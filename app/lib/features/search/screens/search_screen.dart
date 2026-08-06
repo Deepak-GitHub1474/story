@@ -86,7 +86,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   _SectionHeader(label: 'People'),
                   for (final user in results.users)
                     ListTile(
-                      leading: AppAvatar(seed: user.avatarSeed, size: 40),
+                      leading: AppAvatar(
+                        seed: user.avatarSeed,
+                        size: 40,
+                        displayName: user.displayName,
+                        username: user.username,
+                      ),
                       title: Text(
                         user.displayName,
                         style: TextStyle(

@@ -44,7 +44,12 @@ class StoryPost extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onAuthorTap,
-                  child: AppAvatar(seed: story.author.avatarSeed, size: 34),
+                  child: AppAvatar(
+                    seed: story.author.avatarSeed,
+                    size: 34,
+                    displayName: story.author.displayName,
+                    username: story.author.username,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(

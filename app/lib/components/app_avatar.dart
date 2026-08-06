@@ -2,11 +2,31 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
+String initialFor({required String? displayName, required String username}) {
+  for (final candidate in [displayName ?? '', username]) {
+    for (final rune in candidate.trim().runes) {
+      final character = String.fromCharCode(rune);
+      if (RegExp(r'[a-zA-Z0-9]').hasMatch(character)) {
+        return character.toUpperCase();
+      }
+    }
+  }
+  return '?';
+}
+
 class AppAvatar extends StatelessWidget {
-  const AppAvatar({super.key, required this.seed, this.size = 56});
+  const AppAvatar({
+    super.key,
+    required this.seed,
+    this.size = 56,
+    this.displayName,
+    this.username,
+  });
 
   final String seed;
   final double size;
+  final String? displayName;
+  final String? username;
 
   static const _palette = [
     Color(0xFF9B8CFF),
@@ -37,7 +57,9 @@ class AppAvatar extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        String.fromCharCode(65 + (hash % 26)),
+        displayName == null && username == null
+            ? String.fromCharCode(65 + (hash % 26))
+            : initialFor(displayName: displayName, username: username ?? ''),
         style: TextStyle(
           color: const Color(0xFF0B0D12),
           fontSize: size * 0.4,

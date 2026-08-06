@@ -14,7 +14,18 @@ async def signup(client, username):
 
 @pytest.mark.parametrize(
     "username",
-    ["ab", "de", "deepak", "dev_deepak", "dev-deepak", "a1", "x9y8z7", "a" * 30],
+    [
+        "ab",
+        "de",
+        "deepak",
+        "dev_deepak",
+        "dev-deepak",
+        "dev__deepak",
+        "dev___deepak",
+        "a1",
+        "x9y8z7",
+        "a" * 30,
+    ],
 )
 async def test_a_good_username_is_accepted(client, username):
     assert (await signup(client, username)).status_code == 201
@@ -29,9 +40,7 @@ async def test_a_good_username_is_accepted(client, username):
         "deepak_",
         "-deepak",
         "deepak-",
-        "dev__deepak",
         "dev--deepak",
-        "dev_-deepak",
         "dev.deepak",
         "dev deepak",
         "dev@deepak",

@@ -97,8 +97,8 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.USERNAME_TAKEN: (409, "That username is already taken."),
     ErrorCode.USERNAME_INVALID: (
         422,
-        "Use 2 to 30 letters or numbers. A hyphen or underscore may sit "
-        "between them, but not at either end.",
+        "Use 2 to 30 letters, numbers, underscores or hyphens. It must "
+        "start and end with a letter or number.",
     ),
     ErrorCode.PASSWORD_TOO_WEAK: (422, "Choose a longer, less common password."),
     ErrorCode.ACCOUNT_BLOCKED: (403, "This account cannot be used right now."),

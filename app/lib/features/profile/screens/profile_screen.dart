@@ -181,7 +181,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             AppToast.show(context, 'New avatar.');
                           }
                         },
-                        child: AppAvatar(seed: user.avatarSeed, size: 72),
+                        child: AppAvatar(
+                          seed: user.avatarSeed,
+                          size: 72,
+                          displayName: user.displayName,
+                          username: user.username,
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.xl),
                       Expanded(

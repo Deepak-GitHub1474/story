@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -86,13 +88,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       return;
     }
 
-    final label = await showModalBottomSheet<String?>(
+    final label = await showAppSheet<String?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => _HideSheet(filename: file.name),
     );
 

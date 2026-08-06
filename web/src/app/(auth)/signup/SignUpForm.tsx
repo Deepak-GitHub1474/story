@@ -7,7 +7,7 @@ import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { EMPTY_FORM, checkUsername, signUp } from '@/lib/actions/auth';
 
-const USERNAME_PATTERN = /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/;
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 const USERNAME_MIN = 2;
 const USERNAME_MAX = 30;
 
@@ -21,7 +21,8 @@ export function SignUpForm() {
   const isWellFormed =
     username.length >= USERNAME_MIN &&
     username.length <= USERNAME_MAX &&
-    USERNAME_PATTERN.test(username);
+    USERNAME_PATTERN.test(username) &&
+    !username.includes('--');
 
   useEffect(() => {
     if (!isWellFormed) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -74,12 +76,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _openMessageMenu(ChatMessage message, bool isMine) async {
     final colors = context.colors;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -160,7 +158,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onTap: () => context.push('${Routes.user}/${other.username}'),
                 child: Row(
                   children: [
-                    AppAvatar(seed: other.avatarSeed, size: 34),
+                    AppAvatar(
+                      seed: other.avatarSeed,
+                      size: 34,
+                      displayName: other.displayName,
+                      username: other.username,
+                    ),
                     const SizedBox(width: AppSpacing.md),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

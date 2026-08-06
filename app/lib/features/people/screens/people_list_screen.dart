@@ -117,7 +117,12 @@ class PeopleListScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final person = items[index];
                       return ListTile(
-                        leading: AppAvatar(seed: person.avatarSeed, size: 40),
+                        leading: AppAvatar(
+                          seed: person.avatarSeed,
+                          size: 40,
+                          displayName: person.displayName,
+                          username: person.username,
+                        ),
                         title: Text(
                           person.displayName,
                           style: TextStyle(

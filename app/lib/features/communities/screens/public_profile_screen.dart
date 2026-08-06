@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +52,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     if (id == null) {
       AppToast.show(
         context,
-        'They have not opened chat on their device yet.',
+        'They have not signed in since chat was added, so their device has '
+        'no key yet. A message is locked to that key before it leaves your '
+        'phone, so there is nothing to lock it to.',
         kind: AppToastKind.error,
       );
       return;
@@ -85,12 +89,8 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final profile = _override ?? ref.read(publicProfileProvider(widget.username)).valueOrNull;
     if (profile == null || profile.isMe) return;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -187,7 +187,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          AppAvatar(seed: profile.avatarSeed, size: 72),
+                          AppAvatar(
+                            seed: profile.avatarSeed,
+                            size: 72,
+                            displayName: profile.displayName,
+                            username: profile.username,
+                          ),
                           const SizedBox(width: AppSpacing.xl),
                           Expanded(
                             child: Row(

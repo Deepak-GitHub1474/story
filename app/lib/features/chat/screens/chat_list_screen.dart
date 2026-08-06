@@ -183,7 +183,12 @@ class _ConversationRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
-            AppAvatar(seed: conversation.other.avatarSeed, size: 52),
+            AppAvatar(
+              seed: conversation.other.avatarSeed,
+              size: 52,
+              displayName: conversation.other.displayName,
+              username: conversation.other.username,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(

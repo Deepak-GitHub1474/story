@@ -127,7 +127,11 @@ class _Tile extends ConsumerWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  AppAvatar(seed: notification.actorAvatarSeed, size: 40),
+                  AppAvatar(
+                    seed: notification.actorAvatarSeed,
+                    size: 40,
+                    displayName: notification.actorName,
+                  ),
                   Positioned(
                     right: -2,
                     bottom: -2,

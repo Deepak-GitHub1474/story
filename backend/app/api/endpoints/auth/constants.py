@@ -1,7 +1,8 @@
 USERS = "users"
 DEVICES = "devices"
 
-USERNAME_PATTERN = r"^[a-z0-9]+([_-][a-z0-9]+)*$"
+USERNAME_PATTERN = r"^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]{1}$"
+USERNAME_FORBIDDEN = ("--",)
 USERNAME_MIN_LENGTH = 2
 USERNAME_MAX_LENGTH = 30
 
