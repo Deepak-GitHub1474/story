@@ -19,6 +19,17 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
+  String _remembered = '';
+
+  void _rememberSettledQuery(SearchState state) {
+    final query = state.query.trim();
+    if (state.isLoading || query.isEmpty || query == _remembered) return;
+    if (state.results.users.isEmpty) return;
+
+    _remembered = query;
+    ref.read(prefsStoreProvider).rememberSearch(query);
+  }
+
   Future<void> _pick(String username) async {
     _controller.text = username;
     ref.read(searchProvider.notifier).query(username);
@@ -36,6 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final state = ref.watch(searchProvider);
+    _rememberSettledQuery(state);
     final results = state.results;
 
     return Scaffold(

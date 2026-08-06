@@ -4,6 +4,7 @@ import { Avatar } from '@/components/Avatar';
 import { StoryRow } from '@/components/StoryRow';
 import { backendFetch } from '@/lib/server/session';
 import type { TCommunity, TStory } from '@/lib/types';
+import { RecentSearches } from '@/components/RecentSearches';
 import { SearchBox } from './SearchBox';
 
 export const metadata: Metadata = { title: 'Search' };
@@ -29,6 +30,8 @@ export default async function SearchPage({ searchParams }: Props) {
       <div className="mt-6">
         <SearchBox initialQuery={query} />
       </div>
+
+      <RecentSearches query={isEmpty ? '' : query} />
 
       {!query ? (
         <p className="mt-10 max-w-prose leading-relaxed text-text-secondary">
