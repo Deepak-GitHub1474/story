@@ -55,6 +55,44 @@ async def publish_identity(body, *, claims, mongo: AsyncIOMotorDatabase) -> dict
     return {"public_key": body.public_key}
 
 
+async def store_backup(body, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    now = utc_now()
+    await mongo[c.IDENTITIES].update_one(
+        {"_id": claims.user_id},
+        {
+            "$set": {
+                "public_key": body.public_key,
+                "backup": {
+                    "salt": body.salt,
+                    "wrapped_private_key": body.wrapped_private_key,
+                    "kdf": body.kdf.model_dump(),
+                    "updated_at": now,
+                },
+                "updated_at": now,
+            },
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
+    return {"stored": True}
+
+
+async def read_backup(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    identity = await mongo[c.IDENTITIES].find_one(
+        {"_id": claims.user_id}, {"backup": 1, "public_key": 1}
+    )
+    backup = (identity or {}).get("backup")
+    if backup is None:
+        raise api_error(ErrorCode.CHAT_NO_BACKUP)
+
+    return {
+        "salt": backup["salt"],
+        "wrapped_private_key": backup["wrapped_private_key"],
+        "kdf": backup["kdf"],
+        "public_key": identity["public_key"],
+    }
+
+
 async def read_identity(
     username: str | None, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:

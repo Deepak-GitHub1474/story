@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/ui/Button';
+import { ChatUnlock } from '@/components/ChatUnlock';
 import { cn } from '@/lib/cn';
 import { relativeTime } from '@/lib/format';
 import {
@@ -79,7 +80,7 @@ export function ChatThread({
         try {
           cek.current = await unwrapFromPeer({
             wrapped: record.wrapped_cek,
-            mine: identity.pair,
+            mine: identity.identity,
             theirPublicKey: peer.public_key,
             pair: pairKey(userId, record.other.user_id),
             recipientId: userId,
@@ -172,6 +173,8 @@ export function ChatThread({
           </>
         ) : null}
       </header>
+
+      {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
 
       {error ? (
         <p className="mt-3 rounded-[length:var(--radius-md)] bg-surface-raised px-4 py-3 leading-relaxed text-text-secondary">

@@ -51,19 +51,19 @@ export function MessageButton({
               username,
               wrapped_cek_for_me: await wrapForPeer({
                 cek,
-                mine: identity.pair,
+                mine: identity.identity,
                 theirPublicKey: peer.public_key,
                 pair,
                 recipientId: viewerId,
               }),
               wrapped_cek_for_them: await wrapForPeer({
                 cek,
-                mine: identity.pair,
+                mine: identity.identity,
                 theirPublicKey: peer.public_key,
                 pair,
                 recipientId: peer.user_id,
               }),
-              sender_public_key: identity.publicKey,
+              sender_public_key: identity.identity.publicKey,
             });
 
             if (id) router.push(`/chats/${id}`);

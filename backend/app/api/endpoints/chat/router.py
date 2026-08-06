@@ -8,6 +8,7 @@ from app.api.endpoints.chat.models import (
     ReadRequest,
     SendMessageRequest,
     StartConversationRequest,
+    StoreBackupRequest,
 )
 from app.core.deps import CurrentClaims
 from app.db.mongo import MongoDatabase
@@ -23,6 +24,20 @@ async def publish_identity(
 ):
     data = await controllers.publish_identity(body, claims=claims, mongo=mongo)
     return ok_response("Chat key published.", data=data)
+
+
+@router.post("/backup", status_code=status.HTTP_200_OK)
+async def store_backup(
+    body: StoreBackupRequest, claims: CurrentClaims, mongo: MongoDatabase
+):
+    data = await controllers.store_backup(body, claims=claims, mongo=mongo)
+    return ok_response("Chat key backed up.", data=data)
+
+
+@router.get("/backup", status_code=status.HTTP_200_OK)
+async def read_backup(claims: CurrentClaims, mongo: MongoDatabase):
+    data = await controllers.read_backup(claims=claims, mongo=mongo)
+    return ok_response("Chat key backup.", data=data)
 
 
 @router.get("/identity", status_code=status.HTTP_200_OK)

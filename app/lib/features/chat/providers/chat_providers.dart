@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/crypto/chat_crypto.dart';
+import '../../../core/crypto/vault_crypto.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/chat_repository.dart';
 import '../models/chat_models.dart';
@@ -386,5 +387,64 @@ class PresenceHeartbeat {
   Future<void> _beat() async {
     if (_ref.read(authProvider).user == null) return;
     await _ref.read(chatRepositoryProvider).heartbeat();
+  }
+}
+
+
+final chatBootstrapProvider = Provider<ChatBootstrap>(ChatBootstrap.new);
+
+class ChatBootstrap {
+  ChatBootstrap(this._ref);
+
+  final Ref _ref;
+
+  Future<void> afterSignIn({
+    required String userId,
+    required String password,
+  }) async {
+    final store = _ref.read(secureStoreProvider);
+    final crypto = _ref.read(chatCryptoProvider);
+    final repository = _ref.read(chatRepositoryProvider);
+
+    final existing = await repository.backup();
+    final backup = existing.valueOrNull;
+
+    if (backup != null) {
+      try {
+        final identity = await crypto.unwrapIdentity(
+          wrapped: backup.wrappedPrivateKey,
+          password: password,
+          salt: backup.salt,
+          userId: userId,
+        );
+        await store.saveChatKey(userId, identity.privateKey);
+        await repository.publishIdentity(identity.publicKey);
+        _ref.invalidate(chatIdentityProvider);
+        return;
+      } catch (_) {
+        return;
+      }
+    }
+
+    final local = await store.readChatKey(userId);
+    final identity = local != null
+        ? await crypto.restoreIdentity(local)
+        : await crypto.newIdentity();
+
+    final salt = await crypto.randomSalt();
+    await repository.storeBackup(
+      salt: salt,
+      wrappedPrivateKey: await crypto.wrapIdentity(
+        identity: identity,
+        password: password,
+        salt: salt,
+        userId: userId,
+      ),
+      publicKey: identity.publicKey,
+      kdf: const KdfParams().toJson(),
+    );
+
+    await store.saveChatKey(userId, identity.privateKey);
+    _ref.invalidate(chatIdentityProvider);
   }
 }

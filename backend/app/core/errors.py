@@ -29,6 +29,7 @@ class ErrorCode(StrEnum):
     TOTP_REUSED = "TOTP_REUSED"
     TOTP_ALREADY_ENABLED = "TOTP_ALREADY_ENABLED"
     CHAT_NO_IDENTITY = "CHAT_NO_IDENTITY"
+    CHAT_NO_BACKUP = "CHAT_NO_BACKUP"
     CHAT_SELF = "CHAT_SELF"
     CHAT_BLOCKED = "CHAT_BLOCKED"
     CHAT_NOT_YOURS_TO_ACCEPT = "CHAT_NOT_YOURS_TO_ACCEPT"
@@ -117,6 +118,7 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.TOTP_REUSED: (403, "That code has already been used. Wait for the next one."),
     ErrorCode.TOTP_ALREADY_ENABLED: (409, "An authenticator is already set up on this account."),
     ErrorCode.CHAT_NO_IDENTITY: (404, "That account has not set up chat yet."),
+    ErrorCode.CHAT_NO_BACKUP: (404, "No chat key backup on this account yet."),
     ErrorCode.CHAT_SELF: (422, "You cannot message yourself."),
     ErrorCode.CHAT_BLOCKED: (403, "You cannot message this account."),
     ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT: (403, "Only the person who received it can accept."),

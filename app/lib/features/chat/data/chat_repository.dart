@@ -14,6 +14,25 @@ class ChatRepository {
     parse: (data) => data['public_key'] as String,
   );
 
+  Future<Result<ChatBackup>> backup() =>
+      _client.get(Endpoints.chatBackup, parse: ChatBackup.fromJson);
+
+  Future<Result<bool>> storeBackup({
+    required String salt,
+    required String wrappedPrivateKey,
+    required String publicKey,
+    required Map<String, dynamic> kdf,
+  }) => _client.post(
+    Endpoints.chatBackup,
+    body: {
+      'salt': salt,
+      'wrapped_private_key': wrappedPrivateKey,
+      'public_key': publicKey,
+      'kdf': kdf,
+    },
+    parse: (data) => data['stored'] as bool? ?? true,
+  );
+
   Future<Result<PeerIdentity>> identityOf(String username) => _client.get(
     Endpoints.chatIdentityOf(username),
     parse: (data) => PeerIdentity(

@@ -480,3 +480,25 @@ The `compression` flag lives in the **encrypted metadata**, not in the database.
 `size_bytes` counts ciphertext, which is what actually occupies the bucket, so compression genuinely reduces what a user's quota is charged.
 
 **Deduplication is rejected, not deferred.** Convergent encryption would let identical files share one stored object, and would also tell anyone with database access that two accounts hold the same file. On a platform built for anonymity that is a worse trade than the storage it saves.
+
+
+## Chat keys and multiple devices
+
+A chat identity is an X25519 keypair. The private half never leaves the device in the clear, but it is also **wrapped by a key derived from the account password** and stored server-side, so signing in anywhere restores the same identity and the same history.
+
+```
+salt                = 16 random bytes, per account
+KEK_chat            = PBKDF2-HMAC-SHA256(password, salt, 600_000 iterations, 256 bits)
+wrapped_private_key = nonce || AES-256-GCM(KEK_chat, x25519_private,
+                                           aad = "story.chat.identity.v1|" || user_id)
+```
+
+The server stores `salt`, `wrapped_private_key` and the public key. It never sees the private key, and a test asserts the stored document has no `private_key` field.
+
+**Why PBKDF2 here when the vault uses Argon2id.** The vault runs only on a device we control, where Argon2id is available and memory-hardness is worth paying for. Chat must also work in a browser, and WebCrypto offers no Argon2. Shipping an Argon2 WASM build to get it would add a dependency and a download to every page. PBKDF2-HMAC-SHA256 at 600,000 iterations is the strongest KDF available natively on both, and it is what lets one identity work on a phone and a laptop at once. The interop is verified, not assumed: a backup produced by the Flutter app is unwrapped by WebCrypto in a check that runs against real output.
+
+**What this trades away.** Anyone with your password and a copy of the database can read your messages. That is the same bargain the vault already makes, and it is the bargain that makes multi-device possible at all — the alternative is per-device keys and no history on a new device, which is what Signal does and what people complain about.
+
+**Password reset destroys chat history**, for the same reason it destroys the vault: the new password derives a different key, and the old wrap cannot be opened. The reset warning must say so.
+
+**Still no forward secrecy.** One key per conversation, no Double Ratchet. A compromised conversation key opens the whole thread, past and future. A ratchet is the correct fix and is a large build; it also complicates multi-device, because each device needs its own ratchet state. Named here rather than implied.

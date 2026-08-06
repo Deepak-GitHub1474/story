@@ -1,6 +1,8 @@
 const DB_NAME = 'story.chat';
 const STORE = 'identity';
 
+export type StoredIdentity = { seed: string; publicKey: string };
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -27,13 +29,13 @@ function run<T>(
 export async function readIdentity(userId: string) {
   try {
     return (await run('readonly', (store) => store.get(userId))) as
-      | CryptoKeyPair
+      | StoredIdentity
       | undefined;
   } catch {
     return undefined;
   }
 }
 
-export async function writeIdentity(userId: string, pair: CryptoKeyPair) {
-  await run('readwrite', (store) => store.put(pair, userId));
+export async function writeIdentity(userId: string, identity: StoredIdentity) {
+  await run('readwrite', (store) => store.put(identity, userId));
 }

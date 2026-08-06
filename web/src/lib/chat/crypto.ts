@@ -21,18 +21,45 @@ export function fromBase64(value: string) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-export async function newIdentity() {
-  return crypto.subtle.generateKey({ name: 'X25519' }, false, [
+const PKCS8_X25519_PREFIX = new Uint8Array([
+  0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x04,
+  0x22, 0x04, 0x20,
+]);
+
+export type Identity = { privateKey: CryptoKey; publicKey: string };
+
+export async function newIdentity(): Promise<Identity & { seed: Uint8Array }> {
+  const pair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
     'deriveBits',
-  ]) as Promise<CryptoKeyPair>;
-}
+  ])) as CryptoKeyPair;
 
-export async function exportPublicKey(pair: CryptoKeyPair) {
+  const pkcs8 = new Uint8Array(
+    await crypto.subtle.exportKey('pkcs8', pair.privateKey),
+  );
   const raw = await crypto.subtle.exportKey('raw', pair.publicKey);
-  return toBase64(new Uint8Array(raw));
+
+  return {
+    privateKey: pair.privateKey,
+    publicKey: toBase64(new Uint8Array(raw)),
+    seed: pkcs8.slice(-32),
+  };
 }
 
-async function sharedKey(mine: CryptoKeyPair, theirPublicKey: string) {
+export async function importIdentity(
+  seed: Uint8Array,
+  publicKey: string,
+): Promise<Identity> {
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    new Uint8Array([...PKCS8_X25519_PREFIX, ...seed]) as BufferSource,
+    { name: 'X25519' },
+    true,
+    ['deriveBits'],
+  );
+  return { privateKey, publicKey };
+}
+
+async function sharedKey(mine: Identity, theirPublicKey: string) {
   const peer = await crypto.subtle.importKey(
     'raw',
     fromBase64(theirPublicKey) as BufferSource,
@@ -97,7 +124,7 @@ export async function newConversationKey() {
 
 export async function wrapForPeer(options: {
   cek: Uint8Array;
-  mine: CryptoKeyPair;
+  mine: Identity;
   theirPublicKey: string;
   pair: string;
   recipientId: string;
@@ -112,7 +139,7 @@ export async function wrapForPeer(options: {
 
 export async function unwrapFromPeer(options: {
   wrapped: string;
-  mine: CryptoKeyPair;
+  mine: Identity;
   theirPublicKey: string;
   pair: string;
   recipientId: string;
@@ -155,4 +182,56 @@ export async function decryptMessage(
     `${MESSAGE_AAD_PREFIX}${conversationId}`,
   );
   return decoder.decode(plaintext);
+}
+
+const IDENTITY_AAD_PREFIX = 'story.chat.identity.v1|';
+
+export function randomSalt() {
+  return toBase64(crypto.getRandomValues(new Uint8Array(16)));
+}
+
+async function identityKey(password: string, salt: string) {
+  const material = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password) as BufferSource,
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt: fromBase64(salt) as BufferSource,
+      iterations: 600000,
+    },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+}
+
+export async function wrapIdentityRaw(options: {
+  privateKeyRaw: Uint8Array;
+  password: string;
+  salt: string;
+  userId: string;
+}) {
+  const key = await identityKey(options.password, options.salt);
+  return seal(
+    key,
+    options.privateKeyRaw,
+    `${IDENTITY_AAD_PREFIX}${options.userId}`,
+  );
+}
+
+export async function unwrapIdentityRaw(options: {
+  wrapped: string;
+  password: string;
+  salt: string;
+  userId: string;
+}) {
+  const key = await identityKey(options.password, options.salt);
+  return open(key, options.wrapped, `${IDENTITY_AAD_PREFIX}${options.userId}`);
 }

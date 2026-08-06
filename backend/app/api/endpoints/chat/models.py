@@ -37,3 +37,21 @@ class ReactionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     emoji: Annotated[str, Field(min_length=1, max_length=c.EMOJI_MAX_CHARS)]
+
+
+class KdfSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    algo: Annotated[str, Field(max_length=32)]
+    memory_kib: int
+    iterations: int
+    parallelism: int
+
+
+class StoreBackupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    salt: Annotated[str, Field(min_length=8, max_length=128)]
+    wrapped_private_key: Annotated[str, Field(min_length=16, max_length=512)]
+    public_key: Annotated[str, Field(min_length=16, max_length=256)]
+    kdf: KdfSpec

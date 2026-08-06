@@ -79,3 +79,21 @@ export async function unsendMessage(conversationId: string, messageId: string) {
   );
   revalidatePath(`/chats/${conversationId}`);
 }
+
+export async function readChatBackup() {
+  const result = await backendFetch<{
+    salt: string;
+    wrapped_private_key: string;
+    public_key: string;
+  }>('/chat/backup');
+  return result.ok ? result.value : null;
+}
+
+export async function storeChatBackup(body: {
+  salt: string;
+  wrapped_private_key: string;
+  public_key: string;
+  kdf: Record<string, unknown>;
+}) {
+  await backendFetch('/chat/backup', { method: 'POST', body });
+}

@@ -69,6 +69,7 @@ class Endpoints {
 
   static const String keys = '/users/me/keys';
   static const String chatIdentity = '/chat/identity';
+  static const String chatBackup = '/chat/backup';
   static const String chatUnread = '/chat/unread-count';
   static const String chatPresence = '/chat/presence';
 

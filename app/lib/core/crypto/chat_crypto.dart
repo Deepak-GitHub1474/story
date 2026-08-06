@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
+
 class ChatIdentity {
   const ChatIdentity({required this.publicKey, required this.privateKey});
 
@@ -18,6 +19,9 @@ class ChatCrypto {
   static const cekAadPrefix = 'story.cek.v1|';
   static const messageAadPrefix = 'story.msg.v1|';
   static const sharedInfo = 'story.chat.shared.v1';
+  static const identityAadPrefix = 'story.chat.identity.v1|';
+  static const saltLength = 16;
+  static const identityIterations = 600000;
 
   X25519 get _exchange => X25519();
 
@@ -65,7 +69,7 @@ class ChatCrypto {
     return Uint8List.fromList(await key.extractBytes());
   }
 
-  Future<String> _seal({
+  Future<String> seal({
     required Uint8List key,
     required Uint8List plaintext,
     required String aad,
@@ -78,7 +82,7 @@ class ChatCrypto {
     return base64Encode([...box.nonce, ...box.cipherText, ...box.mac.bytes]);
   }
 
-  Future<Uint8List> _open({
+  Future<Uint8List> open({
     required Uint8List key,
     required String sealed,
     required String aad,
@@ -109,7 +113,7 @@ class ChatCrypto {
     required String recipientId,
   }) async {
     final key = await sharedKey(mine: mine, theirPublicKey: theirPublicKey);
-    return _seal(key: key, plaintext: cek, aad: '$cekAadPrefix$pair|$recipientId');
+    return seal(key: key, plaintext: cek, aad: '$cekAadPrefix$pair|$recipientId');
   }
 
   Future<Uint8List> unwrapFromPeer({
@@ -120,14 +124,14 @@ class ChatCrypto {
     required String recipientId,
   }) async {
     final key = await sharedKey(mine: mine, theirPublicKey: theirPublicKey);
-    return _open(key: key, sealed: wrapped, aad: '$cekAadPrefix$pair|$recipientId');
+    return open(key: key, sealed: wrapped, aad: '$cekAadPrefix$pair|$recipientId');
   }
 
   Future<String> encryptMessage({
     required Uint8List cek,
     required String text,
     required String conversationId,
-  }) => _seal(
+  }) => seal(
     key: cek,
     plaintext: Uint8List.fromList(utf8.encode(text)),
     aad: '$messageAadPrefix$conversationId',
@@ -138,11 +142,61 @@ class ChatCrypto {
     required String ciphertext,
     required String conversationId,
   }) async {
-    final opened = await _open(
+    final opened = await open(
       key: cek,
       sealed: ciphertext,
       aad: '$messageAadPrefix$conversationId',
     );
     return utf8.decode(opened);
+  }
+}
+
+
+extension ChatIdentityBackup on ChatCrypto {
+  Future<String> randomSalt() async {
+    final key = await AesGcm.with256bits().newSecretKey();
+    final bytes = await key.extractBytes();
+    return base64Encode(bytes.take(ChatCrypto.saltLength).toList());
+  }
+
+  Future<Uint8List> _identityKey(String password, String salt) async {
+    final derived = await Pbkdf2(
+      macAlgorithm: Hmac.sha256(),
+      iterations: ChatCrypto.identityIterations,
+      bits: 256,
+    ).deriveKey(
+      secretKey: SecretKey(utf8.encode(password)),
+      nonce: base64Decode(salt),
+    );
+    return Uint8List.fromList(await derived.extractBytes());
+  }
+
+  Future<String> wrapIdentity({
+    required ChatIdentity identity,
+    required String password,
+    required String salt,
+    required String userId,
+  }) async {
+    final key = await _identityKey(password, salt);
+    return seal(
+      key: key,
+      plaintext: Uint8List.fromList(base64Decode(identity.privateKey)),
+      aad: '${ChatCrypto.identityAadPrefix}$userId',
+    );
+  }
+
+  Future<ChatIdentity> unwrapIdentity({
+    required String wrapped,
+    required String password,
+    required String salt,
+    required String userId,
+  }) async {
+    final key = await _identityKey(password, salt);
+    final privateKey = await open(
+      key: key,
+      sealed: wrapped,
+      aad: '${ChatCrypto.identityAadPrefix}$userId',
+    );
+    return restoreIdentity(base64Encode(privateKey));
   }
 }

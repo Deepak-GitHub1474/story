@@ -257,6 +257,106 @@ void main() {
     );
   });
 
+  test('an identity survives a password wrap and unwrap', () async {
+    final identity = await chat.newIdentity();
+    final salt = await chat.randomSalt();
+
+    final wrapped = await chat.wrapIdentity(
+      identity: identity,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+    final restored = await chat.unwrapIdentity(
+      wrapped: wrapped,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+
+    expect(restored.publicKey, identity.publicKey);
+    expect(restored.privateKey, identity.privateKey);
+  });
+
+  test('a wrong password does not restore the identity', () async {
+    final identity = await chat.newIdentity();
+    final salt = await chat.randomSalt();
+    final wrapped = await chat.wrapIdentity(
+      identity: identity,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+
+    expect(
+      () => chat.unwrapIdentity(
+        wrapped: wrapped,
+        password: 'the-wrong-password',
+        salt: salt,
+        userId: 'usr_1',
+      ),
+      throwsA(anything),
+    );
+  });
+
+  test('another account cannot restore your identity', () async {
+    final identity = await chat.newIdentity();
+    final salt = await chat.randomSalt();
+    final wrapped = await chat.wrapIdentity(
+      identity: identity,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+
+    expect(
+      () => chat.unwrapIdentity(
+        wrapped: wrapped,
+        password: 'a-long-enough-password',
+        salt: salt,
+        userId: 'usr_2',
+      ),
+      throwsA(anything),
+    );
+  });
+
+  test('two devices restoring the same backup agree on the key', () async {
+    final identity = await chat.newIdentity();
+    final salt = await chat.randomSalt();
+    final wrapped = await chat.wrapIdentity(
+      identity: identity,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+
+    final phone = await chat.unwrapIdentity(
+      wrapped: wrapped,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+    final laptop = await chat.unwrapIdentity(
+      wrapped: wrapped,
+      password: 'a-long-enough-password',
+      salt: salt,
+      userId: 'usr_1',
+    );
+
+    final cek = await chat.newConversationKey();
+    final sealed = await chat.encryptMessage(
+      cek: cek,
+      text: 'same key everywhere',
+      conversationId: 'c',
+    );
+
+    expect(phone.publicKey, laptop.publicKey);
+    expect(
+      await chat.decryptMessage(cek: cek, ciphertext: sealed, conversationId: 'c'),
+      'same key everywhere',
+    );
+  });
+
   test('a long message works', () async {
     final cek = await chat.newConversationKey();
     final text = List.filled(400, 'a sentence that keeps going. ').join();

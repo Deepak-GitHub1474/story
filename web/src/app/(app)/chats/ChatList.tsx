@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '@/components/Avatar';
+import { ChatUnlock } from '@/components/ChatUnlock';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/cn';
 import { relativeTime } from '@/lib/format';
@@ -36,6 +37,8 @@ export function ChatList({ userId }: { userId: string }) {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-[length:var(--text-title)] font-semibold">Messages</h1>
+
+      {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
 
       {identity.status === 'unsupported' ? (
         <p className="mt-4 rounded-[length:var(--radius-md)] border border-danger bg-surface px-4 py-3 leading-relaxed text-text-secondary">

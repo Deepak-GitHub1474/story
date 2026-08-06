@@ -1,3 +1,21 @@
+class ChatBackup {
+  const ChatBackup({
+    required this.salt,
+    required this.wrappedPrivateKey,
+    required this.publicKey,
+  });
+
+  factory ChatBackup.fromJson(Map<String, dynamic> json) => ChatBackup(
+    salt: json['salt'] as String,
+    wrappedPrivateKey: json['wrapped_private_key'] as String,
+    publicKey: json['public_key'] as String,
+  );
+
+  final String salt;
+  final String wrappedPrivateKey;
+  final String publicKey;
+}
+
 class PeerIdentity {
   const PeerIdentity({required this.publicKey, required this.userId});
 
