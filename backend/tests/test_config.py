@@ -15,7 +15,7 @@ BASE = {
     "API_ENV": "production",
     "CORS_ORIGINS": "https://story.app",
     "COOKIE_SECURE": True,
-    "MAIL_PROVIDER": "resend",
+    "MAIL_PROVIDER": "smtp",
     "MONGODB_URI": "mongodb://prod-cluster:27017",
     "MONGODB_DB_NAME": "story",
     "REDIS_URL": "redis://prod-cache:6379/0",
@@ -159,3 +159,28 @@ def test_r2_without_credentials_is_refused_too():
         build_storage(production(STORAGE_PROVIDER="r2"))
 
     assert "STORAGE_S3_ENDPOINT" in str(caught.value)
+
+
+def test_smtp_mail_without_credentials_is_refused():
+    from app.ports.factory import build_mail
+
+    with pytest.raises(ValueError) as caught:
+        build_mail(production(MAIL_PROVIDER="smtp"))
+
+    assert "SMTP_HOST" in str(caught.value)
+
+
+def test_smtp_mail_with_credentials_builds():
+    from app.ports.factory import build_mail
+
+    mail = build_mail(
+        production(
+            MAIL_PROVIDER="smtp",
+            SMTP_HOST="smtp.example.com",
+            SMTP_USERNAME="postmaster@story.test",
+            SMTP_PASSWORD="a-secret",
+            MAIL_FROM="Story <hello@story.test>",
+        )
+    )
+
+    assert hasattr(mail, "send_otp")

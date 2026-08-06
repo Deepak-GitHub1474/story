@@ -50,7 +50,13 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     PUBLIC_WEB_URL: str = "https://story.app"
 
-    MAIL_PROVIDER: Literal["console", "resend", "smtp"] = "console"
+    MAIL_PROVIDER: Literal["console", "smtp"] = "console"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    MAIL_FROM: str = "Story <no-reply@story.local>"
     EMAIL_INDEX_KEY: str = "local-dev-email-index-key-change-me-000000000000"
     EMAIL_ENCRYPTION_KEY: str = "local-dev-email-encryption-key-change-me-0000"
     OTP_HMAC_SECRET: str = "local-dev-otp-secret-change-me-00000000000000"

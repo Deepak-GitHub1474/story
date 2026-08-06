@@ -498,3 +498,36 @@ Signing is `app/core/sigv4.py`, written here rather than pulled from boto3, beca
 ### What R2 buys over S3
 
 Zero egress. A user who stores 5 GB of video and re-downloads it monthly costs roughly $0.45/month on S3 and $0 on R2. Storage is also cheaper per GB, with a free tier. For a vault whose whole purpose is people retrieving their own files, egress is the entire decision.
+
+
+## Sending email
+
+`SmtpMailAdapter` speaks plain SMTP through Python's standard-library `smtplib`, run off the event loop with `asyncio.to_thread`. **No package was added** — nodemailer and its equivalents are client libraries, not mail services, and the standard library already is one.
+
+Any SMTP server works by changing environment variables:
+
+```
+MAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=…
+SMTP_PASSWORD=…        # an app password, never the account password
+MAIL_FROM=Story <no-reply@your-domain>
+```
+
+### There is no free way to send mail with no third party
+
+Worth stating plainly, because it is the question everyone asks. Running your own Postfix is free in licence and unusable in practice: Gmail and Outlook reject or spam-file mail from an IP with no reputation, most cloud providers block outbound port 25 by default, and you would need SPF, DKIM, DMARC, reverse DNS and a warm-up period before delivery became reliable. Deliverability is a reputation system and reputation cannot be bootstrapped alone.
+
+The realistic free options, in order of least effort:
+
+| Option | Free allowance | Notes |
+|---|---|---|
+| Gmail SMTP with an app password | 500/day | Works today, no signup beyond an account you have |
+| Brevo | 300/day | Proper transactional provider |
+| Resend | 3,000/month | Cleanest API, needs a domain |
+| Self-hosted Postfix | Unlimited | Free, and mostly undelivered |
+
+The adapter does not care which. Because the port is one file, moving from Gmail to a provider later is an environment change, not a code change.
+
+**A send failure never breaks the request.** If SMTP is down, the OTP is still stored and the endpoint still returns its usual generic response — otherwise a mail outage would become an account-enumeration oracle, since only real addresses would time out.
