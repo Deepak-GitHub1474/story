@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../settings/providers/theme_provider.dart';
 import '../data/story_repository.dart';
+import '../../auth/models/auth_models.dart';
 import '../models/story_models.dart';
 
 final storyRepositoryProvider = Provider<StoryRepository>(
@@ -176,7 +177,80 @@ final storyDetailProvider = FutureProvider.family<Story, String>((ref, storyId) 
   return story;
 });
 
-final commentsProvider = FutureProvider.family<List<Comment>, String>((ref, storyId) async {
-  final result = await ref.watch(storyRepositoryProvider).comments(storyId);
-  return result.valueOrNull ?? const [];
-});
+final commentsProvider =
+    AsyncNotifierProvider.family<CommentsNotifier, List<Comment>, String>(
+      CommentsNotifier.new,
+    );
+
+class CommentsNotifier extends FamilyAsyncNotifier<List<Comment>, String> {
+  @override
+  Future<List<Comment>> build(String storyId) async {
+    final result = await ref.watch(storyRepositoryProvider).comments(storyId);
+    return result.valueOrNull ?? const [];
+  }
+
+  Future<bool> add(String text, {Comment? replyTo, required AppUser me}) async {
+    final parentId = replyTo?.parentId ?? replyTo?.commentId;
+    final pending = Comment(
+      commentId: 'pending_${DateTime.now().microsecondsSinceEpoch}',
+      storyId: arg,
+      parentId: parentId,
+      author: StoryAuthor(
+        userId: me.userId,
+        username: me.username,
+        displayName: me.displayName,
+        avatarSeed: me.avatarSeed,
+      ),
+      body: text,
+      likes: 0,
+      replyCount: 0,
+      isLiked: false,
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+    );
+
+    state = AsyncData(_insert(state.valueOrNull ?? const [], pending));
+
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .addComment(arg, text, parentId: parentId);
+
+    if (result.isFailure) {
+      state = AsyncData(_remove(state.valueOrNull ?? const [], pending.commentId));
+      return false;
+    }
+
+    await refresh();
+    return true;
+  }
+
+  Future<void> refresh() async {
+    final result = await ref.read(storyRepositoryProvider).comments(arg);
+    state = AsyncData(result.valueOrNull ?? const []);
+  }
+
+  void removeLocally(String commentId) {
+    state = AsyncData(_remove(state.valueOrNull ?? const [], commentId));
+  }
+
+  static List<Comment> _insert(List<Comment> current, Comment pending) {
+    if (pending.parentId == null) return [...current, pending];
+
+    return [
+      for (final comment in current)
+        if (comment.commentId == pending.parentId)
+          comment.copyWith(replies: [...comment.replies, pending])
+        else
+          comment,
+    ];
+  }
+
+  static List<Comment> _remove(List<Comment> current, String commentId) => [
+    for (final comment in current)
+      if (comment.commentId != commentId)
+        comment.copyWith(
+          replies: comment.replies
+              .where((reply) => reply.commentId != commentId)
+              .toList(),
+        ),
+  ];
+}

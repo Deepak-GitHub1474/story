@@ -769,3 +769,16 @@ erDiagram
     support_tickets ||--o{ audit_logs : produces
     users ||--o{ reports : files
 ```
+
+
+## Counting at scale
+
+Every count on a story is maintained with an atomic `$inc` at the moment the thing happens, never by recounting. A like is one `updateOne` with `{$inc: {"counts.likes": 1}}`, which is correct under any amount of concurrency because the increment happens inside the database rather than in application code that read a number first.
+
+`reconcile_counts` in the maintenance worker recomputes from source periodically. It exists to repair drift from a crash between two writes, not as the primary mechanism.
+
+**Where this stops working, and when to care.** A single document can only be updated so fast — roughly a few thousand writes per second before contention on that one document dominates. That is per story, not per platform, so it only bites when one story is being liked thousands of times a second. Nothing else in the system shares that ceiling: a thousand people liking a thousand different stories is a thousand independent documents and scales linearly.
+
+The fix, when a story that hot exists, is a sharded counter: write `$inc` to one of N sub-documents chosen at random and sum them on read. It multiplies write throughput by N and costs one extra read. **It is deliberately not built.** It adds a moving part to every read path in exchange for headroom nothing currently needs, and the change is local enough to make later without touching callers.
+
+**The client never waits for the count to be right.** A like, a comment and a message all render immediately from local state and reconcile when the server answers. A failed write rolls the local change back. That is what makes the number feel instant regardless of what the database is doing, and it is why a slow count never looks like a broken button.

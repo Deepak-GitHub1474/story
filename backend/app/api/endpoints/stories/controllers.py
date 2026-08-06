@@ -75,6 +75,22 @@ async def create_story(
     body: CreateStoryRequest, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:
     now = utc_now()
+    shared_id = None
+
+    if body.shared_story_id is not None:
+        source = await mongo[c.STORIES].find_one(
+            {"_id": body.shared_story_id, "deleted_at": None}
+        )
+        if source is None:
+            raise api_error(ErrorCode.STORY_NOT_FOUND, field="shared_story_id")
+        if source["visibility"] != "public":
+            raise api_error(ErrorCode.STORY_NOT_SHAREABLE, field="shared_story_id")
+
+        shared_id = source.get("shared_story_id") or source["_id"]
+        await mongo[c.STORIES].update_one(
+            {"_id": shared_id}, {"$inc": {"counts.shares": 1}}
+        )
+
     story = {
         "_id": new_id("sto"),
         "author_id": claims.user_id,
@@ -87,6 +103,7 @@ async def create_story(
         "community_id": None,
         "slug": None,
         "media": [],
+        "shared_story_id": shared_id,
         "counts": {"likes": 0, "comments": 0, "shares": 0, "views": 0},
         "moderation": {"state": "unreviewed", "verdict": None, "rule": None},
         "published_at": None,
@@ -96,7 +113,35 @@ async def create_story(
         "deleted_at": None,
     }
     await mongo[c.STORIES].insert_one(story)
-    return {"story": serialize_story(story, include_body=True)}
+    return {
+        "story": await _with_shared(
+            serialize_story(story, include_body=True), story, mongo
+        )
+    }
+
+
+async def _with_shared(payload, story, mongo) -> dict[str, Any]:
+    shared_id = story.get("shared_story_id")
+    if shared_id is None:
+        return payload
+
+    source = await mongo[c.STORIES].find_one({"_id": shared_id, "deleted_at": None})
+    if source is None:
+        return payload
+
+    snapshot = source.get("author_snapshot") or {}
+    payload["shared"] = {
+        "story_id": source["_id"],
+        "title": source.get("title"),
+        "excerpt": source.get("excerpt", ""),
+        "slug": source.get("slug"),
+        "author": {
+            "username": snapshot.get("username", ""),
+            "display_name": snapshot.get("display_name", "Someone"),
+            "avatar_seed": snapshot.get("avatar_seed", ""),
+        },
+    }
+    return payload
 
 
 async def update_story(
@@ -252,7 +297,11 @@ async def share_story(
 async def get_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     liked = await _has_liked(claims.user_id, "story", story_id, mongo)
-    return {"story": serialize_story(story, include_body=True, is_liked=liked)}
+    return {
+        "story": await _with_shared(
+            serialize_story(story, include_body=True, is_liked=liked), story, mongo
+        )
+    }
 
 
 async def list_mine(
@@ -441,7 +490,11 @@ async def _page(docs, next_cursor, has_more, *, viewer_id=None, mongo=None) -> d
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in docs], mongo)
     return {
         "items": [
-            serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+            await _with_shared(
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked),
+                doc,
+                mongo,
+            )
             for doc in docs
         ],
         "next_cursor": next_cursor if has_more else None,
@@ -510,7 +563,11 @@ async def _paginate(
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in page], mongo)
     return {
         "items": [
-            serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+            await _with_shared(
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked),
+                doc,
+                mongo,
+            )
             for doc in page
         ],
         "next_cursor": page[-1]["_id"] if page and has_more else None,
@@ -774,11 +831,24 @@ async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase
     if not (is_owner or is_story_author):
         raise api_error(ErrorCode.COMMENT_NOT_FOUND)
 
-    await mongo[c.COMMENTS].update_one({"_id": comment_id}, {"$set": {"deleted_at": utc_now()}})
+    now = utc_now()
+    removed = 1
+
+    if comment.get("parent_id") is None:
+        replies = await mongo[c.COMMENTS].update_many(
+            {"parent_id": comment_id, "deleted_at": None}, {"$set": {"deleted_at": now}}
+        )
+        removed += replies.modified_count
+    else:
+        await mongo[c.COMMENTS].update_one(
+            {"_id": comment["parent_id"]}, {"$inc": {"counts.replies": -1}}
+        )
+
+    await mongo[c.COMMENTS].update_one({"_id": comment_id}, {"$set": {"deleted_at": now}})
     await mongo[c.STORIES].update_one(
-        {"_id": comment["story_id"]}, {"$inc": {"counts.comments": -1}}
+        {"_id": comment["story_id"]}, {"$inc": {"counts.comments": -removed}}
     )
-    return {"deleted": True, "comment_id": comment_id}
+    return {"deleted": True, "comment_id": comment_id, "removed": removed}
 
 
 async def set_comment_like(

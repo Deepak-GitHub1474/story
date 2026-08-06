@@ -123,26 +123,30 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final text = _comment.text.trim();
     if (text.isEmpty) return;
 
-    setState(() => _isSending = true);
-    final parent = _replyTarget;
-    final result = await ref
-        .read(storyRepositoryProvider)
-        .addComment(storyId, text, parentId: parent?.parentId ?? parent?.commentId);
+    final me = ref.read(authProvider).user;
+    if (me == null) return;
 
-    if (!mounted) return;
+    final parent = _replyTarget;
+    _comment.clear();
+    _commentFocus.unfocus();
     setState(() {
-      _isSending = false;
+      _isSending = true;
       _replyTarget = null;
     });
 
-    if (result.isSuccess) {
-      _comment.clear();
-      _commentFocus.unfocus();
+    final ok = await ref
+        .read(commentsProvider(storyId).notifier)
+        .add(text, replyTo: parent, me: me);
+
+    if (!mounted) return;
+    setState(() => _isSending = false);
+
+    if (ok) {
       _expanded.clear();
-      ref.invalidate(commentsProvider(storyId));
       ref.invalidate(storyDetailProvider(storyId));
     } else {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      _comment.text = text;
+      AppToast.show(context, 'That comment did not post.', kind: AppToastKind.error);
     }
   }
 
@@ -221,10 +225,13 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   }
 
   Future<void> _deleteComment(Comment comment, String storyId) async {
+    ref.read(commentsProvider(storyId).notifier).removeLocally(comment.commentId);
+
     await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
     if (!mounted) return;
+
     _expanded.clear();
-    ref.invalidate(commentsProvider(storyId));
+    await ref.read(commentsProvider(storyId).notifier).refresh();
     ref.invalidate(storyDetailProvider(storyId));
   }
 
