@@ -151,26 +151,22 @@ class _ShellTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          AnimatedScale(
-            scale: isActive ? 1.1 : 1,
-            duration: AppMotion.fast,
-            curve: AppMotion.easeOut,
-            child: Stack(
+          Stack(
               clipBehavior: Clip.none,
               children: [
                 if (destination.isAvatar)
                   Container(
-                    width: AppSizes.iconMd + 6,
-                    height: AppSizes.iconMd + 6,
+                    width: AppSizes.iconMd,
+                    height: AppSizes.iconMd,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: color, width: isActive ? 2 : 1.4),
+                      border: Border.all(color: color, width: isActive ? 2 : 1.5),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       isActive ? destination.activeIcon : destination.icon,
                       color: color,
-                      size: AppSizes.iconMd - 6,
+                      size: AppSizes.iconMd - 8,
                     ),
                   )
                 else
@@ -202,7 +198,6 @@ class _ShellTab extends StatelessWidget {
                     ),
                   ),
               ],
-            ),
           ),
           ],
         ),
