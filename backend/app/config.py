@@ -79,7 +79,7 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_ENABLED: bool = True
 
-    STORAGE_PROVIDER: Literal["local", "s3"] = "local"
+    STORAGE_PROVIDER: Literal["local", "s3", "r2"] = "local"
     STORAGE_LOCAL_ROOT: str = ".storage"
     STORAGE_LOCAL_BASE_URL: str = "http://127.0.0.1:9000/v1/storage"
     STORAGE_S3_ENDPOINT: str = ""

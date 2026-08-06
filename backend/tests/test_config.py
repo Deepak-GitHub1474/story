@@ -120,3 +120,42 @@ def test_s3_storage_with_credentials_builds():
     storage = build_storage(settings)
 
     assert storage.key_for(owner_id="usr_1", item_id="vit_2") == "vault/usr_1/vit_2"
+
+
+def test_r2_is_an_accepted_provider_name():
+    from app.ports.factory import build_storage
+
+    settings = production(
+        STORAGE_PROVIDER="r2",
+        STORAGE_S3_ENDPOINT="https://acc.r2.cloudflarestorage.com",
+        STORAGE_S3_ACCESS_KEY="a" * 20,
+        STORAGE_S3_SECRET_KEY="b" * 40,
+        STORAGE_S3_BUCKET_VAULT="story-vault",
+    )
+
+    assert build_storage(settings).key_for(owner_id="u", item_id="i") == "vault/u/i"
+
+
+def test_r2_and_s3_build_the_same_adapter():
+    from app.ports.factory import build_storage
+
+    common = {
+        "STORAGE_S3_ENDPOINT": "https://acc.r2.cloudflarestorage.com",
+        "STORAGE_S3_ACCESS_KEY": "a" * 20,
+        "STORAGE_S3_SECRET_KEY": "b" * 40,
+        "STORAGE_S3_BUCKET_VAULT": "story-vault",
+    }
+
+    as_r2 = build_storage(production(STORAGE_PROVIDER="r2", **common))
+    as_s3 = build_storage(production(STORAGE_PROVIDER="s3", **common))
+
+    assert type(as_r2) is type(as_s3)
+
+
+def test_r2_without_credentials_is_refused_too():
+    from app.ports.factory import build_storage
+
+    with pytest.raises(ValueError) as caught:
+        build_storage(production(STORAGE_PROVIDER="r2"))
+
+    assert "STORAGE_S3_ENDPOINT" in str(caught.value)

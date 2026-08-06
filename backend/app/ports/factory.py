@@ -52,7 +52,7 @@ def build_storage(settings: Settings) -> StoragePort:
             settings.STORAGE_LOCAL_BASE_URL,
             settings.JWT_SECRET,
         )
-    if settings.STORAGE_PROVIDER == "s3":
+    if settings.STORAGE_PROVIDER in ("s3", "r2"):
         missing = [
             name
             for name in (
