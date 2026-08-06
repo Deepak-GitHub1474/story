@@ -1,14 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { EMPTY_FORM, signIn } from '@/lib/actions/auth';
+import { bootstrapChat } from '@/lib/chat/useIdentity';
 
 export function SignInForm() {
+  const router = useRouter();
   const [state, action, isPending] = useActionState(signIn, EMPTY_FORM);
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (!state.userId) return;
+    void bootstrapChat(state.userId, password).then(() => router.push('/feed'));
+  }, [state.userId, password, router]);
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -34,6 +43,8 @@ export function SignInForm() {
         name="password"
         type={showPassword ? 'text' : 'password'}
         autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
         required
         error={state.field === 'password' ? state.error : null}
         suffix={

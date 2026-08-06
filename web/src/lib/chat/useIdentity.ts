@@ -71,6 +71,44 @@ export function useChatIdentity(userId: string): IdentityState {
   return state;
 }
 
+export async function bootstrapChat(userId: string, password: string) {
+  try {
+    const backup = await readChatBackup();
+
+    if (backup) {
+      const seed = await unwrapIdentityRaw({
+        wrapped: backup.wrapped_private_key,
+        password,
+        salt: backup.salt,
+        userId,
+      });
+      await writeIdentity(userId, {
+        seed: toBase64(seed),
+        publicKey: backup.public_key,
+      });
+      await publishChatKey(backup.public_key);
+      return;
+    }
+
+    const stored = await readIdentity(userId);
+    if (stored) {
+      await backUpIdentity(userId, password, fromBase64(stored.seed), stored.publicKey);
+      await publishChatKey(stored.publicKey);
+      return;
+    }
+
+    const fresh = await newIdentity();
+    await writeIdentity(userId, {
+      seed: toBase64(fresh.seed),
+      publicKey: fresh.publicKey,
+    });
+    await backUpIdentity(userId, password, fresh.seed, fresh.publicKey);
+    await publishChatKey(fresh.publicKey);
+  } catch {
+    return;
+  }
+}
+
 export async function unlockWithPassword(userId: string, password: string) {
   const backup = await readChatBackup();
   if (!backup) return false;

@@ -5,7 +5,9 @@ import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
+import { useRouter } from 'next/navigation';
 import { EMPTY_FORM, checkUsername, signUp } from '@/lib/actions/auth';
+import { bootstrapChat } from '@/lib/chat/useIdentity';
 
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 const USERNAME_MIN = 2;
@@ -17,6 +19,12 @@ export function SignUpForm() {
   const [password, setPassword] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!state.userId) return;
+    void bootstrapChat(state.userId, password).then(() => router.push('/onboarding'));
+  }, [state.userId, password, router]);
 
   const isWellFormed =
     username.length >= USERNAME_MIN &&
