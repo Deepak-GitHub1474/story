@@ -8,6 +8,7 @@ from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_wire, utc_now
 from app.db import keys
+from app.realtime import bus
 
 
 def pair_key(first: str, second: str) -> str:
@@ -373,7 +374,7 @@ def _serialize_message(doc: dict[str, Any]) -> dict[str, Any]:
 
 
 async def send_message(
-    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
 
@@ -398,7 +399,15 @@ async def send_message(
         {"$set": {"last_message_at": now, "updated_at": now}, "$pull": {"deleted_by": other_id}},
     )
 
-    return {"message": _serialize_message(message)}
+    payload = _serialize_message(message)
+    if redis is not None:
+        await bus.publish(
+            redis,
+            [other_id],
+            {"type": "message", "conversation_id": conversation_id, "message": payload},
+        )
+
+    return {"message": payload}
 
 
 async def list_messages(
@@ -495,7 +504,7 @@ async def clear_reaction(
 
 
 async def mark_read(
-    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     await _member_conversation(conversation_id, claims.user_id, mongo)
     now = utc_now()
@@ -511,6 +520,21 @@ async def mark_read(
         },
         upsert=True,
     )
+    if redis is not None:
+        conversation = await mongo[c.CONVERSATIONS].find_one(
+            {"_id": conversation_id}, {"participant_ids": 1}
+        )
+        if conversation is not None:
+            await bus.publish(
+                redis,
+                [_other_id(conversation, claims.user_id)],
+                {
+                    "type": "read",
+                    "conversation_id": conversation_id,
+                    "message_id": body.message_id,
+                },
+            )
+
     return {"conversation_id": conversation_id, "last_read_message_id": body.message_id}
 
 
@@ -563,4 +587,15 @@ async def set_typing(
     await redis.set(
         keys.typing(conversation_id, claims.user_id), "1", ex=c.TYPING_TTL_SECONDS
     )
+
+    conversation = await mongo[c.CONVERSATIONS].find_one(
+        {"_id": conversation_id}, {"participant_ids": 1}
+    )
+    if conversation is not None:
+        await bus.publish(
+            redis,
+            [_other_id(conversation, claims.user_id)],
+            {"type": "typing", "conversation_id": conversation_id},
+        )
+
     return {"typing": True}

@@ -156,8 +156,11 @@ async def send_message(
     body: SendMessageRequest,
     claims: CurrentClaims,
     mongo: MongoDatabase,
+    redis: RedisClient,
 ):
-    data = await controllers.send_message(conversation_id, body, claims=claims, mongo=mongo)
+    data = await controllers.send_message(
+        conversation_id, body, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Sent.", data=data)
 
 
@@ -220,7 +223,13 @@ async def clear_reaction(
 
 @router.post("/conversations/{conversation_id}/read", status_code=status.HTTP_200_OK)
 async def mark_read(
-    conversation_id: str, body: ReadRequest, claims: CurrentClaims, mongo: MongoDatabase
+    conversation_id: str,
+    body: ReadRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
 ):
-    data = await controllers.mark_read(conversation_id, body, claims=claims, mongo=mongo)
+    data = await controllers.mark_read(
+        conversation_id, body, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Marked read.", data=data)
