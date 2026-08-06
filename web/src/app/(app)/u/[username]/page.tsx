@@ -69,7 +69,9 @@ export default async function PublicProfilePage({ params }: Props) {
           @{profile.username}
         </p>
         {profile.bio ? (
-          <p className="mt-2 leading-relaxed text-text-secondary">{profile.bio}</p>
+          <p className="mt-2 leading-relaxed whitespace-pre-line text-text-secondary">
+            {profile.bio}
+          </p>
         ) : null}
         </div>
         {profile.is_me ? null : (

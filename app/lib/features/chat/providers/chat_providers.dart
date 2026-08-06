@@ -105,6 +105,7 @@ final conversationProvider =
 
 class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
   Timer? _poll;
+  bool _isPolling = false;
   StreamSubscription<Map<String, dynamic>>? _live;
   Uint8List? _cek;
   DateTime? _lastTyping;
@@ -247,7 +248,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     final decorated = await _decorate(raw);
 
     state = state.copyWith(
-      messages: decorated,
+      messages: _merge(decorated, const []),
       hasMore: raw.length >= 30,
       cursor: raw.isEmpty ? null : raw.last.messageId,
     );
@@ -255,19 +256,41 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
   }
 
   Future<void> _pollNew() async {
-    final newest = state.messages.where((m) => !m.isSending).firstOrNull;
-    if (newest == null) {
-      await _loadLatest();
-      return;
+    if (_isPolling) return;
+    _isPolling = true;
+
+    try {
+      final newest = state.messages.where((m) => !m.isSending).firstOrNull;
+      if (newest == null) {
+        await _loadLatest();
+        return;
+      }
+
+      final result = await _repository.messages(arg, after: newest.messageId);
+      final fresh = result.valueOrNull ?? const <ChatMessage>[];
+      if (fresh.isEmpty) return;
+
+      final decorated = await _decorate(fresh.reversed.toList());
+      state = state.copyWith(
+        messages: _merge(decorated, state.messages),
+      );
+      await _markRead();
+    } finally {
+      _isPolling = false;
     }
+  }
 
-    final result = await _repository.messages(arg, after: newest.messageId);
-    final fresh = result.valueOrNull ?? const <ChatMessage>[];
-    if (fresh.isEmpty) return;
+  static List<ChatMessage> _merge(
+    List<ChatMessage> incoming,
+    List<ChatMessage> existing,
+  ) {
+    final seen = <String>{};
+    final merged = <ChatMessage>[];
 
-    final decorated = await _decorate(fresh.reversed.toList());
-    state = state.copyWith(messages: [...decorated, ...state.messages]);
-    await _markRead();
+    for (final message in [...incoming, ...existing]) {
+      if (seen.add(message.messageId)) merged.add(message);
+    }
+    return merged;
   }
 
   Future<void> loadOlder() async {
@@ -278,7 +301,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     final decorated = await _decorate(raw);
 
     state = state.copyWith(
-      messages: [...state.messages, ...decorated],
+      messages: _merge(state.messages, decorated),
       hasMore: raw.length >= 30,
       cursor: raw.isEmpty ? state.cursor : raw.last.messageId,
     );

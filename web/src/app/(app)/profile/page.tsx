@@ -48,7 +48,9 @@ export default async function ProfilePage({ searchParams }: Props) {
           @{user.username}
         </p>
         {user.bio ? (
-          <p className="mt-2 leading-relaxed text-text-secondary">{user.bio}</p>
+          <p className="mt-2 leading-relaxed whitespace-pre-line text-text-secondary">
+            {user.bio}
+          </p>
         ) : null}
         {user.interests.length > 0 ? (
           <ul className="mt-3 flex flex-wrap gap-2">
