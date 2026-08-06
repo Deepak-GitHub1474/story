@@ -6,8 +6,6 @@ import '../features/chat/providers/chat_providers.dart';
 import '../features/notifications/providers/notification_providers.dart';
 import '../routing/routes.dart';
 
-import '../features/auth/providers/auth_provider.dart';
-import 'app_avatar.dart';
 import 'double_back_to_exit.dart';
 
 import '../theme/app_theme.dart';
@@ -161,7 +159,20 @@ class _ShellTab extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 if (destination.isAvatar)
-                  _AvatarTab(isActive: isActive)
+                  Container(
+                    width: AppSizes.iconMd + 6,
+                    height: AppSizes.iconMd + 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color, width: isActive ? 2 : 1.4),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      isActive ? destination.activeIcon : destination.icon,
+                      color: color,
+                      size: AppSizes.iconMd - 6,
+                    ),
+                  )
                 else
                   Icon(
                     isActive ? destination.activeIcon : destination.icon,
@@ -236,40 +247,13 @@ class _ComposeButtonState extends State<_ComposeButton> {
               height: 40,
               child: Icon(
                 Icons.add_box_outlined,
-                color: colors.textPrimary,
-                size: AppSizes.iconMd + 4,
+                color: colors.textMuted,
+                size: AppSizes.iconMd,
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-
-class _AvatarTab extends ConsumerWidget {
-  const _AvatarTab({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.colors;
-    final seed = ref.watch(authProvider).user?.avatarSeed ?? '';
-
-    return AnimatedContainer(
-      duration: AppMotion.fast,
-      curve: AppMotion.easeOut,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: isActive ? colors.accent : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      child: AppAvatar(seed: seed, size: AppSizes.iconMd),
     );
   }
 }

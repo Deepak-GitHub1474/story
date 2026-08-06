@@ -44,8 +44,8 @@ const shellDestinations = [
   ShellDestination(
     route: Routes.activity,
     label: 'Activity',
-    icon: Icons.notifications_none,
-    activeIcon: Icons.notifications,
+    icon: Icons.favorite_border,
+    activeIcon: Icons.favorite,
   ),
   ShellDestination(
     route: Routes.chats,
