@@ -174,12 +174,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          '@${other.username}',
-                          style: TextStyle(
-                            color: colors.textMuted,
-                            fontSize: AppTypeScale.caption,
-                          ),
+                        _PresenceLine(
+                          username: other.username,
+                          isOnline: state.conversation?.otherOnline,
+                          isTyping: state.conversation?.otherTyping ?? false,
                         ),
                       ],
                     ),
@@ -281,6 +279,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 replyTo: _replyTo,
                 onCancelReply: () => setState(() => _replyTo = null),
                 onSend: _send,
+                onTyping: (_) => ref
+                    .read(conversationProvider(widget.conversationId).notifier)
+                    .announceTyping(),
               ),
           ],
         ),
@@ -407,6 +408,7 @@ class _Composer extends StatelessWidget {
     required this.replyTo,
     required this.onCancelReply,
     required this.onSend,
+    required this.onTyping,
   });
 
   final TextEditingController controller;
@@ -414,6 +416,7 @@ class _Composer extends StatelessWidget {
   final ChatMessage? replyTo;
   final VoidCallback onCancelReply;
   final VoidCallback onSend;
+  final ValueChanged<String> onTyping;
 
   @override
   Widget build(BuildContext context) {
@@ -511,6 +514,7 @@ class _Composer extends StatelessWidget {
                       borderSide: BorderSide(color: colors.accent, width: 1.6),
                     ),
                   ),
+                  onChanged: onTyping,
                   onSubmitted: (_) => onSend(),
                 ),
               ),
@@ -560,6 +564,59 @@ class _SendButton extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+
+class _PresenceLine extends StatelessWidget {
+  const _PresenceLine({
+    required this.username,
+    required this.isOnline,
+    required this.isTyping,
+  });
+
+  final String username;
+  final bool? isOnline;
+  final bool isTyping;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    final label = isTyping
+        ? 'typing…'
+        : isOnline == true
+        ? 'Online'
+        : '@$username';
+
+    return AnimatedSwitcher(
+      duration: AppMotion.base,
+      child: Row(
+        key: ValueKey(label),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isTyping || isOnline == true) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: isTyping ? colors.accent : colors.success,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: isTyping ? colors.accent : colors.textMuted,
+              fontSize: AppTypeScale.caption,
+              fontWeight: isTyping ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

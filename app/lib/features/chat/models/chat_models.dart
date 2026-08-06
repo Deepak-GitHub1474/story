@@ -37,6 +37,8 @@ class Conversation {
     this.senderPublicKey,
     this.theirLastReadMessageId,
     this.lastMessageAt,
+    this.otherOnline,
+    this.otherTyping = false,
   });
 
   factory Conversation.fromJson(Map<String, dynamic> json) => Conversation(
@@ -49,6 +51,8 @@ class Conversation {
     senderPublicKey: json['sender_public_key'] as String?,
     theirLastReadMessageId: json['their_last_read_message_id'] as String?,
     lastMessageAt: json['last_message_at'] as String?,
+    otherOnline: json['other_online'] as bool?,
+    otherTyping: json['other_typing'] as bool? ?? false,
   );
 
   final String conversationId;
@@ -60,6 +64,8 @@ class Conversation {
   final String? senderPublicKey;
   final String? theirLastReadMessageId;
   final String? lastMessageAt;
+  final bool? otherOnline;
+  final bool otherTyping;
 
   bool get isPending => state == 'pending';
 }

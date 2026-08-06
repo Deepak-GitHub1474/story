@@ -7,6 +7,7 @@ from app.api.endpoints.connections import controllers as connection_controllers
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_wire, utc_now
+from app.db import keys
 
 
 def pair_key(first: str, second: str) -> str:
@@ -75,13 +76,31 @@ def _other_id(conversation: dict[str, Any], user_id: str) -> str:
     )
 
 
+def _shows_presence(user: dict[str, Any] | None) -> bool:
+    return (user or {}).get("prefs", {}).get("show_online_status", True)
+
+
+async def _presence_of(viewer, peer, peer_id: str, redis) -> bool | None:
+    if redis is None:
+        return None
+    if not _shows_presence(viewer) or not _shows_presence(peer):
+        return None
+    return await redis.get(keys.presence(peer_id)) is not None
+
+
 async def _serialize_conversation(
-    conversation: dict[str, Any], *, user_id: str, mongo: AsyncIOMotorDatabase
+    conversation: dict[str, Any],
+    *,
+    user_id: str,
+    mongo: AsyncIOMotorDatabase,
+    redis=None,
 ) -> dict[str, Any]:
     other_id = _other_id(conversation, user_id)
     other = await mongo[c.USERS].find_one(
-        {"_id": other_id}, {"username": 1, "display_name": 1, "avatar_seed": 1}
+        {"_id": other_id},
+        {"username": 1, "display_name": 1, "avatar_seed": 1, "prefs": 1},
     )
+    viewer = await mongo[c.USERS].find_one({"_id": user_id}, {"prefs": 1})
 
     key = await mongo[c.KEYS].find_one(
         {"_id": f"{conversation['_id']}:{user_id}"},
@@ -111,13 +130,18 @@ async def _serialize_conversation(
         "wrapped_cek": (key or {}).get("wrapped_cek"),
         "sender_public_key": (key or {}).get("sender_public_key"),
         "unread_count": unread,
+        "other_online": await _presence_of(viewer, other, other_id, redis),
+        "other_typing": redis is not None
+        and await redis.get(keys.typing(conversation["_id"], other_id)) is not None,
         "their_last_read_message_id": (theirs or {}).get("last_read_message_id"),
         "last_message_at": to_wire(conversation.get("last_message_at")),
         "created_at": to_wire(conversation.get("created_at")),
     }
 
 
-async def start_conversation(body, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def start_conversation(
+    body, *, claims, mongo: AsyncIOMotorDatabase, redis=None
+) -> dict[str, Any]:
     other = await _user_by_username(body.username, mongo)
     if other["_id"] == claims.user_id:
         raise api_error(ErrorCode.CHAT_SELF, field="username")
@@ -130,7 +154,7 @@ async def start_conversation(body, *, claims, mongo: AsyncIOMotorDatabase) -> di
     if existing is not None:
         return {
             "conversation": await _serialize_conversation(
-                existing, user_id=claims.user_id, mongo=mongo
+                existing, user_id=claims.user_id, mongo=mongo, redis=redis
             ),
             "created": False,
         }
@@ -175,14 +199,14 @@ async def start_conversation(body, *, claims, mongo: AsyncIOMotorDatabase) -> di
 
     return {
         "conversation": await _serialize_conversation(
-            conversation, user_id=claims.user_id, mongo=mongo
-        ),
+                conversation, user_id=claims.user_id, mongo=mongo, redis=redis
+            ),
         "created": True,
     }
 
 
 async def list_conversations(
-    *, claims, mongo: AsyncIOMotorDatabase, state: str | None
+    *, claims, mongo: AsyncIOMotorDatabase, state: str | None, redis=None
 ) -> dict[str, Any]:
     query: dict[str, Any] = {
         "participant_ids": claims.user_id,
@@ -205,7 +229,9 @@ async def list_conversations(
 
     return {
         "items": [
-            await _serialize_conversation(doc, user_id=claims.user_id, mongo=mongo)
+            await _serialize_conversation(
+                doc, user_id=claims.user_id, mongo=mongo, redis=redis
+            )
             for doc in docs
         ]
     }
@@ -223,13 +249,13 @@ async def _member_conversation(
 
 
 async def get_conversation(
-    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
     return {
         "conversation": await _serialize_conversation(
-            conversation, user_id=claims.user_id, mongo=mongo
-        )
+                conversation, user_id=claims.user_id, mongo=mongo, redis=redis
+            )
     }
 
 
@@ -451,3 +477,18 @@ async def unread_count(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]
     )
 
     return {"unread": unread, "requests": requests}
+
+
+async def heartbeat(*, claims, redis) -> dict[str, Any]:
+    await redis.set(keys.presence(claims.user_id), "1", ex=c.PRESENCE_TTL_SECONDS)
+    return {"online": True}
+
+
+async def set_typing(
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase, redis
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+    await redis.set(
+        keys.typing(conversation_id, claims.user_id), "1", ex=c.TYPING_TTL_SECONDS
+    )
+    return {"typing": True}

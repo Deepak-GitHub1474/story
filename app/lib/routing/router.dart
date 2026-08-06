@@ -58,6 +58,7 @@ const shellDestinations = [
     label: 'You',
     icon: Icons.person_outline,
     activeIcon: Icons.person,
+    isAvatar: true,
   ),
 ];
 

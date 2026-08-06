@@ -97,6 +97,29 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 AppSection(
+                  title: 'Chat',
+                  children: [
+                    AppListRow(
+                      label: 'Show when I am online',
+                      icon: Icons.circle_outlined,
+                      trailing: Switch.adaptive(
+                        value: user?.prefs['show_online_status'] as bool? ?? true,
+                        activeThumbColor: colors.accent,
+                        onChanged: (value) async {
+                          await ref
+                              .read(profileRepositoryProvider)
+                              .updateProfile(prefs: {'show_online_status': value});
+                          await ref.read(authProvider.notifier).refreshUser();
+                        },
+                      ),
+                    ),
+                    const AppListRow(
+                      label: 'Turning this off also hides theirs from you.',
+                      icon: Icons.info_outline,
+                    ),
+                  ],
+                ),
+                AppSection(
                   title: 'Account',
                   children: [
                     AppListRow(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,6 +55,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     super.dispose();
   }
 
+  void _onTabSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 240) return;
+
+    final next = velocity < 0
+        ? _tabController.index + 1
+        : _tabController.index - 1;
+    if (next < 0 || next >= _tabs.length) return;
+
+    HapticFeedback.selectionClick();
+    _tabController.animateTo(next);
+  }
+
   Future<bool> _onSwipe(Story story, SwipeAction action) async {
     final repository = ref.read(storyRepositoryProvider);
     final notifier = ref.read(myStoriesProvider.notifier);
@@ -103,8 +117,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
 
     return SafeArea(
-      child: Column(
-        children: [
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: _onTabSwipe,
+        child: Column(
+          children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
@@ -270,7 +287,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -92,6 +92,7 @@ final conversationProvider =
 class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
   Timer? _poll;
   Uint8List? _cek;
+  DateTime? _lastTyping;
   int _pendingSeq = 0;
 
   @override
@@ -147,7 +148,21 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
 
   void _startPolling() {
     _poll?.cancel();
-    _poll = Timer.periodic(const Duration(seconds: 3), (_) => _pollNew());
+    _poll = Timer.periodic(const Duration(seconds: 3), (_) => _tick());
+  }
+
+  Future<void> _tick() async {
+    await _pollNew();
+    final refreshed = await _repository.conversation(arg);
+    final conversation = refreshed.valueOrNull;
+    if (conversation != null) state = state.copyWith(conversation: conversation);
+  }
+
+  Future<void> announceTyping() async {
+    final now = DateTime.now();
+    if (_lastTyping != null && now.difference(_lastTyping!).inSeconds < 4) return;
+    _lastTyping = now;
+    await _repository.typing(arg);
   }
 
   Future<List<ChatMessage>> _decorate(List<ChatMessage> raw) async {
@@ -341,5 +356,35 @@ class ChatStarter {
 
     _ref.invalidate(conversationsProvider(null));
     return started.valueOrNull?.conversationId;
+  }
+}
+
+
+final presenceHeartbeatProvider = Provider<PresenceHeartbeat>((ref) {
+  final beat = PresenceHeartbeat(ref);
+  ref.onDispose(beat.stop);
+  return beat;
+});
+
+class PresenceHeartbeat {
+  PresenceHeartbeat(this._ref);
+
+  final Ref _ref;
+  Timer? _timer;
+
+  void start() {
+    if (_timer != null) return;
+    unawaited(_beat());
+    _timer = Timer.periodic(const Duration(seconds: 45), (_) => _beat());
+  }
+
+  void stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  Future<void> _beat() async {
+    if (_ref.read(authProvider).user == null) return;
+    await _ref.read(chatRepositoryProvider).heartbeat();
   }
 }

@@ -11,6 +11,7 @@ from app.api.endpoints.chat.models import (
 )
 from app.core.deps import CurrentClaims
 from app.db.mongo import MongoDatabase
+from app.db.redis import RedisClient
 from app.responses import ok_response
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -36,6 +37,25 @@ async def read_identity(username: str, claims: CurrentClaims, mongo: MongoDataba
     return ok_response("Chat key.", data=data)
 
 
+@router.post("/presence", status_code=status.HTTP_200_OK)
+async def heartbeat(claims: CurrentClaims, redis: RedisClient):
+    data = await controllers.heartbeat(claims=claims, redis=redis)
+    return ok_response("Online.", data=data)
+
+
+@router.post("/conversations/{conversation_id}/typing", status_code=status.HTTP_200_OK)
+async def set_typing(
+    conversation_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
+):
+    data = await controllers.set_typing(
+        conversation_id, claims=claims, mongo=mongo, redis=redis
+    )
+    return ok_response("Typing.", data=data)
+
+
 @router.get("/unread-count", status_code=status.HTTP_200_OK)
 async def unread_count(claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.unread_count(claims=claims, mongo=mongo)
@@ -47,9 +67,12 @@ async def start_conversation(
     body: StartConversationRequest,
     claims: CurrentClaims,
     mongo: MongoDatabase,
+    redis: RedisClient,
     response: Response,
 ):
-    data = await controllers.start_conversation(body, claims=claims, mongo=mongo)
+    data = await controllers.start_conversation(
+        body, claims=claims, mongo=mongo, redis=redis
+    )
     if not data["created"]:
         response.status_code = status.HTTP_200_OK
         return ok_response("Conversation already open.", data=data)
@@ -60,17 +83,25 @@ async def start_conversation(
 async def list_conversations(
     claims: CurrentClaims,
     mongo: MongoDatabase,
+    redis: RedisClient,
     state: str | None = Query(default=None),
 ):
-    data = await controllers.list_conversations(claims=claims, mongo=mongo, state=state)
+    data = await controllers.list_conversations(
+        claims=claims, mongo=mongo, state=state, redis=redis
+    )
     return ok_response("Chats loaded.", data=data)
 
 
 @router.get("/conversations/{conversation_id}", status_code=status.HTTP_200_OK)
 async def get_conversation(
-    conversation_id: str, claims: CurrentClaims, mongo: MongoDatabase
+    conversation_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
 ):
-    data = await controllers.get_conversation(conversation_id, claims=claims, mongo=mongo)
+    data = await controllers.get_conversation(
+        conversation_id, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Chat loaded.", data=data)
 
 

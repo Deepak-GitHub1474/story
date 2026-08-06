@@ -10,6 +10,7 @@ class PrefsPatch(BaseModel):
     reading_size: Literal["reading", "readingLg"] | None = None
     notify_in_app: bool | None = None
     notify_email: bool | None = None
+    show_online_status: bool | None = None
 
 
 class UpdateProfileRequest(BaseModel):

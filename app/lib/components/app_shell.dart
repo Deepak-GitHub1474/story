@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/chat/providers/chat_providers.dart';
 import '../features/notifications/providers/notification_providers.dart';
 import '../routing/routes.dart';
 
+import '../features/auth/providers/auth_provider.dart';
+import 'app_avatar.dart';
 import 'double_back_to_exit.dart';
 
 import '../theme/app_theme.dart';
@@ -17,6 +20,7 @@ class ShellDestination {
     required this.icon,
     required this.activeIcon,
     this.badgeCount = 0,
+    this.isAvatar = false,
   });
 
   final String route;
@@ -24,6 +28,7 @@ class ShellDestination {
   final IconData icon;
   final IconData activeIcon;
   final int badgeCount;
+  final bool isAvatar;
 
   ShellDestination withBadge(int count) => ShellDestination(
     route: route,
@@ -31,6 +36,7 @@ class ShellDestination {
     icon: icon,
     activeIcon: activeIcon,
     badgeCount: count,
+    isAvatar: isAvatar,
   );
 }
 
@@ -50,6 +56,9 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(chatIdentityProvider);
+    ref.read(presenceHeartbeatProvider).start();
+
     final colors = context.colors;
     final unread = ref.watch(unreadCountProvider);
 
@@ -151,11 +160,14 @@ class _ShellTab extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  isActive ? destination.activeIcon : destination.icon,
-                  color: color,
-                  size: AppSizes.iconMd,
-                ),
+                if (destination.isAvatar)
+                  _AvatarTab(isActive: isActive)
+                else
+                  Icon(
+                    isActive ? destination.activeIcon : destination.icon,
+                    color: color,
+                    size: AppSizes.iconMd,
+                  ),
                 if (badgeCount > 0)
                   Positioned(
                     right: -6,
@@ -231,6 +243,33 @@ class _ComposeButtonState extends State<_ComposeButton> {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _AvatarTab extends ConsumerWidget {
+  const _AvatarTab({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final seed = ref.watch(authProvider).user?.avatarSeed ?? '';
+
+    return AnimatedContainer(
+      duration: AppMotion.fast,
+      curve: AppMotion.easeOut,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isActive ? colors.accent : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: AppAvatar(seed: seed, size: AppSizes.iconMd),
     );
   }
 }

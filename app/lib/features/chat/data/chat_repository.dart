@@ -22,6 +22,14 @@ class ChatRepository {
     ),
   );
 
+  Future<Result<bool>> heartbeat() =>
+      _client.post(Endpoints.chatPresence, parse: (data) => data['online'] as bool? ?? true);
+
+  Future<Result<bool>> typing(String conversationId) => _client.post(
+    Endpoints.chatTyping(conversationId),
+    parse: (data) => data['typing'] as bool? ?? true,
+  );
+
   Future<Result<ChatUnread>> unread() =>
       _client.get(Endpoints.chatUnread, parse: ChatUnread.fromJson);
 

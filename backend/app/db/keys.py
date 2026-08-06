@@ -51,3 +51,11 @@ def session_epoch(user_id: str) -> str:
 
 def totp_used(user_id: str, code: str) -> str:
     return f"{NAMESPACE}:TOTP_USED:{user_id}:{code}"
+
+
+def presence(user_id: str) -> str:
+    return f"{NAMESPACE}:PRESENCE:{user_id}"
+
+
+def typing(conversation_id: str, user_id: str) -> str:
+    return f"{NAMESPACE}:TYPING:{conversation_id}:{user_id}"
