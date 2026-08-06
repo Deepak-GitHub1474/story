@@ -70,4 +70,39 @@ void main() {
 
     expect(prefs.recentSearches, isEmpty);
   });
+
+  test('searches older than a day are gone', () async {
+    final twoDaysAgo = DateTime.now().subtract(const Duration(days: 2));
+    SharedPreferences.setMockInitialValues({
+      'story.recent_searches': ['stale'],
+      'story.recent_searches_at': twoDaysAgo.millisecondsSinceEpoch,
+    });
+    final prefs = PrefsStore(await SharedPreferences.getInstance());
+
+    expect(prefs.recentSearches, isEmpty);
+  });
+
+  test('searches from an hour ago survive', () async {
+    final anHourAgo = DateTime.now().subtract(const Duration(hours: 1));
+    SharedPreferences.setMockInitialValues({
+      'story.recent_searches': ['fresh'],
+      'story.recent_searches_at': anHourAgo.millisecondsSinceEpoch,
+    });
+    final prefs = PrefsStore(await SharedPreferences.getInstance());
+
+    expect(prefs.recentSearches, ['fresh']);
+  });
+
+  test('remembering something resets the clock', () async {
+    final twoDaysAgo = DateTime.now().subtract(const Duration(days: 2));
+    SharedPreferences.setMockInitialValues({
+      'story.recent_searches': ['stale'],
+      'story.recent_searches_at': twoDaysAgo.millisecondsSinceEpoch,
+    });
+    final prefs = PrefsStore(await SharedPreferences.getInstance());
+
+    await prefs.rememberSearch('fresh');
+
+    expect(prefs.recentSearches, ['fresh']);
+  });
 }

@@ -58,7 +58,7 @@ e2e: ## Start a test-profile API on its own database, run the app suite, tear do
 		--host 127.0.0.1 --port 9000 > /tmp/story-e2e.log 2>&1 & \
 		echo $$! > /tmp/story-e2e.pid
 	@until curl -sf --max-time 2 http://127.0.0.1:9000/v1/health/ready >/dev/null; do sleep 1; done
-	@cd app && flutter test; status=$$?; \
+	@cd app && flutter test --run-skipped; status=$$?; \
 		kill `cat /tmp/story-e2e.pid` 2>/dev/null; rm -f /tmp/story-e2e.pid; \
 		exit $$status
 

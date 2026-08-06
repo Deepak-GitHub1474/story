@@ -89,9 +89,9 @@ class FeedScreen extends ConsumerWidget {
               state: state,
               onRefresh: () => ref.read(feedProvider.notifier).refresh(),
               onLoadMore: () => ref.read(feedProvider.notifier).loadMore(),
-              onOpen: (story) => context.push('\${Routes.story}/\${story.storyId}'),
+              onOpen: (story) => context.push('${Routes.story}/${story.storyId}'),
               onAuthorTap: (story) => context.push(
-                '\${Routes.user}/\${story.author.username}',
+                '${Routes.user}/${story.author.username}',
               ),
               onLike: (story) => _like(ref, story),
               onShare: (story) => _share(context, ref, story),
