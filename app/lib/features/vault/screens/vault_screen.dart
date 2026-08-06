@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +7,7 @@ import '../../../components/app_card.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
+import '../../../core/files/file_picker.dart';
 import '../../../core/security/secure_screen.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -73,19 +73,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   }
 
   Future<void> _addFile() async {
-    final picked = await FilePicker.platform.pickFiles(
-      withData: true,
-      type: FileType.custom,
-      allowedExtensions: const [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif',
-        'mp4', 'mov', 'm4v',
-        'pdf',
-      ],
-    );
-    final file = picked?.files.singleOrNull;
-    if (file?.bytes == null || !mounted) return;
+    final file = await FilePicking.pick();
+    if (file == null || !mounted) return;
 
-    final kind = detectKind(file!.bytes!, file.name);
+    final kind = detectKind(file.bytes, file.name);
     if (kind == null) {
       AppToast.show(
         context,
@@ -108,7 +99,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     if (!mounted) return;
 
     final ok = await ref.read(vaultUploadProvider.notifier).addFile(
-      bytes: file.bytes!,
+      bytes: file.bytes,
       filename: file.name,
       kind: kind,
       label: label,
@@ -195,13 +186,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               if (overview.valueOrNull?.hasPasscode == false) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'No vault passcode yet. Set one up from Settings before you can '
-                  'store anything.',
+                  'You have not set up a vault yet.',
                   style: TextStyle(
                     color: colors.textMuted,
                     fontSize: AppTypeScale.caption,
                     height: 1.5,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppButton(
+                  label: 'Set up your vault',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => context.push(Routes.vaultSetup),
                 ),
               ],
             ],

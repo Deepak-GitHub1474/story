@@ -131,23 +131,58 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
       return false;
     }
 
+    final record = passcodes.first;
     final passcodeKey = await crypto.deriveKek(
       Uint8List.fromList(utf8.encode(passcode)),
-      await crypto.randomBytes(VaultCrypto.saltLength),
-      kdf,
+      Uint8List.fromList(base64Decode(record.saltPc)),
+      record.kdf.isEmpty ? kdf : KdfParams.fromJson(record.kdf),
     );
 
     state = VaultSession(
       state: VaultLockState.unlocked,
       umk: umk,
       passcodeKey: passcodeKey,
-      passcodeId: passcodes.first.passcodeId,
+      passcodeId: record.passcodeId,
     );
     return true;
   }
 
   void lock() {
     state = const VaultSession(state: VaultLockState.locked);
+  }
+
+  Future<bool> createPasscode({
+    required String password,
+    required String passcode,
+    String label = 'Main vault',
+  }) async {
+    final crypto = _crypto;
+    const kdf = KdfParams();
+
+    if (state.umk == null && !await setUpKeys(password)) return false;
+
+    final saltPc = await crypto.randomBytes(VaultCrypto.saltLength);
+    final passcodeKey = await crypto.deriveKek(
+      Uint8List.fromList(utf8.encode(passcode)),
+      saltPc,
+      kdf,
+    );
+
+    final verifier = await crypto.wrap(
+      key: passcodeKey,
+      plaintext: Uint8List.fromList(utf8.encode('story.passcode.v1')),
+      aad: 'story.passcode.v1',
+    );
+
+    final result = await _repository.createPasscode(
+      label: label,
+      passcodeHash: base64Encode(verifier),
+      saltPc: base64Encode(saltPc),
+      kdf: kdf.toJson(),
+      escrowPayload: base64Encode(verifier),
+    );
+
+    return result.valueOrNull != null;
   }
 
   Future<String?> hashLabel(String label) async {
