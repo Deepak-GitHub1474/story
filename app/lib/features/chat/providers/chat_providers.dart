@@ -214,7 +214,10 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
 
   Future<void> _pollNew() async {
     final newest = state.messages.where((m) => !m.isSending).firstOrNull;
-    if (newest == null) return;
+    if (newest == null) {
+      await _loadLatest();
+      return;
+    }
 
     final result = await _repository.messages(arg, after: newest.messageId);
     final fresh = result.valueOrNull ?? const <ChatMessage>[];
