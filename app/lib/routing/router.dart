@@ -22,6 +22,7 @@ import '../features/stories/screens/composer_screen.dart';
 import '../features/stories/screens/story_detail_screen.dart';
 import '../features/onboarding/screens/interests_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/settings/screens/avatar_screen.dart';
 import '../features/settings/screens/change_password_screen.dart';
 import '../features/settings/screens/edit_profile_screen.dart';
 import '../features/settings/screens/sessions_screen.dart';
@@ -257,6 +258,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             conversationId: state.pathParameters['conversationId']!,
           ),
         ),
+      ),
+      GoRoute(
+        path: Routes.avatar,
+        pageBuilder: (context, state) =>
+            slidePage(key: state.pageKey, child: const AvatarScreen()),
       ),
       GoRoute(
         path: Routes.settings,

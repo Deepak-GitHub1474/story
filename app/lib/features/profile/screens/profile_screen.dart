@@ -10,7 +10,6 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../settings/providers/settings_provider.dart';
 
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
@@ -170,17 +169,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Row(
                     children: [
                       GestureDetector(
-                        onLongPress: () async {
-                          final result = await ref
-                              .read(profileRepositoryProvider)
-                              .regenerateAvatar();
-                          if (!context.mounted) return;
-                          if (result.isSuccess) {
-                            await ref.read(authProvider.notifier).refreshUser();
-                            if (!context.mounted) return;
-                            AppToast.show(context, 'New avatar.');
-                          }
-                        },
+                        onTap: () => context.push(Routes.avatar),
                         child: AppAvatar(
                           seed: user.avatarSeed,
                           size: 72,

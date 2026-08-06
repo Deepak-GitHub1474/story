@@ -6,12 +6,14 @@ import '../models/auth_models.dart';
 Map<String, dynamic> _profilePatch({
   String? displayName,
   String? bio,
+  String? avatarSeed,
   List<String>? interests,
   Map<String, dynamic>? prefs,
 }) {
   final patch = <String, dynamic>{};
   if (displayName != null) patch['display_name'] = displayName;
   if (bio != null) patch['bio'] = bio;
+  if (avatarSeed != null) patch['avatar_seed'] = avatarSeed;
   if (interests != null) patch['interests'] = interests;
   if (prefs != null) patch['prefs'] = prefs;
   return patch;
@@ -32,6 +34,7 @@ class ProfileRepository {
   Future<Result<AppUser>> updateProfile({
     String? displayName,
     String? bio,
+    String? avatarSeed,
     List<String>? interests,
     Map<String, dynamic>? prefs,
   }) => _client.patch(
@@ -39,6 +42,7 @@ class ProfileRepository {
     body: _profilePatch(
       displayName: displayName,
       bio: bio,
+      avatarSeed: avatarSeed,
       interests: interests,
       prefs: prefs,
     ),

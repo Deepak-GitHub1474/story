@@ -24,6 +24,7 @@ class Routes {
   static const String blocked = '/people/blocked';
 
   static const String editProfile = '/settings/profile';
+  static const String avatar = '/settings/avatar';
   static const String interests = '/settings/interests';
   static const String changePassword = '/settings/password';
   static const String sessions = '/settings/sessions';

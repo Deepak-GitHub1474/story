@@ -125,6 +125,11 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Account',
                   children: [
                     AppListRow(
+                      label: 'Choose your avatar',
+                      icon: Icons.face_outlined,
+                      onTap: () => context.push(Routes.avatar),
+                    ),
+                    AppListRow(
                       label: 'Edit profile',
                       icon: Icons.person_outline,
                       onTap: () => context.push(Routes.editProfile),
