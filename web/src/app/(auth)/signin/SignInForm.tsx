@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { EMPTY_FORM, signIn } from '@/lib/actions/auth';
+import { signIn } from '@/lib/actions/auth';
+import { EMPTY_FORM } from '@/lib/actions/state';
 import { bootstrapChat } from '@/lib/chat/useIdentity';
 
 export function SignInForm() {

@@ -216,20 +216,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 color: colors.surfaceRaised,
-                child: Text(
-                  state.error!,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.label,
-                    height: 1.5,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.error!,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: AppTypeScale.label,
+                        height: 1.5,
+                      ),
+                    ),
+                    if (state.needsRekey) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: 'Reset this chat',
+                        variant: AppButtonVariant.secondary,
+                        onPressed: () async {
+                          final ok = await ref
+                              .read(
+                                conversationProvider(widget.conversationId).notifier,
+                              )
+                              .rekey();
+                          if (!context.mounted) return;
+                          AppToast.show(
+                            context,
+                            ok
+                                ? 'Fresh key. You can talk again.'
+                                : 'Could not reset. They may need to open the app.',
+                            kind: ok ? AppToastKind.success : AppToastKind.error,
+                          );
+                        },
+                      ),
+                    ],
+                  ],
                 ),
               ),
             Expanded(
               child: state.isLoading
                   ? const Center(child: CircularProgressIndicator.adaptive())
                   : state.messages.isEmpty
-                  ? _EmptyThread(name: other?.displayName ?? 'them')
+                  ? SingleChildScrollView(
+                      child: _EmptyThread(name: other?.displayName ?? 'them'),
+                    )
                   : ListView.builder(
                       controller: _scroll,
                       reverse: true,
@@ -334,9 +363,9 @@ class _EmptyThread extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

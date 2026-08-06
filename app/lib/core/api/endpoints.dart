@@ -82,6 +82,8 @@ class Endpoints {
 
   static String chatAccept(String id) => '/chat/conversations/$id/accept';
 
+  static String chatKeys(String id) => '/chat/conversations/$id/keys';
+
   static String chatMessages(String id) => '/chat/conversations/$id/messages';
 
   static String chatRead(String id) => '/chat/conversations/$id/read';

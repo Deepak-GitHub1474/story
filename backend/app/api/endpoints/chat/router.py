@@ -6,6 +6,7 @@ from app.api.endpoints.chat.models import (
     PublishIdentityRequest,
     ReactionRequest,
     ReadRequest,
+    RekeyRequest,
     SendMessageRequest,
     StartConversationRequest,
     StoreBackupRequest,
@@ -126,6 +127,19 @@ async def accept_conversation(
 ):
     data = await controllers.accept_conversation(conversation_id, claims=claims, mongo=mongo)
     return ok_response("Request accepted.", data=data)
+
+
+@router.put("/conversations/{conversation_id}/keys", status_code=status.HTTP_200_OK)
+async def rekey_conversation(
+    conversation_id: str,
+    body: RekeyRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+):
+    data = await controllers.rekey_conversation(
+        conversation_id, body, claims=claims, mongo=mongo
+    )
+    return ok_response("Chat key reset. Earlier messages are gone.", data=data)
 
 
 @router.delete("/conversations/{conversation_id}", status_code=status.HTTP_200_OK)

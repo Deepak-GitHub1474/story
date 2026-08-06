@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { useRouter } from 'next/navigation';
-import { EMPTY_FORM, checkUsername, signUp } from '@/lib/actions/auth';
+import { checkUsername, signUp } from '@/lib/actions/auth';
+import { EMPTY_FORM } from '@/lib/actions/state';
 import { bootstrapChat } from '@/lib/chat/useIdentity';
 
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;

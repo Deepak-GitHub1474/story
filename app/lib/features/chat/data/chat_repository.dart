@@ -83,6 +83,21 @@ class ChatRepository {
         Conversation.fromJson(Map<String, dynamic>.from(data['conversation'] as Map)),
   );
 
+  Future<Result<bool>> rekey({
+    required String conversationId,
+    required String wrappedForMe,
+    required String wrappedForThem,
+    required String senderPublicKey,
+  }) => _client.put(
+    Endpoints.chatKeys(conversationId),
+    body: {
+      'wrapped_cek_for_me': wrappedForMe,
+      'wrapped_cek_for_them': wrappedForThem,
+      'sender_public_key': senderPublicKey,
+    },
+    parse: (data) => data['rekeyed'] as bool? ?? true,
+  );
+
   Future<Result<bool>> accept(String id) => _client.post(
     Endpoints.chatAccept(id),
     parse: (data) => data['state'] == 'accepted',

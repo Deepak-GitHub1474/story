@@ -20,6 +20,14 @@ class StartConversationRequest(BaseModel):
     sender_public_key: Annotated[str, Field(min_length=16, max_length=256)]
 
 
+class RekeyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    wrapped_cek_for_me: Annotated[str, Field(min_length=16, max_length=512)]
+    wrapped_cek_for_them: Annotated[str, Field(min_length=16, max_length=512)]
+    sender_public_key: Annotated[str, Field(min_length=16, max_length=256)]
+
+
 class SendMessageRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

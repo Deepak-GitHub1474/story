@@ -321,6 +321,40 @@ async def delete_conversation(
     return {"conversation_id": conversation_id, "deleted": True}
 
 
+async def rekey_conversation(
+    conversation_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+    other_id = _other_id(conversation, claims.user_id)
+    now = utc_now()
+
+    for user_id, wrapped in (
+        (claims.user_id, body.wrapped_cek_for_me),
+        (other_id, body.wrapped_cek_for_them),
+    ):
+        await mongo[c.KEYS].update_one(
+            {"_id": f"{conversation_id}:{user_id}"},
+            {
+                "$set": {
+                    "conversation_id": conversation_id,
+                    "user_id": user_id,
+                    "wrapped_cek": wrapped,
+                    "sender_public_key": body.sender_public_key,
+                    "created_at": now,
+                }
+            },
+            upsert=True,
+        )
+
+    await mongo[c.MESSAGES].delete_many({"conversation_id": conversation_id})
+    await mongo[c.READS].delete_many({"conversation_id": conversation_id})
+    await mongo[c.CONVERSATIONS].update_one(
+        {"_id": conversation_id}, {"$set": {"updated_at": now}}
+    )
+
+    return {"conversation_id": conversation_id, "rekeyed": True}
+
+
 def _serialize_message(doc: dict[str, Any]) -> dict[str, Any]:
     is_deleted = doc.get("deleted_at") is not None
     return {

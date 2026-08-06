@@ -571,3 +571,84 @@ async def test_a_pending_request_does_not_count_as_unread(client):
 
     assert total["unread"] == 0
     assert total["requests"] == 1
+
+
+async def test_a_conversation_key_can_be_replaced_after_a_reinstall(client):
+    one, two = await mutual(client, "rekey_ann", "rekey_ben")
+    cid = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rekey_ben"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+
+    response = await client.put(
+        f"/v1/chat/conversations/{cid}/keys",
+        json={
+            "wrapped_cek_for_me": b64(b"nonce12bytes" + b"fresh-for-me"),
+            "wrapped_cek_for_them": b64(b"nonce12bytes" + b"fresh-for-them"),
+            "sender_public_key": b64(bytes([9] * 32)),
+        },
+        headers=one,
+    )
+
+    assert response.status_code == 200
+
+    mine = (await client.get(f"/v1/chat/conversations/{cid}", headers=one)).json()["data"][
+        "conversation"
+    ]
+    theirs = (await client.get(f"/v1/chat/conversations/{cid}", headers=two)).json()["data"][
+        "conversation"
+    ]
+
+    assert mine["wrapped_cek"] == b64(b"nonce12bytes" + b"fresh-for-me")
+    assert theirs["wrapped_cek"] == b64(b"nonce12bytes" + b"fresh-for-them")
+
+
+async def test_rekeying_drops_messages_nobody_can_read_any_more(client):
+    one, _ = await mutual(client, "rekey2_ann", "rekey2_ben")
+    cid = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rekey2_ben"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+    await client.post(
+        f"/v1/chat/conversations/{cid}/messages", json=message_body(), headers=one
+    )
+
+    await client.put(
+        f"/v1/chat/conversations/{cid}/keys",
+        json={
+            "wrapped_cek_for_me": b64(b"nonce12bytes" + b"fresh-for-me"),
+            "wrapped_cek_for_them": b64(b"nonce12bytes" + b"fresh-for-them"),
+            "sender_public_key": b64(bytes([9] * 32)),
+        },
+        headers=one,
+    )
+
+    items = (
+        await client.get(f"/v1/chat/conversations/{cid}/messages", headers=one)
+    ).json()["data"]["items"]
+
+    assert items == []
+
+
+async def test_a_stranger_cannot_rekey_your_conversation(client):
+    one, _ = await mutual(client, "rekey3_ann", "rekey3_ben")
+    cid = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rekey3_ben"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+
+    stranger = await with_identity(client, "rekey3_snoop")
+    response = await client.put(
+        f"/v1/chat/conversations/{cid}/keys",
+        json={
+            "wrapped_cek_for_me": b64(b"nonce12bytes" + b"stolen"),
+            "wrapped_cek_for_them": b64(b"nonce12bytes" + b"stolen"),
+            "sender_public_key": b64(bytes([9] * 32)),
+        },
+        headers=stranger,
+    )
+
+    assert response.status_code == 404

@@ -70,6 +70,17 @@ class ApiClient {
     skipAuth: skipAuth,
   );
 
+  Future<Result<T>> put<T>(
+    String path, {
+    JsonMap? body,
+    required T Function(JsonMap data) parse,
+    bool skipAuth = false,
+  }) => _send(
+    () => _dio.put(path, data: body, options: Options(extra: {'skipAuth': skipAuth})),
+    parse,
+    skipAuth: skipAuth,
+  );
+
   Future<Result<T>> delete<T>(
     String path, {
     JsonMap? body,

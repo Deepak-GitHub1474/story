@@ -6,13 +6,7 @@ import { clearSession, saveSession, backendFetch } from '../server/session';
 import type { TEnvelope, TTokens } from '../types';
 import type { TMe } from '../types';
 
-export type TFormState = {
-  error: string | null;
-  field: string | null;
-  userId?: string;
-};
-
-export const EMPTY_FORM: TFormState = { error: null, field: null };
+import type { TAuthFormState as TFormState } from './state';
 
 type AuthPayload = { user: TMe; tokens: TTokens };
 

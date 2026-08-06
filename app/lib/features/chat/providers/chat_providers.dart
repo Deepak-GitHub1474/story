@@ -56,6 +56,7 @@ class ConversationState {
     this.hasMore = false,
     this.cursor,
     this.error,
+    this.needsRekey = false,
   });
 
   final List<ChatMessage> messages;
@@ -65,6 +66,7 @@ class ConversationState {
   final bool hasMore;
   final String? cursor;
   final String? error;
+  final bool needsRekey;
 
   ConversationState copyWith({
     List<ChatMessage>? messages,
@@ -74,6 +76,7 @@ class ConversationState {
     bool? hasMore,
     String? cursor,
     String? error,
+    bool? needsRekey,
   }) => ConversationState(
     messages: messages ?? this.messages,
     conversation: conversation ?? this.conversation,
@@ -82,6 +85,7 @@ class ConversationState {
     hasMore: hasMore ?? this.hasMore,
     cursor: cursor ?? this.cursor,
     error: error,
+    needsRekey: needsRekey ?? false,
   );
 }
 
@@ -136,7 +140,9 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
         state = state.copyWith(
           isLoading: false,
           conversation: conversation,
-          error: 'This chat was started on another device, so its key is not here.',
+          error: 'The keys for this chat changed, so nothing here can be opened. '
+              'Resetting starts it fresh and clears what came before.',
+          needsRekey: true,
         );
         return;
       }
@@ -298,6 +304,46 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
       await _repository.react(arg, messageId, emoji);
     }
     await _loadLatest();
+  }
+
+  Future<bool> rekey() async {
+    final identity = await ref.read(chatIdentityProvider.future);
+    final conversation = state.conversation;
+    final me = ref.read(authProvider).user;
+    if (identity == null || conversation == null || me == null) return false;
+
+    final peer = (await _repository.identityOf(conversation.other.username)).valueOrNull;
+    if (peer == null) return false;
+
+    final cek = await _crypto.newConversationKey();
+    final pair = ChatCrypto.pairKey(me.userId, peer.userId);
+
+    final done = await _repository.rekey(
+      conversationId: arg,
+      wrappedForMe: await _crypto.wrapForPeer(
+        cek: cek,
+        mine: identity,
+        theirPublicKey: peer.publicKey,
+        pair: pair,
+        recipientId: me.userId,
+      ),
+      wrappedForThem: await _crypto.wrapForPeer(
+        cek: cek,
+        mine: identity,
+        theirPublicKey: peer.publicKey,
+        pair: pair,
+        recipientId: peer.userId,
+      ),
+      senderPublicKey: identity.publicKey,
+    );
+
+    if (done.valueOrNull != true) return false;
+
+    _cek = cek;
+    state = state.copyWith(messages: const [], needsRekey: false);
+    await _loadLatest();
+    _startPolling();
+    return true;
   }
 
   Future<void> accept() async {
