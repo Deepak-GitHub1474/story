@@ -460,7 +460,7 @@ async def list_messages(
 
 
 async def unsend_message(
-    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     await _member_conversation(conversation_id, claims.user_id, mongo)
 
@@ -472,15 +472,28 @@ async def unsend_message(
     if message["sender_id"] != claims.user_id:
         raise api_error(ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT)
 
-    await mongo[c.MESSAGES].update_one(
-        {"_id": message_id},
-        {"$set": {"deleted_at": utc_now(), "ciphertext": None, "reactions": {}}},
-    )
+    await mongo[c.MESSAGES].delete_one({"_id": message_id})
+
+    if redis is not None:
+        conversation = await mongo[c.CONVERSATIONS].find_one(
+            {"_id": conversation_id}, {"participant_ids": 1}
+        )
+        if conversation is not None:
+            await bus.publish(
+                redis,
+                [_other_id(conversation, claims.user_id)],
+                {
+                    "type": "unsent",
+                    "conversation_id": conversation_id,
+                    "message_id": message_id,
+                },
+            )
+
     return {"message_id": message_id, "deleted": True}
 
 
 async def set_reaction(
-    conversation_id: str, message_id: str, body, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, message_id: str, body, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     await _member_conversation(conversation_id, claims.user_id, mongo)
     result = await mongo[c.MESSAGES].update_one(
@@ -489,18 +502,42 @@ async def set_reaction(
     )
     if result.matched_count == 0:
         raise api_error(ErrorCode.MESSAGE_NOT_FOUND)
+    await _push_reaction(conversation_id, message_id, claims, mongo, redis)
     return {"message_id": message_id, "emoji": body.emoji}
 
 
 async def clear_reaction(
-    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase
+    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     await _member_conversation(conversation_id, claims.user_id, mongo)
     await mongo[c.MESSAGES].update_one(
         {"_id": message_id, "conversation_id": conversation_id},
         {"$unset": {f"reactions.{claims.user_id}": ""}},
     )
+    await _push_reaction(conversation_id, message_id, claims, mongo, redis)
     return {"message_id": message_id, "emoji": None}
+
+
+async def _push_reaction(conversation_id, message_id, claims, mongo, redis) -> None:
+    if redis is None:
+        return
+
+    conversation = await mongo[c.CONVERSATIONS].find_one(
+        {"_id": conversation_id}, {"participant_ids": 1}
+    )
+    message = await mongo[c.MESSAGES].find_one({"_id": message_id})
+    if conversation is None or message is None:
+        return
+
+    await bus.publish(
+        redis,
+        [_other_id(conversation, claims.user_id)],
+        {
+            "type": "reaction",
+            "conversation_id": conversation_id,
+            "message": _serialize_message(message),
+        },
+    )
 
 
 async def mark_read(

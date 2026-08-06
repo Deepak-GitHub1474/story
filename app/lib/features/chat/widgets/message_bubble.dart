@@ -13,7 +13,10 @@ class MessageBubble extends StatefulWidget {
     required this.isSeen,
     required this.onLongPress,
     required this.onDoubleTap,
+    required this.onReplySwipe,
     this.repliedTo,
+    this.onTapReplied,
+    this.myReaction,
   });
 
   final ChatMessage message;
@@ -22,6 +25,9 @@ class MessageBubble extends StatefulWidget {
   final ChatMessage? repliedTo;
   final VoidCallback onLongPress;
   final VoidCallback onDoubleTap;
+  final VoidCallback onReplySwipe;
+  final VoidCallback? onTapReplied;
+  final String? myReaction;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -52,16 +58,7 @@ class _MessageBubbleState extends State<MessageBubble>
     final message = widget.message;
     final isMine = widget.isMine;
 
-    final body = message.isDeleted
-        ? Text(
-            'Unsent',
-            style: TextStyle(
-              color: colors.textMuted,
-              fontSize: AppTypeScale.label,
-              fontStyle: FontStyle.italic,
-            ),
-          )
-        : message.text == null
+    final body = message.text == null
         ? Text(
             'Cannot be opened on this device',
             style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
@@ -93,7 +90,26 @@ class _MessageBubbleState extends State<MessageBubble>
                 ? CrossAxisAlignment.end
                 : CrossAxisAlignment.start,
             children: [
-              GestureDetector(
+              Dismissible(
+                key: ValueKey('reply-${message.messageId}'),
+                direction: DismissDirection.startToEnd,
+                dismissThresholds: const {DismissDirection.startToEnd: 0.28},
+                confirmDismiss: (_) async {
+                  widget.onReplySwipe();
+                  return false;
+                },
+                background: Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(
+                      Icons.reply,
+                      size: AppSizes.iconSm,
+                      color: colors.accent,
+                    ),
+                  ),
+                ),
+                child: GestureDetector(
                 onLongPress: widget.onLongPress,
                 onDoubleTap: widget.onDoubleTap,
                 child: ConstrainedBox(
@@ -129,7 +145,9 @@ class _MessageBubbleState extends State<MessageBubble>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (widget.repliedTo != null) ...[
-                          Container(
+                          GestureDetector(
+                            onTap: widget.onTapReplied,
+                            child: Container(
                             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                             padding: const EdgeInsets.all(AppSpacing.sm),
                             decoration: BoxDecoration(
@@ -138,15 +156,16 @@ class _MessageBubbleState extends State<MessageBubble>
                                   : colors.surfaceRaised,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
-                            child: Text(
-                              widget.repliedTo!.text ?? 'Message',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isMine
-                                    ? colors.accentText
-                                    : colors.textSecondary,
-                                fontSize: AppTypeScale.caption,
+                              child: Text(
+                                widget.repliedTo!.text ?? 'Message',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isMine
+                                      ? colors.accentText
+                                      : colors.textSecondary,
+                                  fontSize: AppTypeScale.caption,
+                                ),
                               ),
                             ),
                           ),
@@ -155,6 +174,7 @@ class _MessageBubbleState extends State<MessageBubble>
                       ],
                     ),
                   ),
+                ),
                 ),
               ),
               if (message.reactions.isNotEmpty)

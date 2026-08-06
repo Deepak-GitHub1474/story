@@ -4,12 +4,21 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/crypto/chat_crypto.dart';
+import '../../../core/realtime/realtime_client.dart';
 import '../../../core/crypto/vault_crypto.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/chat_repository.dart';
 import '../models/chat_models.dart';
 
 final chatCryptoProvider = Provider<ChatCrypto>((ref) => const ChatCrypto());
+
+final realtimeProvider = Provider<RealtimeClient>((ref) {
+  final store = ref.watch(secureStoreProvider);
+  final client = RealtimeClient(store.readAccessToken);
+  unawaited(client.connect());
+  ref.onDispose(client.dispose);
+  return client;
+});
 
 final chatRepositoryProvider = Provider<ChatRepository>(
   (ref) => ChatRepository(ref.watch(apiClientProvider)),
@@ -96,13 +105,17 @@ final conversationProvider =
 
 class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
   Timer? _poll;
+  StreamSubscription<Map<String, dynamic>>? _live;
   Uint8List? _cek;
   DateTime? _lastTyping;
   int _pendingSeq = 0;
 
   @override
   ConversationState build(String conversationId) {
-    ref.onDispose(() => _poll?.cancel());
+    ref.onDispose(() {
+      _poll?.cancel();
+      _live?.cancel();
+    });
     unawaited(_open(conversationId));
     return const ConversationState();
   }
@@ -155,14 +168,43 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
 
   void _startPolling() {
     _poll?.cancel();
-    _poll = Timer.periodic(const Duration(seconds: 3), (_) => _tick());
+    _live?.cancel();
+
+    final realtime = ref.read(realtimeProvider);
+    unawaited(realtime.connect());
+    _live = realtime.events.listen(_onRealtime);
+
+    _poll = Timer.periodic(const Duration(seconds: 20), (_) => _tick());
+  }
+
+  void _onRealtime(Map<String, dynamic> event) {
+    if (event['conversation_id'] != arg) return;
+
+    switch (event['type']) {
+      case 'message':
+      case 'reaction':
+        unawaited(_pollNew());
+      case 'unsent':
+        state = state.copyWith(
+          messages: state.messages
+              .where((m) => m.messageId != event['message_id'])
+              .toList(),
+        );
+      case 'typing':
+      case 'read':
+        unawaited(_refreshConversation());
+    }
+  }
+
+  Future<void> _refreshConversation() async {
+    final result = await _repository.conversation(arg);
+    final conversation = result.valueOrNull;
+    if (conversation != null) state = state.copyWith(conversation: conversation);
   }
 
   Future<void> _tick() async {
     await _pollNew();
-    final refreshed = await _repository.conversation(arg);
-    final conversation = refreshed.valueOrNull;
-    if (conversation != null) state = state.copyWith(conversation: conversation);
+    await _refreshConversation();
   }
 
   Future<void> announceTyping() async {
@@ -296,8 +338,10 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
   }
 
   Future<void> unsend(String messageId) async {
+    state = state.copyWith(
+      messages: state.messages.where((m) => m.messageId != messageId).toList(),
+    );
     await _repository.unsend(arg, messageId);
-    await _loadLatest();
   }
 
   Future<void> react(String messageId, String? emoji) async {

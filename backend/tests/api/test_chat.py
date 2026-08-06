@@ -416,7 +416,7 @@ async def test_the_sender_can_see_that_it_was_read(client):
     assert conversation["their_last_read_message_id"] == sent["message_id"]
 
 
-async def test_unsending_replaces_the_message_with_a_tombstone(client):
+async def test_unsending_removes_the_message_entirely(client):
     one, two = await mutual(client, "uns_ann", "uns_ben")
     cid = (
         await client.post(
@@ -437,8 +437,7 @@ async def test_unsending_replaces_the_message_with_a_tombstone(client):
         await client.get(f"/v1/chat/conversations/{cid}/messages", headers=two)
     ).json()["data"]["items"]
 
-    assert theirs[0]["is_deleted"] is True
-    assert theirs[0]["ciphertext"] is None
+    assert theirs == []
 
 
 async def test_you_cannot_unsend_someone_elses_message(client):

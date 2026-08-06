@@ -34,6 +34,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _focus = FocusNode();
 
   ChatMessage? _replyTo;
+  final _keys = <String, GlobalKey>{};
+
+  GlobalKey _keyFor(String messageId) =>
+      _keys.putIfAbsent(messageId, GlobalKey.new);
+
+  void _scrollTo(String messageId) {
+    final target = _keys[messageId]?.currentContext;
+    if (target == null) return;
+
+    Scrollable.ensureVisible(
+      target,
+      duration: AppMotion.base,
+      curve: AppMotion.easeOut,
+      alignment: 0.4,
+    );
+  }
 
   @override
   void initState() {
@@ -75,6 +91,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _openMessageMenu(ChatMessage message, bool isMine) async {
     final colors = context.colors;
+    final me = ref.read(authProvider).user?.userId ?? '';
 
     await showAppSheet<void>(
       context: context,
@@ -90,13 +107,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   for (final emoji in quickReactions)
                     _ReactionButton(
                       emoji: emoji,
+                      isChosen: message.reactions.any(
+                        (r) => r.emoji == emoji && r.userId == me,
+                      ),
                       onTap: () {
                         Navigator.of(sheetContext).pop();
+                        final already = message.reactions.any(
+                          (r) => r.emoji == emoji && r.userId == me,
+                        );
                         ref
                             .read(
                               conversationProvider(widget.conversationId).notifier,
                             )
-                            .react(message.messageId, emoji);
+                            .react(message.messageId, already ? null : emoji);
                       },
                     ),
                 ],
@@ -277,8 +300,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   state.conversation!.theirLastReadMessageId!,
                                 ) <=
                                 0;
+                        final mine = message.reactions
+                            .where((r) => r.userId == me)
+                            .firstOrNull;
                         return MessageBubble(
-                          key: ValueKey(message.messageId),
+                          key: _keyFor(message.messageId),
+                          myReaction: mine?.emoji,
+                          onReplySwipe: () {
+                            setState(() => _replyTo = message);
+                            _focus.requestFocus();
+                          },
+                          onTapReplied: () => _scrollTo(message.replyTo!),
                           message: message,
                           isMine: isMine,
                           isSeen: seen,
@@ -323,10 +355,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 class _ReactionButton extends StatefulWidget {
-  const _ReactionButton({required this.emoji, required this.onTap});
+  const _ReactionButton({
+    required this.emoji,
+    required this.onTap,
+    this.isChosen = false,
+  });
 
   final String emoji;
   final VoidCallback onTap;
+  final bool isChosen;
 
   @override
   State<_ReactionButton> createState() => _ReactionButtonState();
@@ -348,7 +385,16 @@ class _ReactionButtonState extends State<_ReactionButton> {
         scale: _scale,
         duration: AppMotion.fast,
         curve: AppMotion.easeOut,
-        child: Text(widget.emoji, style: const TextStyle(fontSize: 30)),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.isChosen
+                ? context.colors.accent.withValues(alpha: 0.18)
+                : Colors.transparent,
+          ),
+          child: Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+        ),
       ),
     );
   }

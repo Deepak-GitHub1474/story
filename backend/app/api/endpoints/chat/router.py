@@ -183,10 +183,14 @@ async def list_messages(
     "/conversations/{conversation_id}/messages/{message_id}", status_code=status.HTTP_200_OK
 )
 async def unsend_message(
-    conversation_id: str, message_id: str, claims: CurrentClaims, mongo: MongoDatabase
+    conversation_id: str,
+    message_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
 ):
     data = await controllers.unsend_message(
-        conversation_id, message_id, claims=claims, mongo=mongo
+        conversation_id, message_id, claims=claims, mongo=mongo, redis=redis
     )
     return ok_response("Unsent.", data=data)
 
@@ -201,9 +205,10 @@ async def set_reaction(
     body: ReactionRequest,
     claims: CurrentClaims,
     mongo: MongoDatabase,
+    redis: RedisClient,
 ):
     data = await controllers.set_reaction(
-        conversation_id, message_id, body, claims=claims, mongo=mongo
+        conversation_id, message_id, body, claims=claims, mongo=mongo, redis=redis
     )
     return ok_response("Reacted.", data=data)
 
@@ -213,10 +218,14 @@ async def set_reaction(
     status_code=status.HTTP_200_OK,
 )
 async def clear_reaction(
-    conversation_id: str, message_id: str, claims: CurrentClaims, mongo: MongoDatabase
+    conversation_id: str,
+    message_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
 ):
     data = await controllers.clear_reaction(
-        conversation_id, message_id, claims=claims, mongo=mongo
+        conversation_id, message_id, claims=claims, mongo=mongo, redis=redis
     )
     return ok_response("Reaction removed.", data=data)
 
