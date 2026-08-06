@@ -14,7 +14,7 @@ export function InterestPicker({
   interests,
   initial = [],
   doneHref = '/feed',
-  title = 'What are you carrying?',
+  title = 'What are you into?',
   hasSkip = true,
 }: {
   interests: TInterest[];

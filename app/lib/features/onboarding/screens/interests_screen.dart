@@ -55,7 +55,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
     final interests = ref.watch(interestsProvider);
 
     return AppScaffold(
-      title: 'What are you carrying?',
+      title: 'What are you into?',
       leading: widget.isOnboarding
           ? null
           : BackButton(onPressed: () => context.pop()),
