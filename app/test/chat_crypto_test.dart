@@ -193,6 +193,70 @@ void main() {
     );
   });
 
+  test('the sender opens their own copy with the peer key, not their own', () async {
+    final ann = await chat.newIdentity();
+    final ben = await chat.newIdentity();
+    final cek = await chat.newConversationKey();
+    const pair = 'usr_ann:usr_ben';
+
+    final forAnn = await chat.wrapForPeer(
+      cek: cek,
+      mine: ann,
+      theirPublicKey: ben.publicKey,
+      pair: pair,
+      recipientId: 'usr_ann',
+    );
+
+    expect(
+      await chat.unwrapFromPeer(
+        wrapped: forAnn,
+        mine: ann,
+        theirPublicKey: ben.publicKey,
+        pair: pair,
+        recipientId: 'usr_ann',
+      ),
+      equals(cek),
+    );
+
+    expect(
+      () => chat.unwrapFromPeer(
+        wrapped: forAnn,
+        mine: ann,
+        theirPublicKey: ann.publicKey,
+        pair: pair,
+        recipientId: 'usr_ann',
+      ),
+      throwsA(anything),
+      reason: 'using your own public key derives a different secret',
+    );
+  });
+
+  test('both sides derive the same key from the other persons public key', () async {
+    final ann = await chat.newIdentity();
+    final ben = await chat.newIdentity();
+    final cek = await chat.newConversationKey();
+    const pair = 'usr_ann:usr_ben';
+
+    final forBen = await chat.wrapForPeer(
+      cek: cek,
+      mine: ann,
+      theirPublicKey: ben.publicKey,
+      pair: pair,
+      recipientId: 'usr_ben',
+    );
+
+    expect(
+      await chat.unwrapFromPeer(
+        wrapped: forBen,
+        mine: ben,
+        theirPublicKey: ann.publicKey,
+        pair: pair,
+        recipientId: 'usr_ben',
+      ),
+      equals(cek),
+    );
+  });
+
   test('a long message works', () async {
     final cek = await chat.newConversationKey();
     final text = List.filled(400, 'a sentence that keeps going. ').join();

@@ -119,15 +119,15 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
 
     final peer = await _repository.identityOf(conversation.other.username);
     final wrapped = conversation.wrappedCek;
-    final senderKey = conversation.senderPublicKey ?? peer.valueOrNull?.publicKey;
+    final peerKey = peer.valueOrNull?.publicKey;
     final me = ref.read(authProvider).user!.userId;
 
-    if (wrapped != null && senderKey != null) {
+    if (wrapped != null && peerKey != null) {
       try {
         _cek = await _crypto.unwrapFromPeer(
           wrapped: wrapped,
           mine: identity,
-          theirPublicKey: senderKey,
+          theirPublicKey: peerKey,
           pair: ChatCrypto.pairKey(me, conversation.other.userId),
           recipientId: me,
         );
