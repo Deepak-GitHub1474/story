@@ -113,3 +113,88 @@ async def test_pictures_survive_into_the_feed(client, signup_payload):
     mine = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
 
     assert mine[0]["images"] == [url]
+
+
+async def test_a_made_up_media_id_never_reaches_storage(client, monkeypatch):
+    from app.api.endpoints.media import router as media_router
+
+    asked = []
+
+    class Spy:
+        async def read(self, *, profile, key):
+            asked.append(key)
+            return None
+
+    monkeypatch.setattr(media_router, "build_storage", lambda settings: Spy())
+
+    for bad in (
+        "not-a-real-id",
+        "med_short",
+        "%2e%2e%2fvault%2fusr_x",
+        "med_01KZDX8B6DR33WZBFHW8F4MNPJ/../../secret",
+    ):
+        response = await client.get(f"/v1/media/{bad}")
+        assert response.status_code == 404
+
+    assert asked == []
+
+
+async def test_a_real_looking_id_does_reach_storage(client, monkeypatch):
+    from app.api.endpoints.media import router as media_router
+
+    asked = []
+
+    class Spy:
+        async def read(self, *, profile, key):
+            asked.append(key)
+            return None
+
+    monkeypatch.setattr(media_router, "build_storage", lambda settings: Spy())
+
+    await client.get("/v1/media/med_01KZDX8B6DR33WZBFHW8F4MNPJ")
+
+    assert asked == ["media/med_01KZDX8B6DR33WZBFHW8F4MNPJ"]
+
+
+async def test_a_picture_is_served_with_sniffing_turned_off(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+
+    response = await client.get(url.replace("/v1", ""))
+
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+
+async def test_a_story_cannot_point_at_someone_elses_server(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    response = await client.post(
+        "/v1/stories",
+        json={"body": "Look.", "images": ["https://tracker.example.com/pixel.png"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+async def test_a_story_cannot_point_at_a_made_up_path(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    response = await client.post(
+        "/v1/stories",
+        json={"body": "Look.", "images": ["/v1/media/../../etc/passwd"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+async def test_a_story_can_still_point_at_a_real_picture(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+
+    response = await client.post(
+        "/v1/stories", json={"body": "Look.", "images": [url]}, headers=headers
+    )
+
+    assert response.status_code == 201

@@ -71,6 +71,7 @@ class ErrorCode(StrEnum):
     MODERATION_BLOCKED = "MODERATION_BLOCKED"
     MODERATION_UNAVAILABLE = "MODERATION_UNAVAILABLE"
     AI_UNAVAILABLE = "AI_UNAVAILABLE"
+    MEDIA_NOT_FOUND = "MEDIA_NOT_FOUND"
     UNSUPPORTED_IMAGE = "UNSUPPORTED_IMAGE"
     IMAGE_TOO_BIG = "IMAGE_TOO_BIG"
     EXPOSURE_ACK_REQUIRED = "EXPOSURE_ACK_REQUIRED"
@@ -169,6 +170,7 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
         503,
         "The safety check is down, so nothing publishes right now. Your story is saved.",
     ),
+    ErrorCode.MEDIA_NOT_FOUND: (404, "We could not find that picture."),
     ErrorCode.UNSUPPORTED_IMAGE: (422, "Pictures can be JPEG or PNG."),
     ErrorCode.IMAGE_TOO_BIG: (422, "That picture is too large."),
     ErrorCode.AI_UNAVAILABLE: (
