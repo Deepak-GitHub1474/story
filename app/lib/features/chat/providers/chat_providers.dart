@@ -549,6 +549,7 @@ class ChatBootstrap {
         _ref.invalidate(chatIdentityProvider);
         return;
       } catch (_) {
+        await _startOver(userId: userId, password: password);
         return;
       }
     }
@@ -557,6 +558,47 @@ class ChatBootstrap {
     final identity = local != null
         ? await crypto.restoreIdentity(local)
         : await crypto.newIdentity();
+
+    await _publishBackup(userId: userId, password: password, identity: identity);
+  }
+
+  Future<void> rewrapBackup({
+    required String userId,
+    required String password,
+  }) async {
+    final store = _ref.read(secureStoreProvider);
+    final crypto = _ref.read(chatCryptoProvider);
+
+    final local = await store.readChatKey(userId);
+    if (local == null) return;
+
+    await _publishBackup(
+      userId: userId,
+      password: password,
+      identity: await crypto.restoreIdentity(local),
+    );
+  }
+
+  Future<void> _startOver({
+    required String userId,
+    required String password,
+  }) async {
+    final crypto = _ref.read(chatCryptoProvider);
+    await _publishBackup(
+      userId: userId,
+      password: password,
+      identity: await crypto.newIdentity(),
+    );
+  }
+
+  Future<void> _publishBackup({
+    required String userId,
+    required String password,
+    required ChatIdentity identity,
+  }) async {
+    final store = _ref.read(secureStoreProvider);
+    final crypto = _ref.read(chatCryptoProvider);
+    final repository = _ref.read(chatRepositoryProvider);
 
     final salt = await crypto.randomSalt();
     await repository.storeBackup(
@@ -572,6 +614,7 @@ class ChatBootstrap {
     );
 
     await store.saveChatKey(userId, identity.privateKey);
+    await repository.publishIdentity(identity.publicKey);
     _ref.invalidate(chatIdentityProvider);
   }
 }

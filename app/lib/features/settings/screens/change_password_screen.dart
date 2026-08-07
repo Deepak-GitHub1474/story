@@ -8,7 +8,9 @@ import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/password_strength_bar.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../providers/settings_provider.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -52,6 +54,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     final failure = result.failureOrNull;
     if (failure == null) {
+      final userId = ref.read(authProvider).user?.userId;
+      if (userId != null) {
+        await ref
+            .read(chatBootstrapProvider)
+            .rewrapBackup(userId: userId, password: _next.text);
+      }
+      if (!mounted) return;
       AppToast.show(context, 'Password changed.', kind: AppToastKind.success);
       context.pop();
       return;

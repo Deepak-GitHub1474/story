@@ -1,5 +1,8 @@
+import json
+
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
+from app.api.endpoints.chat import controllers as chat_controllers
 from app.api.endpoints.realtime import controllers
 from app.core.deps import CurrentClaims
 from app.db.redis import RedisClient
@@ -20,20 +23,36 @@ async def issue_ticket(claims: CurrentClaims, redis: RedisClient):
 
 @router.websocket("/ws")
 async def realtime(websocket: WebSocket, ticket: str = Query(default="")):
-    user_id = await controllers.claim_ticket(
-        ticket, redis=websocket.app.state.redis
-    )
+    redis = websocket.app.state.redis
+    user_id = await controllers.claim_ticket(ticket, redis=redis)
     if user_id is None:
         await websocket.close(code=4401)
         return
 
     await websocket.accept()
     hub.attach(user_id, websocket)
+    await chat_controllers.mark_online(user_id, redis=redis)
 
     try:
         while True:
-            await websocket.receive_text()
+            raw = await websocket.receive_text()
+            await _handle(raw, user_id=user_id, redis=redis)
     except WebSocketDisconnect:
         pass
     finally:
         hub.detach(user_id, websocket)
+        if not hub.is_online(user_id):
+            await chat_controllers.mark_offline(user_id, redis=redis)
+
+
+async def _handle(raw: str, *, user_id: str, redis) -> None:
+    try:
+        event = json.loads(raw)
+    except ValueError:
+        return
+
+    if not isinstance(event, dict):
+        return
+
+    if event.get("type") == "ping":
+        await chat_controllers.mark_online(user_id, redis=redis)

@@ -612,8 +612,16 @@ async def unread_count(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]
     return {"unread": unread, "requests": requests}
 
 
+async def mark_online(user_id: str, *, redis) -> None:
+    await redis.set(keys.presence(user_id), "1", ex=c.PRESENCE_TTL_SECONDS)
+
+
+async def mark_offline(user_id: str, *, redis) -> None:
+    await redis.delete(keys.presence(user_id))
+
+
 async def heartbeat(*, claims, redis) -> dict[str, Any]:
-    await redis.set(keys.presence(claims.user_id), "1", ex=c.PRESENCE_TTL_SECONDS)
+    await mark_online(claims.user_id, redis=redis)
     return {"online": True}
 
 

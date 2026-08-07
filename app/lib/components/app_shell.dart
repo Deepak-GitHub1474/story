@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +57,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(chatIdentityProvider);
-    ref.read(presenceHeartbeatProvider).start();
+    unawaited(ref.read(realtimeProvider).connect());
 
     final colors = context.colors;
     final unread = ref.watch(unreadCountProvider);

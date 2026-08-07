@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     STORAGE_S3_BUCKET_MEDIA: str = ""
     AI_PROVIDER: Literal["none", "gemini"] = "none"
     AI_API_KEY: str = ""
-    AI_MODEL: str = "gemini-flash-lite-latest"
+    AI_MODEL: str = "gemini-3.5-flash-lite"
     AI_TIMEOUT_SECONDS: float = 20.0
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300

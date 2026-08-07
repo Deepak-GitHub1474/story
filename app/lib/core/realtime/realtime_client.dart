@@ -14,6 +14,7 @@ class RealtimeClient {
   WebSocket? _socket;
   StreamSubscription<dynamic>? _listener;
   Timer? _retry;
+  Timer? _ping;
   int _attempt = 0;
   bool _closed = false;
 
@@ -42,6 +43,7 @@ class RealtimeClient {
 
       _socket = socket;
       _attempt = 0;
+      _startPing();
       _listener = socket.listen(
         (raw) {
           try {
@@ -58,7 +60,17 @@ class RealtimeClient {
     }
   }
 
+  void _startPing() {
+    _ping?.cancel();
+    _ping = Timer.periodic(const Duration(seconds: 45), (_) {
+      final socket = _socket;
+      if (socket == null || socket.readyState != WebSocket.open) return;
+      socket.add(jsonEncode({'type': 'ping'}));
+    });
+  }
+
   void _scheduleRetry() {
+    _ping?.cancel();
     _socket = null;
     if (_closed) return;
 
@@ -71,6 +83,7 @@ class RealtimeClient {
   Future<void> dispose() async {
     _closed = true;
     _retry?.cancel();
+    _ping?.cancel();
     await _listener?.cancel();
     await _socket?.close();
     await _events.close();
