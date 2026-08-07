@@ -312,6 +312,21 @@ async def accept_conversation(
     return {"conversation_id": conversation_id, "state": c.ACCEPTED}
 
 
+async def reject_conversation(
+    conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+    if conversation.get("state") != c.PENDING:
+        raise api_error(ErrorCode.CHAT_ALREADY_OPEN)
+    if conversation.get("requested_by") == claims.user_id:
+        raise api_error(ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT)
+
+    await mongo[c.MESSAGES].delete_many({"conversation_id": conversation_id})
+    await mongo[c.KEYS].delete_many({"conversation_id": conversation_id})
+    await mongo[c.CONVERSATIONS].delete_one({"_id": conversation_id})
+    return {"conversation_id": conversation_id, "rejected": True}
+
+
 async def delete_conversation(
     conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:

@@ -283,7 +283,9 @@ async def test_a_reshare_with_no_words_of_your_own_is_not_reviewed(
     assert fake.seen == []
 
 
-async def test_a_reshare_you_wrote_something_on_is_reviewed(client, signup_payload, use_ai):
+async def test_a_reshare_is_never_reviewed_even_with_your_own_note(
+    client, signup_payload, use_ai
+):
     fake = use_ai(FakeAI())
     author = await auth_headers(client, signup_payload)
     original = await draft(client, author, body="The original words.")
@@ -299,13 +301,14 @@ async def test_a_reshare_you_wrote_something_on_is_reviewed(client, signup_paylo
     reshare = (
         await client.post(
             "/v1/stories",
-            json={"body": "Everyone go and shout at this person.", "shared_story_id": original},
+            json={"body": "Worth reading, this one.", "shared_story_id": original},
             headers=reader,
         )
     ).json()["data"]["story"]["story_id"]
 
-    await client.post(
+    response = await client.post(
         f"/v1/stories/{reshare}/publish", json={"visibility": "public"}, headers=reader
     )
 
-    assert len(fake.seen) == 1
+    assert response.status_code == 200
+    assert fake.seen == []

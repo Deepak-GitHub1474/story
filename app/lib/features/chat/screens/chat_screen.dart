@@ -336,6 +336,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onAccept: () => ref
                     .read(conversationProvider(widget.conversationId).notifier)
                     .accept(),
+                onReject: () async {
+                  final done = await ref
+                      .read(conversationProvider(widget.conversationId).notifier)
+                      .reject();
+                  if (done && context.mounted) context.pop();
+                },
               )
             else if (canWrite)
               _Composer(
@@ -445,10 +451,15 @@ class _EmptyThread extends StatelessWidget {
 }
 
 class _RequestBar extends StatelessWidget {
-  const _RequestBar({required this.name, required this.onAccept});
+  const _RequestBar({
+    required this.name,
+    required this.onAccept,
+    required this.onReject,
+  });
 
   final String name;
   final VoidCallback onAccept;
+  final VoidCallback onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -474,6 +485,12 @@ class _RequestBar extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           AppButton(label: 'Accept', onPressed: onAccept),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Not interested',
+            variant: AppButtonVariant.secondary,
+            onPressed: onReject,
+          ),
         ],
       ),
     );

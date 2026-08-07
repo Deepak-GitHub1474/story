@@ -98,6 +98,11 @@ class ChatRepository {
     parse: (data) => data['rekeyed'] as bool? ?? true,
   );
 
+  Future<Result<bool>> reject(String id) => _client.post(
+    '${Endpoints.chatConversations}/$id/reject',
+    parse: (data) => data['rejected'] as bool? ?? true,
+  );
+
   Future<Result<bool>> accept(String id) => _client.post(
     Endpoints.chatAccept(id),
     parse: (data) => data['state'] == 'accepted',

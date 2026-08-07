@@ -129,6 +129,16 @@ async def accept_conversation(
     return ok_response("Request accepted.", data=data)
 
 
+@router.post("/conversations/{conversation_id}/reject", status_code=status.HTTP_200_OK)
+async def reject_conversation(
+    conversation_id: str, claims: CurrentClaims, mongo: MongoDatabase
+):
+    data = await controllers.reject_conversation(
+        conversation_id, claims=claims, mongo=mongo
+    )
+    return ok_response("Request turned down.", data=data)
+
+
 @router.put("/conversations/{conversation_id}/keys", status_code=status.HTTP_200_OK)
 async def rekey_conversation(
     conversation_id: str,

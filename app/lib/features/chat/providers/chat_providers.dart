@@ -427,6 +427,13 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     return true;
   }
 
+  Future<bool> reject() async {
+    final done = await _repository.reject(arg);
+    ref.invalidate(conversationsProvider(null));
+    ref.invalidate(conversationsProvider('pending'));
+    return done.valueOrNull ?? false;
+  }
+
   Future<void> accept() async {
     await _repository.accept(arg);
     ref.invalidate(conversationsProvider(null));

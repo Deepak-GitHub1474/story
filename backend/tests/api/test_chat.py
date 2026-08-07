@@ -651,3 +651,77 @@ async def test_a_stranger_cannot_rekey_your_conversation(client):
     )
 
     assert response.status_code == 404
+
+
+async def test_turning_down_a_request_removes_it(client):
+    one = await with_identity(client, "rej_sender")
+    two = await with_identity(client, "rej_target")
+    await follow(client, one, "rej_target")
+    conversation = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rej_target"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+
+    response = await client.post(
+        f"/v1/chat/conversations/{conversation}/reject", headers=two
+    )
+
+    assert response.status_code == 200
+    requests = (
+        await client.get("/v1/chat/conversations?state=pending", headers=two)
+    ).json()["data"]
+    assert requests["items"] == []
+
+
+async def test_only_the_person_asked_can_turn_it_down(client):
+    one = await with_identity(client, "rej_sender2")
+    await with_identity(client, "rej_target2")
+    await follow(client, one, "rej_target2")
+    conversation = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rej_target2"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+
+    response = await client.post(
+        f"/v1/chat/conversations/{conversation}/reject", headers=one
+    )
+
+    assert response.status_code == 403
+
+
+async def test_a_turned_down_request_can_be_asked_again_later(client):
+    one = await with_identity(client, "rej_sender3")
+    two = await with_identity(client, "rej_target3")
+    await follow(client, one, "rej_target3")
+    conversation = (
+        await client.post(
+            "/v1/chat/conversations", json=start_body(username="rej_target3"), headers=one
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+    await client.post(f"/v1/chat/conversations/{conversation}/reject", headers=two)
+
+    again = await client.post(
+        "/v1/chat/conversations", json=start_body(username="rej_target3"), headers=one
+    )
+
+    assert again.status_code == 201
+    assert again.json()["data"]["conversation"]["state"] == "pending"
+
+
+async def test_an_open_conversation_cannot_be_turned_down(client):
+    one, two = await mutual(client, "rej_open_one", "rej_open_two")
+    conversation = (
+        await client.post(
+            "/v1/chat/conversations",
+            json=start_body(username="rej_open_two"),
+            headers=one,
+        )
+    ).json()["data"]["conversation"]["conversation_id"]
+
+    response = await client.post(
+        f"/v1/chat/conversations/{conversation}/reject", headers=two
+    )
+
+    assert response.status_code == 409

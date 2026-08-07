@@ -280,8 +280,7 @@ async def _review(
     if ai is None or body.visibility == "private":
         return ALLOWED
 
-    is_reshare = story.get("shared_story_id") is not None
-    if is_reshare and not (story.get("body") or "").strip():
+    if story.get("shared_story_id") is not None:
         return ALLOWED
 
     try:

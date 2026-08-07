@@ -34,6 +34,7 @@ class ErrorCode(StrEnum):
     CHAT_BLOCKED = "CHAT_BLOCKED"
     CHAT_NOT_YOURS_TO_ACCEPT = "CHAT_NOT_YOURS_TO_ACCEPT"
     CONVERSATION_NOT_FOUND = "CONVERSATION_NOT_FOUND"
+    CHAT_ALREADY_OPEN = "CHAT_ALREADY_OPEN"
     MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND"
 
     EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
@@ -126,6 +127,7 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.CHAT_BLOCKED: (403, "You cannot message this account."),
     ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT: (403, "Only the person who received it can accept."),
     ErrorCode.CONVERSATION_NOT_FOUND: (404, "We could not find that chat."),
+    ErrorCode.CHAT_ALREADY_OPEN: (409, "That chat is already open."),
     ErrorCode.MESSAGE_NOT_FOUND: (404, "We could not find that message."),
     ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
