@@ -8,6 +8,7 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../providers/community_providers.dart';
 import '../widgets/community_tile.dart';
+import '../widgets/suggestions_strip.dart';
 
 class CommunitiesScreen extends ConsumerWidget {
   const CommunitiesScreen({super.key});
@@ -67,22 +68,34 @@ class CommunitiesScreen extends ConsumerWidget {
                 data: (items) => RefreshIndicator(
                   color: colors.accent,
                   backgroundColor: colors.surface,
-                  onRefresh: () => ref.read(communityBrowseProvider.notifier).load(),
+                  onRefresh: () async {
+                    ref.invalidate(suggestionsProvider);
+                    await ref.read(communityBrowseProvider.notifier).load();
+                  },
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
-                    itemCount: items.length,
-                    separatorBuilder: (context, index) =>
-                        Divider(height: 1, color: colors.border),
-                    itemBuilder: (context, index) => CommunityTile(
-                      community: items[index],
-                      onTap: () => context.push(
-                        '${Routes.community}/${items[index].slug}',
-                      ),
-                      onToggle: () => ref
-                          .read(communityBrowseProvider.notifier)
-                          .toggleMembership(items[index]),
-                    ),
+                    itemCount: items.length + 1,
+                    separatorBuilder: (context, index) => index == 0
+                        ? const SizedBox.shrink()
+                        : Divider(height: 1, color: colors.border),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return selected == null
+                            ? const SuggestionsStrip()
+                            : const SizedBox.shrink();
+                      }
+
+                      final community = items[index - 1];
+                      return CommunityTile(
+                        community: community,
+                        onTap: () =>
+                            context.push('${Routes.community}/${community.slug}'),
+                        onToggle: () => ref
+                            .read(communityBrowseProvider.notifier)
+                            .toggleMembership(community),
+                      );
+                    },
                   ),
                 ),
               ),

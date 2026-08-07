@@ -9,7 +9,7 @@ from app.api.endpoints.stories.models import (
     UpdateCommentRequest,
     UpdateStoryRequest,
 )
-from app.core.deps import AppSettings, CurrentClaims, rate_limit_dep
+from app.core.deps import AI, AppSettings, CurrentClaims, rate_limit_dep
 from app.core.idempotency import remember, replay
 from app.db.mongo import MongoDatabase
 from app.db.redis import RedisClient
@@ -86,9 +86,15 @@ async def delete_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabas
 
 @router.post("/stories/{story_id}/publish", status_code=status.HTTP_200_OK)
 async def publish_story(
-    story_id: str, body: PublishStoryRequest, claims: CurrentClaims, mongo: MongoDatabase
+    story_id: str,
+    body: PublishStoryRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    ai: AI,
 ):
-    data = await controllers.publish_story(story_id, body, claims=claims, mongo=mongo)
+    data = await controllers.publish_story(
+        story_id, body, claims=claims, mongo=mongo, ai=ai
+    )
     message = "Your story is live." if body.visibility == "public" else "Saved as private."
     return ok_response(message, data=data)
 

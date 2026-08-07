@@ -168,6 +168,7 @@ class ApiClient {
           .map((item) => FieldError.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
       statusCode: response.statusCode,
+      details: errorData,
     );
   }
 

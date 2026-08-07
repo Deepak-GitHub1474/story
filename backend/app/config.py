@@ -94,6 +94,10 @@ class Settings(BaseSettings):
     STORAGE_S3_SECRET_KEY: str = ""
     STORAGE_S3_BUCKET_VAULT: str = ""
     STORAGE_S3_BUCKET_MEDIA: str = ""
+    AI_PROVIDER: Literal["none", "gemini"] = "none"
+    AI_API_KEY: str = ""
+    AI_MODEL: str = "gemini-2.5-flash"
+    AI_TIMEOUT_SECONDS: float = 8.0
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
     VAULT_QUOTA_BYTES: int = 2 * 1024**3

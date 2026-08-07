@@ -7,8 +7,17 @@ from app.core.errors import ErrorCode, api_error
 from app.core.tokens import AccessClaims, TokenError, decode_access_token
 from app.db.keys import access_denylist, rate_limit, session_epoch
 from app.db.redis import RedisClient
+from app.ports.ai import AIPort
+from app.ports.factory import build_ai
 
 AppSettings = Annotated[Settings, Depends(get_settings)]
+
+
+def get_ai(settings: AppSettings) -> AIPort:
+    return build_ai(settings)
+
+
+AI = Annotated[AIPort, Depends(get_ai)]
 
 
 def _bearer_token(request: Request, settings: Settings) -> str | None:

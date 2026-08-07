@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../components/app_button.dart';
+import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
+import '../../../core/result.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -124,7 +125,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  Future<void> _publish(String visibility) async {
+  Future<void> _publish(String visibility, {bool exposureAck = false}) async {
     DateTime? scheduledFor;
     if (visibility == 'scheduled') {
       scheduledFor = await _pickSchedule();
@@ -146,6 +147,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       visibility: visibility,
       communitySlug: _communitySlug,
       scheduledFor: scheduledFor,
+      exposureAck: exposureAck,
     );
 
     if (!mounted) return;
@@ -167,8 +169,38 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       );
       context.pop();
     } else {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      await _handlePublishFailure(result.failureOrNull!, visibility);
     }
+  }
+
+  Future<void> _handlePublishFailure(Failure<Story> failure, String visibility) async {
+    if (failure.code == 'EXPOSURE_ACK_REQUIRED') {
+      final goAhead = await showAppSheet<bool>(
+        context: context,
+        title: 'This could point back to you',
+        builder: (sheetContext) =>
+            _ExposureSheet(exposes: failure.exposes, message: failure.message),
+      );
+      if (goAhead == true && mounted) {
+        await _publish(visibility, exposureAck: true);
+      }
+      return;
+    }
+
+    if (failure.code == 'MODERATION_BLOCKED') {
+      await showAppSheet<void>(
+        context: context,
+        title: 'This cannot go up',
+        builder: (sheetContext) => _BlockedSheet(
+          reason: failure.message,
+          rule: failure.details['rule'] as String?,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    AppToast.show(context, failure.message, kind: AppToastKind.error);
   }
 
   Future<void> _openPublishSheet() async {
@@ -510,6 +542,161 @@ class _CommunityPicker extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ExposureSheet extends StatelessWidget {
+  const _ExposureSheet({required this.exposes, required this.message});
+
+  final List<String> exposes;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Nobody here knows who you are, and we would like to keep it that '
+            'way. These parts could give you away to someone who already knows '
+            'you.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          for (final item in exposes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.remove_red_eye_outlined,
+                    size: AppSizes.iconSm,
+                    color: colors.accent,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: AppTypeScale.body,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'It is your story. Go back and change it, or put it up as it is.',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: AppTypeScale.caption,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Let me edit it',
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Publish it anyway',
+            variant: AppButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BlockedSheet extends StatelessWidget {
+  const _BlockedSheet({required this.reason, this.rule});
+
+  final String reason;
+  final String? rule;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            reason,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.body,
+              height: 1.6,
+            ),
+          ),
+          if (rule != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.border),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Text(
+                rule!.replaceAll('-', ' '),
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: AppTypeScale.caption,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Hard, dark and painful writing is welcome here. Only these five '
+            'things are not, and each one is about somebody else getting hurt. '
+            'Your draft is saved.',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: AppTypeScale.caption,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Back to the draft',
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
     );
   }
 }

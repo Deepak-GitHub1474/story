@@ -67,6 +67,9 @@ class ErrorCode(StrEnum):
     STORY_NOT_EDITABLE = "STORY_NOT_EDITABLE"
     STORY_NOT_SHAREABLE = "STORY_NOT_SHAREABLE"
     SCHEDULE_REQUIRED = "SCHEDULE_REQUIRED"
+    MODERATION_BLOCKED = "MODERATION_BLOCKED"
+    MODERATION_UNAVAILABLE = "MODERATION_UNAVAILABLE"
+    EXPOSURE_ACK_REQUIRED = "EXPOSURE_ACK_REQUIRED"
     SCHEDULE_IN_PAST = "SCHEDULE_IN_PAST"
     COMMENT_NOT_EDITABLE = "COMMENT_NOT_EDITABLE"
     COMMENT_NOT_FOUND = "COMMENT_NOT_FOUND"
@@ -156,6 +159,15 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.STORY_NOT_EDITABLE: (400, "The edit window for this story has closed."),
     ErrorCode.STORY_NOT_SHAREABLE: (400, "Only public stories can be shared."),
     ErrorCode.SCHEDULE_REQUIRED: (422, "Choose when this should publish."),
+    ErrorCode.MODERATION_BLOCKED: (422, "This breaks one of the five rules."),
+    ErrorCode.MODERATION_UNAVAILABLE: (
+        503,
+        "The safety check is down, so nothing publishes right now. Your story is saved.",
+    ),
+    ErrorCode.EXPOSURE_ACK_REQUIRED: (
+        422,
+        "Some of this could identify you. Publish again to say you know.",
+    ),
     ErrorCode.SCHEDULE_IN_PAST: (422, "Choose a time in the future."),
     ErrorCode.COMMENT_NOT_EDITABLE: (400, "The edit window for this comment has closed."),
     ErrorCode.COMMENT_NOT_FOUND: (404, "We could not find that comment."),

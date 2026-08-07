@@ -27,8 +27,10 @@ Map<String, dynamic> _publishBody(
   String visibility,
   String? communitySlug,
   DateTime? scheduledFor,
+  bool exposureAck,
 ) {
   final payload = <String, dynamic>{'visibility': visibility};
+  if (exposureAck) payload['exposure_ack'] = true;
   if (communitySlug != null) payload['community_slug'] = communitySlug;
   if (scheduledFor != null) {
     payload['scheduled_for'] = scheduledFor.toUtc().toIso8601String();
@@ -66,9 +68,10 @@ class StoryRepository {
     required String visibility,
     String? communitySlug,
     DateTime? scheduledFor,
+    bool exposureAck = false,
   }) => _client.post(
     Endpoints.publishStory(storyId),
-    body: _publishBody(visibility, communitySlug, scheduledFor),
+    body: _publishBody(visibility, communitySlug, scheduledFor, exposureAck),
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 

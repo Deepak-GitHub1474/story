@@ -1,10 +1,13 @@
 from functools import lru_cache
 
+from app.adapters.ai_gemini import GeminiAdapter
+from app.adapters.ai_none import NoAIAdapter
 from app.adapters.mail_console import ConsoleMailAdapter
 from app.adapters.mail_smtp import SmtpMailAdapter
 from app.adapters.storage_local import LocalDiskAdapter
 from app.adapters.storage_s3 import S3Adapter
 from app.config import Settings
+from app.ports.ai import AIPort
 from app.ports.mail import MailPort
 from app.ports.storage import StoragePort
 
@@ -105,3 +108,23 @@ def build_storage(settings: Settings) -> StoragePort:
             settings.STORAGE_S3_BUCKET_MEDIA,
         )
     raise ValueError(f"Unknown storage provider: {settings.STORAGE_PROVIDER}")
+
+
+@lru_cache
+def _no_ai() -> NoAIAdapter:
+    return NoAIAdapter()
+
+
+@lru_cache
+def _gemini(api_key: str, model: str, timeout: float) -> GeminiAdapter:
+    return GeminiAdapter(api_key=api_key, model=model, timeout=timeout)
+
+
+def build_ai(settings: Settings) -> AIPort:
+    if settings.AI_PROVIDER == "none":
+        return _no_ai()
+    if settings.AI_PROVIDER == "gemini":
+        if not settings.AI_API_KEY:
+            raise ValueError("AI_PROVIDER=gemini needs: AI_API_KEY")
+        return _gemini(settings.AI_API_KEY, settings.AI_MODEL, settings.AI_TIMEOUT_SECONDS)
+    raise ValueError(f"Unknown AI provider: {settings.AI_PROVIDER}")

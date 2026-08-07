@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:story_app/core/result.dart';
 import 'package:story_app/core/api/api_client.dart';
 import 'package:story_app/core/storage/secure_store.dart';
 
@@ -61,6 +62,7 @@ ApiClient buildClient(StubAdapter adapter, SecureStore store) {
 }
 
 void main() {
+  _moderationDetails();
   late SecureStore store;
 
   setUp(() {
@@ -254,5 +256,38 @@ void main() {
     );
 
     expect(result.failureOrNull!.code, 'NETWORK_UNAVAILABLE');
+  });
+}
+
+void _moderationDetails() {
+  group('error details', () {
+    test('a blocked publish keeps the rule that was broken', () {
+      const failure = Failure<void>(
+        code: 'MODERATION_BLOCKED',
+        message: 'It prints an address.',
+        details: {'rule': 'doxxing'},
+      );
+
+      expect(failure.details['rule'], 'doxxing');
+    });
+
+    test('an exposure warning keeps what would give the author away', () {
+      const failure = Failure<void>(
+        code: 'EXPOSURE_ACK_REQUIRED',
+        message: 'Some of this could identify you.',
+        details: {
+          'exposes': ['employer', 'phone number'],
+        },
+      );
+
+      expect(failure.exposes, ['employer', 'phone number']);
+    });
+
+    test('an ordinary failure exposes nothing', () {
+      const failure = Failure<void>(code: 'NOPE', message: 'no');
+
+      expect(failure.exposes, isEmpty);
+      expect(failure.details, isEmpty);
+    });
   });
 }

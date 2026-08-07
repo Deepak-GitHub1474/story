@@ -8,6 +8,11 @@ final communityRepositoryProvider = Provider<CommunityRepository>(
   (ref) => CommunityRepository(ref.watch(apiClientProvider)),
 );
 
+final suggestionsProvider = FutureProvider<Suggestions>((ref) async {
+  final result = await ref.watch(communityRepositoryProvider).suggestions();
+  return result.valueOrNull ?? const Suggestions(communities: [], people: []);
+});
+
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   final result = await ref.watch(communityRepositoryProvider).categories();
   return result.valueOrNull ?? const [];

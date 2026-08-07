@@ -15,6 +15,7 @@ from app.api.endpoints.realtime.router import router as realtime_router
 from app.api.endpoints.reports.router import router as reports_router
 from app.api.endpoints.search.router import router as search_router
 from app.api.endpoints.stories.router import router as stories_router
+from app.api.endpoints.suggestions.router import router as suggestions_router
 from app.api.endpoints.tickets.router import router as tickets_router
 from app.api.endpoints.totp.router import router as totp_router
 from app.api.endpoints.users.router import router as users_router
@@ -28,6 +29,7 @@ api_router.include_router(admin_router)
 api_router.include_router(admin_vault_router)
 api_router.include_router(chat_router)
 api_router.include_router(realtime_router)
+api_router.include_router(suggestions_router)
 api_router.include_router(tickets_router)
 api_router.include_router(totp_router)
 api_router.include_router(email_router)

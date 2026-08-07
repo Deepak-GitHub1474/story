@@ -3,6 +3,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.adapters.ai_gemini import ModerationUnavailable
 from app.api.endpoints.communities import controllers as community_controllers
 from app.api.endpoints.connections import controllers as connection_controllers
 from app.api.endpoints.notifications.service import notify, preview, withdraw
@@ -24,6 +25,7 @@ from app.api.endpoints.stories.utils import (
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_storage, utc_now
+from app.ports.ai import ALLOWED, AIPort, StoryReview
 
 
 def _to_minute(value):
@@ -194,10 +196,17 @@ async def update_story(
 
 
 async def publish_story(
-    story_id: str, body: PublishStoryRequest, *, claims, mongo: AsyncIOMotorDatabase
+    story_id: str,
+    body: PublishStoryRequest,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    ai: AIPort | None = None,
 ) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
     now = utc_now()
+
+    review = await _review(story, body, ai=ai)
 
     update: dict[str, Any] = {
         "visibility": body.visibility,
@@ -253,7 +262,40 @@ async def publish_story(
             )
 
     story.update(update)
-    return {"story": serialize_story(story, include_body=True)}
+    return {
+        "story": serialize_story(story, include_body=True),
+        "suggested_community": review.suggested_community,
+        "needs_care": review.needs_care,
+    }
+
+
+async def _review(story, body: PublishStoryRequest, *, ai: AIPort | None) -> StoryReview:
+    if ai is None or body.visibility == "private":
+        return ALLOWED
+
+    try:
+        review = await ai.review_story(
+            title=story.get("title"),
+            body=story.get("body") or "",
+            community=body.community_slug,
+        )
+    except ModerationUnavailable:
+        raise api_error(ErrorCode.MODERATION_UNAVAILABLE) from None
+
+    if not review.is_allowed:
+        raise api_error(
+            ErrorCode.MODERATION_BLOCKED,
+            message=review.reason,
+            extra={"rule": review.rule},
+        )
+
+    if review.is_exposing and not body.exposure_ack:
+        raise api_error(
+            ErrorCode.EXPOSURE_ACK_REQUIRED,
+            extra={"exposes": review.exposes},
+        )
+
+    return review
 
 
 async def _notify_community(

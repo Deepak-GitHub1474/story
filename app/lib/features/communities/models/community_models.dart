@@ -120,3 +120,45 @@ class PublicProfile {
     isMe: isMe,
   );
 }
+
+class SuggestedPerson {
+  const SuggestedPerson({
+    required this.userId,
+    required this.displayName,
+    required this.reason,
+    this.username,
+    this.avatarSeed = '',
+  });
+
+  factory SuggestedPerson.fromJson(Map<String, dynamic> json) => SuggestedPerson(
+    userId: json['user_id'] as String,
+    displayName: json['display_name'] as String? ?? 'Someone',
+    reason: json['reason'] as String? ?? '',
+    username: json['username'] as String?,
+    avatarSeed: json['avatar_seed'] as String? ?? '',
+  );
+
+  final String userId;
+  final String displayName;
+  final String reason;
+  final String? username;
+  final String avatarSeed;
+}
+
+class Suggestions {
+  const Suggestions({required this.communities, required this.people});
+
+  factory Suggestions.fromJson(Map<String, dynamic> json) => Suggestions(
+    communities: (json['communities'] as List<dynamic>? ?? [])
+        .map((item) => Community.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+    people: (json['people'] as List<dynamic>? ?? [])
+        .map((item) => SuggestedPerson.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+  );
+
+  final List<Community> communities;
+  final List<SuggestedPerson> people;
+
+  bool get isEmpty => communities.isEmpty && people.isEmpty;
+}

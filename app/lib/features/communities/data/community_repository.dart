@@ -14,6 +14,11 @@ class CommunityRepository {
 
   final ApiClient _client;
 
+  Future<Result<Suggestions>> suggestions() => _client.get(
+    Endpoints.suggestions,
+    parse: Suggestions.fromJson,
+  );
+
   Future<Result<List<Category>>> categories() => _client.get(
     Endpoints.categories,
     parse: (data) => _mapItems(data, Category.fromJson),

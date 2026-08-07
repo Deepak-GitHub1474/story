@@ -33,6 +33,7 @@ class PublishStoryRequest(BaseModel):
     visibility: Literal["public", "private", "scheduled"]
     community_slug: str | None = None
     scheduled_for: datetime | None = None
+    exposure_ack: bool = False
 
 
 class UpdateCommentRequest(BaseModel):

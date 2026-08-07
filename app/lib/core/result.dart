@@ -32,12 +32,19 @@ class Failure<T> extends Result<T> {
     this.field,
     this.fields = const [],
     this.statusCode,
+    this.details = const {},
   });
 
   final String code;
   final String message;
   final String? field;
   final List<FieldError> fields;
+  final Map<String, dynamic> details;
+
+  List<String> get exposes =>
+      (details['exposes'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList();
   final int? statusCode;
 
   bool get isUnauthorized => statusCode == 401;
