@@ -33,16 +33,16 @@ final chatIdentityProvider = FutureProvider<ChatIdentity?>((ref) async {
   final repository = ref.read(chatRepositoryProvider);
 
   final stored = await store.readChatKey(userId);
-  if (stored != null) {
-    final identity = await crypto.restoreIdentity(stored);
-    await repository.publishIdentity(identity.publicKey);
-    return identity;
-  }
+  if (stored == null) return null;
 
-  final identity = await crypto.newIdentity();
-  await store.saveChatKey(userId, identity.privateKey);
+  final identity = await crypto.restoreIdentity(stored);
   await repository.publishIdentity(identity.publicKey);
   return identity;
+});
+
+final chatLockedProvider = FutureProvider<bool>((ref) async {
+  final identity = await ref.watch(chatIdentityProvider.future);
+  return identity == null;
 });
 
 final conversationsProvider =
@@ -560,6 +560,34 @@ class ChatBootstrap {
         : await crypto.newIdentity();
 
     await _publishBackup(userId: userId, password: password, identity: identity);
+  }
+
+  Future<bool> unlockOnThisDevice({
+    required String userId,
+    required String password,
+  }) async {
+    final store = _ref.read(secureStoreProvider);
+    final crypto = _ref.read(chatCryptoProvider);
+    final repository = _ref.read(chatRepositoryProvider);
+
+    final existing = await repository.backup();
+    final backup = existing.valueOrNull;
+    if (backup == null) return false;
+
+    try {
+      final identity = await crypto.unwrapIdentity(
+        wrapped: backup.wrappedPrivateKey,
+        password: password,
+        salt: backup.salt,
+        userId: userId,
+      );
+      await store.saveChatKey(userId, identity.privateKey);
+      await repository.publishIdentity(identity.publicKey);
+      _ref.invalidate(chatIdentityProvider);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> rewrapBackup({

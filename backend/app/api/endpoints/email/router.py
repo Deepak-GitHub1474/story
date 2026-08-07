@@ -1,4 +1,3 @@
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
@@ -11,21 +10,15 @@ from app.api.endpoints.email.models import (
     ResetRequest,
     ResetVerifyRequest,
 )
-from app.core.deps import AppSettings, CurrentClaims, rate_limit_dep
+from app.core.deps import AppSettings, CurrentClaims, Mail, rate_limit_dep
 from app.db.mongo import MongoDatabase
 from app.db.redis import RedisClient
-from app.ports.factory import build_mail
-from app.ports.mail import MailPort
 from app.responses import ok_response
 
 router = APIRouter(tags=["email"])
 
 
-def _mail(settings: AppSettings) -> MailPort:
-    return build_mail(settings)
 
-
-Mail = Annotated[MailPort, Depends(_mail)]
 
 
 @router.post(

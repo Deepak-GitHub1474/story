@@ -9,7 +9,7 @@ from app.api.endpoints.auth.models import (
     UsernameAvailableRequest,
 )
 from app.api.endpoints.users import controllers as user_controllers
-from app.core.deps import AppSettings, ClientIpPrefix, CurrentClaims, rate_limit_dep
+from app.core.deps import AppSettings, ClientIpPrefix, CurrentClaims, Mail, rate_limit_dep
 from app.db.mongo import MongoDatabase
 from app.db.redis import RedisClient
 from app.responses import ok_response
@@ -54,9 +54,15 @@ async def signin(
     mongo: MongoDatabase,
     redis: RedisClient,
     settings: AppSettings,
+    mail: Mail,
 ):
     data = await controllers.signin(
-        body, ip_prefix=ip_prefix, mongo=mongo, redis=redis, settings=settings
+        body,
+        ip_prefix=ip_prefix,
+        mongo=mongo,
+        redis=redis,
+        settings=settings,
+        mail=mail,
     )
     return ok_response("Welcome back.", data=data)
 

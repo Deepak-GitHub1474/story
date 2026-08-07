@@ -20,7 +20,7 @@ class StoryListView extends StatefulWidget {
     this.onAuthorTap,
     this.onShare,
     this.onOpenShared,
-    this.onSwipe,
+    this.onLongPress,
     this.emptyTitle = 'Nothing here yet',
     this.emptyBody = '',
     this.endLabel = 'You are all caught up',
@@ -36,7 +36,7 @@ class StoryListView extends StatefulWidget {
   final void Function(Story story)? onAuthorTap;
   final void Function(Story story)? onShare;
   final void Function(String storyId)? onOpenShared;
-  final Future<bool> Function(Story story, SwipeAction action)? onSwipe;
+  final void Function(Story story)? onLongPress;
   final String emptyTitle;
   final String emptyBody;
   final String endLabel;
@@ -122,6 +122,9 @@ class _StoryListViewState extends State<StoryListView> {
 
   Widget _buildPost(BuildContext context, Story story) {
     final post = StoryPost(
+      onLongPress: widget.onLongPress == null
+          ? null
+          : () => widget.onLongPress!(story),
       story: story,
       showVisibility: widget.showVisibility,
       onTap: () => widget.onOpen(story),
@@ -136,33 +139,7 @@ class _StoryListViewState extends State<StoryListView> {
           : () => widget.onOpenShared?.call(story.shared!.storyId),
     );
 
-    if (widget.onSwipe == null) return post;
-
-    final colors = context.colors;
-    final secondary = story.isDraft ? SwipeAction.publish : SwipeAction.archive;
-
-    return Dismissible(
-      key: ValueKey(story.storyId),
-      background: _SwipeBackground(
-        alignment: Alignment.centerLeft,
-        color: story.isDraft ? colors.success : colors.surfaceRaised,
-        icon: story.isDraft ? Icons.publish_rounded : Icons.archive_outlined,
-        label: story.isDraft ? 'Publish' : 'To drafts',
-        foreground: story.isDraft ? colors.bg : colors.textPrimary,
-      ),
-      secondaryBackground: _SwipeBackground(
-        alignment: Alignment.centerRight,
-        color: colors.danger,
-        icon: Icons.delete_outline,
-        label: 'Delete',
-        foreground: colors.bg,
-      ),
-      confirmDismiss: (direction) => widget.onSwipe!(
-        story,
-        direction == DismissDirection.endToStart ? SwipeAction.delete : secondary,
-      ),
-      child: post,
-    );
+    return post;
   }
 
   int _itemCount(StoryListState state) {
@@ -210,42 +187,3 @@ class _StoryListViewState extends State<StoryListView> {
   }
 }
 
-class _SwipeBackground extends StatelessWidget {
-  const _SwipeBackground({
-    required this.alignment,
-    required this.color,
-    required this.icon,
-    required this.label,
-    required this.foreground,
-  });
-
-  final Alignment alignment;
-  final Color color;
-  final IconData icon;
-  final String label;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: color,
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: foreground, size: AppSizes.iconMd),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            label,
-            style: TextStyle(
-              color: foreground,
-              fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

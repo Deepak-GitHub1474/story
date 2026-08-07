@@ -19,6 +19,7 @@ from app.api.endpoints.auth.utils import (
     serialize_user,
 )
 from app.config import Settings
+from app.core.crypto import decrypt_email
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id, new_referral_code
 from app.core.password import (
@@ -171,6 +172,7 @@ async def signin(
     mongo: AsyncIOMotorDatabase,
     redis: Redis,
     settings: Settings,
+    mail=None,
 ) -> dict[str, Any]:
     user = await mongo[c.USERS].find_one({"username_lower": body.username})
 
@@ -217,7 +219,17 @@ async def signin(
     await mongo[c.USERS].update_one({"_id": user["_id"]}, {"$set": update})
     user.update(update)
 
-    await _record_device(user_id=user["_id"], login_info=login_info, mongo=mongo, now=now)
+    is_new_device = await _record_device(
+        user_id=user["_id"], login_info=login_info, mongo=mongo, now=now
+    )
+    if is_new_device and mail is not None:
+        await _warn_about_device(
+            user_id=user["_id"],
+            login_info=login_info,
+            mail=mail,
+            mongo=mongo,
+            settings=settings,
+        )
 
     tokens = await _issue_session(user=user, settings=settings, redis=redis)
     return {"user": serialize_user(user), "tokens": tokens}
@@ -225,10 +237,10 @@ async def signin(
 
 async def _record_device(
     *, user_id: str, login_info: dict[str, Any], mongo: AsyncIOMotorDatabase, now
-) -> None:
+) -> bool:
     label_parts = [login_info["device_model"], login_info["os_version"]]
     label = " · ".join([part for part in label_parts if part]) or login_info["platform"]
-    await mongo[c.DEVICES].update_one(
+    result = await mongo[c.DEVICES].update_one(
         {"user_id": user_id, "fingerprint": login_info["fingerprint"]},
         {
             "$set": {
@@ -247,6 +259,45 @@ async def _record_device(
             },
         },
         upsert=True,
+    )
+    return result.upserted_id is not None
+
+
+async def _warn_about_device(
+    *, user_id: str, login_info: dict[str, Any], mail, mongo, settings
+) -> None:
+    document = await mongo["user_keys"].find_one(
+        {"_id": user_id}, {"email_ciphertext": 1, "email_verified": 1}
+    )
+    if not document or not document.get("email_verified"):
+        return
+    if not document.get("email_ciphertext"):
+        return
+
+    label = login_info.get("device_model") or login_info["platform"]
+    where = " · ".join(
+        part
+        for part in (label, login_info.get("os_version"), login_info.get("app_version"))
+        if part
+    )
+
+    try:
+        address = decrypt_email(
+            document["email_ciphertext"], key=settings.EMAIL_ENCRYPTION_KEY
+        )
+    except Exception:
+        return
+
+    await mail.send_security_alert(
+        email=address,
+        subject="Story — a new device signed in",
+        body=(
+            f"Somebody signed in to your Story account from a device we have not "
+            f"seen before.\n\n    {where}\n\n"
+            "If that was you, there is nothing to do. If it was not, change your "
+            "password and use Sign out everywhere in Settings. Whoever it is "
+            "cannot read your vault or your messages without your other secrets."
+        ),
     )
 
 

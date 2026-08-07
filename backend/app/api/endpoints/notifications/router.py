@@ -35,6 +35,12 @@ async def mark_read(notification_id: str, claims: CurrentClaims, mongo: MongoDat
     return ok_response("Marked as read.", data=data)
 
 
+@router.delete("/{notification_id}", status_code=status.HTTP_200_OK)
+async def remove(notification_id: str, claims: CurrentClaims, mongo: MongoDatabase):
+    data = await controllers.remove(notification_id, claims=claims, mongo=mongo)
+    return ok_response("Cleared.", data=data)
+
+
 @router.post("/read-all", status_code=status.HTTP_200_OK)
 async def mark_all_read(claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.mark_all_read(claims=claims, mongo=mongo)

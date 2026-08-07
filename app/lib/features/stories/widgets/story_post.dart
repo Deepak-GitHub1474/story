@@ -17,6 +17,7 @@ class StoryPost extends StatelessWidget {
     this.onAuthorTap,
     this.onShare,
     this.onSharedTap,
+    this.onLongPress,
     this.showVisibility = false,
   });
 
@@ -27,6 +28,7 @@ class StoryPost extends StatelessWidget {
   final VoidCallback? onAuthorTap;
   final VoidCallback? onShare;
   final VoidCallback? onSharedTap;
+  final VoidCallback? onLongPress;
   final bool showVisibility;
 
   @override
@@ -35,6 +37,7 @@ class StoryPost extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,

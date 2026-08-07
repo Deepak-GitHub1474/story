@@ -52,6 +52,19 @@ class NotificationsNotifier extends Notifier<AsyncValue<List<AppNotification>>> 
     await ref.read(unreadCountProvider.notifier).refresh();
   }
 
+  Future<void> remove(String id) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final gone = current.firstWhere((item) => item.notificationId == id);
+    state = AsyncValue.data(
+      current.where((item) => item.notificationId != id).toList(),
+    );
+    if (!gone.isRead) ref.read(unreadCountProvider.notifier).decrement();
+
+    await ref.read(notificationRepositoryProvider).remove(id);
+  }
+
   Future<void> markRead(String id) async {
     final current = state.valueOrNull;
     if (current == null) return;

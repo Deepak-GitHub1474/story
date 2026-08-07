@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
@@ -67,7 +68,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     _tabController.animateTo(next);
   }
 
-  Future<bool> _onSwipe(Story story, SwipeAction action) async {
+  Future<void> _openStoryActions(Story story) async {
+    final colors = context.colors;
+
+    final action = await showAppSheet<SwipeAction>(
+      context: context,
+      title: story.title?.isNotEmpty == true ? story.title! : 'This story',
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (story.isDraft)
+              ListTile(
+                leading: Icon(Icons.publish_rounded, color: colors.textPrimary),
+                title: const Text('Publish it'),
+                onTap: () => Navigator.of(sheetContext).pop(SwipeAction.publish),
+              )
+            else
+              ListTile(
+                leading: Icon(Icons.archive_outlined, color: colors.textPrimary),
+                title: const Text('Move back to drafts'),
+                onTap: () => Navigator.of(sheetContext).pop(SwipeAction.archive),
+              ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: colors.danger),
+              title: Text('Delete', style: TextStyle(color: colors.danger)),
+              onTap: () => Navigator.of(sheetContext).pop(SwipeAction.delete),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+
+    if (action != null && mounted) await _act(story, action);
+  }
+
+  Future<bool> _act(Story story, SwipeAction action) async {
     final repository = ref.read(storyRepositoryProvider);
     final notifier = ref.read(myStoriesProvider.notifier);
 
@@ -156,7 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             child: StoryListView(
               state: stories,
               showVisibility: true,
-              onSwipe: _onSwipe,
+              onLongPress: _openStoryActions,
               onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
               onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
               onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),

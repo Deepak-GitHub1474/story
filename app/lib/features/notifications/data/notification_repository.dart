@@ -26,6 +26,11 @@ class NotificationRepository {
     parse: (data) => data['read'] as bool? ?? true,
   );
 
+  Future<Result<bool>> remove(String id) => _client.delete(
+    '${Endpoints.notifications}/$id',
+    parse: (data) => data['deleted'] as bool? ?? true,
+  );
+
   Future<Result<bool>> markAllRead() => _client.post(
     Endpoints.markAllNotificationsRead,
     parse: (data) => data['read'] as bool? ?? true,

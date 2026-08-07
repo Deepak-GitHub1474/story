@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/app_button.dart';
+import '../../../components/app_sheet.dart';
 import '../../../components/skeleton.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
@@ -12,6 +14,7 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/chat_models.dart';
 import '../providers/chat_providers.dart';
+import '../widgets/unlock_chat_sheet.dart';
 
 class ChatListScreen extends ConsumerStatefulWidget {
   const ChatListScreen({super.key});
@@ -47,11 +50,23 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
     final conversations = ref.watch(
       conversationsProvider(_showRequests ? 'pending' : null),
     );
+    final isLocked = ref.watch(chatLockedProvider).valueOrNull ?? false;
 
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isLocked)
+            _LockedBanner(
+              onUnlock: () async {
+                final done = await showAppSheet<bool>(
+                  context: context,
+                  title: 'Unlock your messages',
+                  builder: (sheetContext) => const UnlockChatSheet(),
+                );
+                if (done == true) ref.invalidate(chatLockedProvider);
+              },
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -307,6 +322,60 @@ class _Empty extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LockedBanner extends StatelessWidget {
+  const _LockedBanner({required this.onUnlock});
+
+  final VoidCallback onUnlock;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.accent),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your messages are locked on this phone',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.body,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Type your password once to bring them back, here and on every '
+            'phone you sign in on.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Unlock messages',
+            variant: AppButtonVariant.secondary,
+            onPressed: onUnlock,
+          ),
+        ],
       ),
     );
   }

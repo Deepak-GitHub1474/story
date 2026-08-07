@@ -56,6 +56,17 @@ async def mark_read(notification_id: str, *, claims, mongo: AsyncIOMotorDatabase
     return {"read": True, "notification_id": notification_id}
 
 
+async def remove(
+    notification_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    result = await mongo[c.NOTIFICATIONS].delete_one(
+        {"_id": notification_id, "user_id": claims.user_id}
+    )
+    if result.deleted_count == 0:
+        raise api_error(ErrorCode.NOTIFICATION_NOT_FOUND)
+    return {"deleted": True, "notification_id": notification_id}
+
+
 async def mark_all_read(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     result = await mongo[c.NOTIFICATIONS].update_many(
         {"user_id": claims.user_id, "read_at": None}, {"$set": {"read_at": utc_now()}}

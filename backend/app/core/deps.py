@@ -8,7 +8,8 @@ from app.core.tokens import AccessClaims, TokenError, decode_access_token
 from app.db.keys import access_denylist, rate_limit, session_epoch
 from app.db.redis import RedisClient
 from app.ports.ai import AIPort
-from app.ports.factory import build_ai
+from app.ports.factory import build_ai, build_mail
+from app.ports.mail import MailPort
 
 AppSettings = Annotated[Settings, Depends(get_settings)]
 
@@ -18,6 +19,13 @@ def get_ai(settings: AppSettings) -> AIPort:
 
 
 AI = Annotated[AIPort, Depends(get_ai)]
+
+
+def get_mail(settings: AppSettings) -> MailPort:
+    return build_mail(settings)
+
+
+Mail = Annotated[MailPort, Depends(get_mail)]
 
 
 def _bearer_token(request: Request, settings: Settings) -> str | None:
