@@ -50,13 +50,19 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     PUBLIC_WEB_URL: str = "https://story.app"
 
-    MAIL_PROVIDER: Literal["console", "resend", "smtp"] = "console"
+    MAIL_PROVIDER: Literal["console", "smtp"] = "console"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    MAIL_FROM: str = "Story <no-reply@story.local>"
     EMAIL_INDEX_KEY: str = "local-dev-email-index-key-change-me-000000000000"
     EMAIL_ENCRYPTION_KEY: str = "local-dev-email-encryption-key-change-me-0000"
     OTP_HMAC_SECRET: str = "local-dev-otp-secret-change-me-00000000000000"
     OTP_TTL_SECONDS: int = 600
     OTP_FAIL_THRESHOLD: int = 5
-    OTP_LOCKOUT_SECONDS: int = 900
+    OTP_LOCKOUT_SECONDS: int = 30
     OTP_RESEND_COOLDOWN_SECONDS: int = 30
     RESET_TOKEN_TTL_SECONDS: int = 900
 
@@ -79,7 +85,7 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_ENABLED: bool = True
 
-    STORAGE_PROVIDER: Literal["local", "s3"] = "local"
+    STORAGE_PROVIDER: Literal["local", "s3", "r2"] = "local"
     STORAGE_LOCAL_ROOT: str = ".storage"
     STORAGE_LOCAL_BASE_URL: str = "http://127.0.0.1:9000/v1/storage"
     STORAGE_S3_ENDPOINT: str = ""

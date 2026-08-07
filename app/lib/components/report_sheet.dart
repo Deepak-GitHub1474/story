@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api/endpoints.dart';
@@ -33,13 +35,9 @@ Future<void> showReportSheet(
 }) async {
   final colors = context.colors;
 
-  final reason = await showModalBottomSheet<ReportReason>(
-    context: context,
-    backgroundColor: colors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-    ),
-    builder: (sheetContext) => SafeArea(
+  final reason = await showAppSheet<ReportReason>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
       child: ListView(
         shrinkWrap: true,
         children: [

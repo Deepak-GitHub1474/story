@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
@@ -9,9 +11,32 @@ const LINKS = [
   { href: '/communities', label: 'Communities' },
   { href: '/search', label: 'Search' },
   { href: '/activity', label: 'Activity' },
+  { href: '/chats', label: 'Messages' },
 ];
 
 export function Nav({ unread, username }: { unread: number; username: string }) {
+  const [chatUnread, setChatUnread] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const response = await fetch('/api/chat?unread=1');
+      const data = (await response.json()) as {
+        unread: number;
+        requests: number;
+      } | null;
+      if (!cancelled && data) setChatUnread(data.unread + data.requests);
+    }
+
+    void load();
+    const timer = setInterval(load, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
   const pathname = usePathname();
 
   return (
@@ -41,6 +66,16 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
                   )}
                 >
                   {link.label}
+                  {link.href === '/chats' && chatUnread > 0 ? (
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-bold text-accent-text">
+                      {chatUnread}
+                    </span>
+                  ) : null}
+                  {link.href === '/chats' && chatUnread > 0 ? (
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-bold text-accent-text">
+                      {chatUnread > 99 ? '99+' : chatUnread}
+                    </span>
+                  ) : null}
                   {link.href === '/activity' && unread > 0 ? (
                     <span className="ml-1.5 inline-flex min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] bg-danger px-1 text-[10px] font-bold text-bg">
                       {unread > 99 ? '99+' : unread}

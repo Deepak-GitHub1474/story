@@ -1,9 +1,10 @@
 'use client';
 
-import { useOptimistic, useState, useTransition } from 'react';
+import { useOptimistic, useTransition } from 'react';
 import { cn } from '@/lib/cn';
-import { SITE_URL } from '@/lib/config';
-import { shareStory, toggleLike } from '@/lib/actions/stories';
+import { ShareControl } from '@/components/ShareControl';
+import { toggleLike } from '@/lib/actions/stories';
+import type { TStory } from '@/lib/types';
 
 function HeartIcon({ isOn }: { isOn: boolean }) {
   return (
@@ -23,21 +24,13 @@ function HeartIcon({ isOn }: { isOn: boolean }) {
   );
 }
 
-export function StoryActions({
-  storyId,
-  slug,
-  isLiked,
-  likes,
-  comments,
-  isPublic,
-}: {
-  storyId: string;
-  slug: string | null;
-  isLiked: boolean;
-  likes: number;
-  comments: number;
-  isPublic: boolean;
-}) {
+export function StoryActions({ story }: { story: TStory }) {
+  const storyId = story.story_id;
+  const isLiked = story.is_liked;
+  const likes = story.counts.likes;
+  const comments = story.counts.comments;
+  const isPublic = story.visibility === 'public';
+
   const [state, setOptimistic] = useOptimistic(
     { isLiked, count: likes },
     (current, next: boolean) => ({
@@ -45,7 +38,6 @@ export function StoryActions({
       count: current.count + (next ? 1 : -1),
     }),
   );
-  const [notice, setNotice] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   return (
@@ -87,37 +79,8 @@ export function StoryActions({
         {comments}
       </a>
 
-      {isPublic && slug ? (
-        <button
-          type="button"
-          aria-label="Copy link"
-          onClick={() =>
-            startTransition(async () => {
-              await navigator.clipboard.writeText(`${SITE_URL}/s/${slug}`);
-              await shareStory(storyId);
-              setNotice('Link copied.');
-            })
-          }
-          className="group inline-flex items-center text-text-muted transition-colors hover:text-text-secondary"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="size-[var(--size-icon-md)] group-active:scale-90"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <path d="m22 2-7 20-4-9-9-4Z" />
-          </svg>
-        </button>
-      ) : null}
+      {isPublic ? <ShareControl story={story} /> : null}
 
-      {notice ? (
-        <span role="status" className="text-[length:var(--text-caption)] text-text-muted">
-          {notice}
-        </span>
-      ) : null}
     </div>
   );
 }

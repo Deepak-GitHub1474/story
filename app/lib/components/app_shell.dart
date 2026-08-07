@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/chat/providers/chat_providers.dart';
 import '../features/notifications/providers/notification_providers.dart';
 import '../routing/routes.dart';
 
@@ -17,6 +18,7 @@ class ShellDestination {
     required this.icon,
     required this.activeIcon,
     this.badgeCount = 0,
+    this.isAvatar = false,
   });
 
   final String route;
@@ -24,6 +26,7 @@ class ShellDestination {
   final IconData icon;
   final IconData activeIcon;
   final int badgeCount;
+  final bool isAvatar;
 
   ShellDestination withBadge(int count) => ShellDestination(
     route: route,
@@ -31,6 +34,7 @@ class ShellDestination {
     icon: icon,
     activeIcon: activeIcon,
     badgeCount: count,
+    isAvatar: isAvatar,
   );
 }
 
@@ -50,6 +54,9 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(chatIdentityProvider);
+    ref.read(presenceHeartbeatProvider).start();
+
     final colors = context.colors;
     final unread = ref.watch(unreadCountProvider);
 
@@ -85,7 +92,7 @@ class AppShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 64,
+            height: 56,
             child: Row(
               children: [
                 Expanded(
@@ -135,23 +142,39 @@ class _ShellTab extends StatelessWidget {
     final colors = context.colors;
     final color = isActive ? colors.accent : colors.textMuted;
 
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedScale(
-            scale: isActive ? 1.1 : 1,
-            duration: AppMotion.fast,
-            curve: AppMotion.easeOut,
-            child: Stack(
+    return Semantics(
+      label: destination.label,
+      button: true,
+      selected: isActive,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+          Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  isActive ? destination.activeIcon : destination.icon,
-                  color: color,
-                  size: AppSizes.iconMd,
-                ),
+                if (destination.isAvatar)
+                  Container(
+                    width: AppSizes.iconMd,
+                    height: AppSizes.iconMd,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color, width: isActive ? 2 : 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      isActive ? destination.activeIcon : destination.icon,
+                      color: color,
+                      size: AppSizes.iconMd - 8,
+                    ),
+                  )
+                else
+                  Icon(
+                    isActive ? destination.activeIcon : destination.icon,
+                    color: color,
+                    size: AppSizes.iconMd,
+                  ),
                 if (badgeCount > 0)
                   Positioned(
                     right: -6,
@@ -175,19 +198,9 @@ class _ShellTab extends StatelessWidget {
                     ),
                   ),
               ],
-            ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          AnimatedDefaultTextStyle(
-            duration: AppMotion.fast,
-            style: TextStyle(
-              color: color,
-              fontSize: AppTypeScale.caption,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            ),
-            child: Text(destination.label),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -221,13 +234,17 @@ class _ComposeButtonState extends State<_ComposeButton> {
           scale: _isPressed ? 0.9 : 1,
           duration: AppMotion.fast,
           curve: AppMotion.easeOut,
-          child: SizedBox(
-            width: 52,
-            height: 40,
-            child: Icon(
-              Icons.add_box_outlined,
-              color: colors.textPrimary,
-              size: AppSizes.iconMd + 4,
+          child: Semantics(
+            label: 'Write',
+            button: true,
+            child: SizedBox(
+              width: 52,
+              height: 40,
+              child: Icon(
+                Icons.add_box_outlined,
+                color: colors.textMuted,
+                size: AppSizes.iconMd,
+              ),
             ),
           ),
         ),

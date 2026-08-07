@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,9 +14,11 @@ import '../../../core/api/endpoints.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/story_post.dart';
 import '../models/community_models.dart';
 import '../providers/community_providers.dart';
@@ -35,6 +40,27 @@ class PublicProfileScreen extends ConsumerStatefulWidget {
 
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   PublicProfile? _override;
+
+  bool _isOpeningChat = false;
+
+  Future<void> _openChat(String username) async {
+    setState(() => _isOpeningChat = true);
+    final id = await ref.read(chatStarterProvider).open(username);
+    if (!mounted) return;
+    setState(() => _isOpeningChat = false);
+
+    if (id == null) {
+      AppToast.show(
+        context,
+        'They have not signed in since chat was added, so their device has '
+        'no key yet. A message is locked to that key before it leaves your '
+        'phone, so there is nothing to lock it to.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+    unawaited(context.push('${Routes.chat}/$id'));
+  }
 
   Future<void> _toggleFollow(PublicProfile profile) async {
     final next = !profile.isFollowing;
@@ -63,12 +89,8 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final profile = _override ?? ref.read(publicProfileProvider(widget.username)).valueOrNull;
     if (profile == null || profile.isMe) return;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -165,7 +187,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          AppAvatar(seed: profile.avatarSeed, size: 72),
+                          AppAvatar(
+                            seed: profile.avatarSeed,
+                            size: 72,
+                            displayName: profile.displayName,
+                            username: profile.username,
+                          ),
                           const SizedBox(width: AppSpacing.xl),
                           Expanded(
                             child: Row(
@@ -201,8 +228,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       ],
                       if (!profile.isMe) ...[
                         const SizedBox(height: AppSpacing.lg),
-                        SizedBox(
-                          width: double.infinity,
+                        Row(
+                          children: [
+                        Expanded(
                           child: Material(
                             color: profile.isFollowing
                                 ? Colors.transparent
@@ -236,6 +264,37 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                               ),
                             ),
                           ),
+                        ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                child: InkWell(
+                                  onTap: _isOpeningChat
+                                      ? null
+                                      : () => _openChat(profile.username),
+                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                  child: Container(
+                                    height: 42,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: colors.border),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                    ),
+                                    child: Text(
+                                      _isOpeningChat ? 'Opening' : 'Message',
+                                      style: TextStyle(
+                                        color: colors.textPrimary,
+                                        fontSize: AppTypeScale.body,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -348,17 +407,7 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
   }
 
   Future<void> _share() async {
-    final result = await ref.read(storyRepositoryProvider).share(_story.storyId);
-    if (!mounted) return;
-
-    final url = result.valueOrNull;
-    if (url == null) {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
-      return;
-    }
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!mounted) return;
-    AppToast.show(context, 'Link copied.', kind: AppToastKind.success);
+    await showShareSheet(context: context, ref: ref, story: _story);
   }
 
   @override
@@ -372,6 +421,9 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
       onLike: _toggleLike,
       onShare: _story.isPublic ? _share : null,
       onAuthorTap: () => context.push('${Routes.user}/${_story.author.username}'),
+      onSharedTap: _story.shared == null
+          ? null
+          : () => context.push('${Routes.story}/${_story.shared!.storyId}'),
     );
   }
 }

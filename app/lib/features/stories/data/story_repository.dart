@@ -41,9 +41,17 @@ class StoryRepository {
 
   final ApiClient _client;
 
-  Future<Result<Story>> create({String? title, required String body}) => _client.post(
+  Future<Result<Story>> create({
+    String? title,
+    required String body,
+    String? sharedStoryId,
+  }) => _client.post(
     Endpoints.stories,
-    body: {'title': title, 'body': body},
+    body: {
+      'title': title,
+      'body': body,
+      'shared_story_id': ?sharedStoryId,
+    },
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 

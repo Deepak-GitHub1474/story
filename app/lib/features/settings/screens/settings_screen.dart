@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,13 +25,16 @@ class SettingsScreen extends ConsumerWidget {
     final readingSize = ref.watch(readingSizeProvider);
     final user = ref.watch(authProvider).user;
 
-    return SafeArea(
-      child: CustomScrollView(
-        slivers: [
+    return Scaffold(
+      backgroundColor: colors.bg,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
           SliverAppBar(
             pinned: true,
             backgroundColor: colors.bg,
             surfaceTintColor: Colors.transparent,
+            leading: BackButton(onPressed: () => context.pop()),
             title: const Text('Settings'),
           ),
           SliverPadding(
@@ -94,8 +99,36 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 AppSection(
+                  title: 'Chat',
+                  children: [
+                    AppListRow(
+                      label: 'Show when I am online',
+                      icon: Icons.circle_outlined,
+                      trailing: Switch.adaptive(
+                        value: user?.prefs['show_online_status'] as bool? ?? true,
+                        activeThumbColor: colors.accent,
+                        onChanged: (value) async {
+                          await ref
+                              .read(profileRepositoryProvider)
+                              .updateProfile(prefs: {'show_online_status': value});
+                          await ref.read(authProvider.notifier).refreshUser();
+                        },
+                      ),
+                    ),
+                    const AppListRow(
+                      label: 'Turning this off also hides theirs from you.',
+                      icon: Icons.info_outline,
+                    ),
+                  ],
+                ),
+                AppSection(
                   title: 'Account',
                   children: [
+                    AppListRow(
+                      label: 'Choose your avatar',
+                      icon: Icons.face_outlined,
+                      onTap: () => context.push(Routes.avatar),
+                    ),
                     AppListRow(
                       label: 'Edit profile',
                       icon: Icons.person_outline,
@@ -182,33 +215,20 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _pickTheme(BuildContext context, WidgetRef ref, String current) async {
     final colors = context.colors;
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showAppSheet<String>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.border,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
             for (final option in const [
               ('system', 'System'),
               ('midnight', 'Midnight'),

@@ -75,6 +75,22 @@ async def create_story(
     body: CreateStoryRequest, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:
     now = utc_now()
+    shared_id = None
+
+    if body.shared_story_id is not None:
+        source = await mongo[c.STORIES].find_one(
+            {"_id": body.shared_story_id, "deleted_at": None}
+        )
+        if source is None:
+            raise api_error(ErrorCode.STORY_NOT_FOUND, field="shared_story_id")
+        if source["visibility"] != "public":
+            raise api_error(ErrorCode.STORY_NOT_SHAREABLE, field="shared_story_id")
+
+        shared_id = source.get("shared_story_id") or source["_id"]
+        await mongo[c.STORIES].update_one(
+            {"_id": shared_id}, {"$inc": {"counts.shares": 1}}
+        )
+
     story = {
         "_id": new_id("sto"),
         "author_id": claims.user_id,
@@ -87,6 +103,7 @@ async def create_story(
         "community_id": None,
         "slug": None,
         "media": [],
+        "shared_story_id": shared_id,
         "counts": {"likes": 0, "comments": 0, "shares": 0, "views": 0},
         "moderation": {"state": "unreviewed", "verdict": None, "rule": None},
         "published_at": None,
@@ -96,7 +113,59 @@ async def create_story(
         "deleted_at": None,
     }
     await mongo[c.STORIES].insert_one(story)
-    return {"story": serialize_story(story, include_body=True)}
+    return {
+        "story": await _with_shared(
+            serialize_story(story, include_body=True), story, mongo
+        )
+    }
+
+
+def _shared_payload(source: dict[str, Any]) -> dict[str, Any]:
+    snapshot = source.get("author_snapshot") or {}
+    return {
+        "story_id": source["_id"],
+        "title": source.get("title"),
+        "excerpt": source.get("excerpt", ""),
+        "slug": source.get("slug"),
+        "author": {
+            "user_id": source.get("author_id"),
+            "username": snapshot.get("username", ""),
+            "display_name": snapshot.get("display_name", "Someone"),
+            "avatar_seed": snapshot.get("avatar_seed", ""),
+        },
+    }
+
+
+async def _with_shared(payload, story, mongo) -> dict[str, Any]:
+    shared_id = story.get("shared_story_id")
+    if shared_id is None:
+        return payload
+
+    source = await mongo[c.STORIES].find_one({"_id": shared_id, "deleted_at": None})
+    if source is None:
+        return payload
+
+    payload["shared"] = _shared_payload(source)
+    return payload
+
+
+async def _attach_shared(payloads, docs, mongo) -> list[dict[str, Any]]:
+    wanted = {doc["shared_story_id"] for doc in docs if doc.get("shared_story_id")}
+    if not wanted:
+        return payloads
+
+    sources = (
+        await mongo[c.STORIES]
+        .find({"_id": {"$in": list(wanted)}, "deleted_at": None}, c.FEED_PROJECTION)
+        .to_list(length=len(wanted))
+    )
+    by_id = {source["_id"]: source for source in sources}
+
+    for payload, doc in zip(payloads, docs, strict=True):
+        source = by_id.get(doc.get("shared_story_id"))
+        if source is not None:
+            payload["shared"] = _shared_payload(source)
+    return payloads
 
 
 async def update_story(
@@ -252,7 +321,11 @@ async def share_story(
 async def get_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     liked = await _has_liked(claims.user_id, "story", story_id, mongo)
-    return {"story": serialize_story(story, include_body=True, is_liked=liked)}
+    return {
+        "story": await _with_shared(
+            serialize_story(story, include_body=True, is_liked=liked), story, mongo
+        )
+    }
 
 
 async def list_mine(
@@ -261,7 +334,9 @@ async def list_mine(
     query: dict[str, Any] = {"author_id": claims.user_id, "deleted_at": None}
     if visibility:
         query["visibility"] = visibility
-    return await _paginate(query, mongo=mongo, limit=limit, cursor=cursor)
+    return await _paginate(
+        query, mongo=mongo, limit=limit, cursor=cursor, viewer_id=claims.user_id
+    )
 
 
 async def list_feed(
@@ -296,37 +371,59 @@ async def list_feed(
     if hidden:
         base["author_id"] = {"$nin": list(hidden)}
 
+    reader = await mongo[c.USERS].find_one({"_id": claims.user_id}, {"interests": 1})
+    interest_slugs = await _interest_slugs((reader or {}).get("interests", []), mongo)
+    uplifting_slugs = await _uplifting_slugs(mongo)
+
+    phases: list[tuple[str, dict[str, Any] | None]] = [
+        ("p", {"$or": personal_clauses} if personal_clauses else None),
+        ("i", {"community_slug": {"$in": interest_slugs}} if interest_slugs else None),
+        ("u", {"community_slug": {"$in": uplifting_slugs}} if uplifting_slugs else None),
+        ("g", None),
+    ]
+    live = [(key, clause) for key, clause in phases if clause is not None or key == "g"]
+
     phase, marker = _split_cursor(cursor)
-    items: list[dict[str, Any]] = []
+    keys = [key for key, _ in live]
+    position = keys.index(phase) if phase in keys else 0
 
-    if phase == "p" and personal_clauses:
-        query = {**base, "$or": personal_clauses}
-        if marker:
-            query["_id"] = {"$lt": marker}
-        items = await _fetch(query, mongo=mongo, limit=limit + 1)
+    collected: list[dict[str, Any]] = []
+    next_cursor: str | None = None
+    has_more = False
 
-        if len(items) > limit:
-            page = items[:limit]
-            return _page(page, f"p:{page[-1]['_id']}", True)
+    for index in range(position, len(live)):
+        key, clause = live[index]
+        earlier = [c2 for _, c2 in live[:index] if c2 is not None]
+        wanted = limit - len(collected)
+        if wanted <= 0:
+            break
 
-        remaining = limit - len(items)
-        if remaining == 0:
-            probe = await _fetch(_global_query(base, personal_clauses, None), mongo=mongo, limit=1)
-            return _page(items, "g:", bool(probe))
+        query = _phase_query(base, clause, earlier, marker if index == position else None)
+        docs = await _fetch(query, mongo=mongo, limit=wanted + 1)
 
-        fill = await _fetch(
-            _global_query(base, personal_clauses, None), mongo=mongo, limit=remaining + 1
+        taken = docs[:wanted]
+        collected.extend(taken)
+
+        if len(docs) > wanted:
+            next_cursor = f"{key}:{taken[-1]['_id']}"
+            has_more = True
+            break
+
+        if index + 1 < len(live):
+            next_cursor = f"{live[index + 1][0]}:"
+            has_more = True
+        else:
+            next_cursor = None
+            has_more = False
+
+    if has_more and next_cursor and next_cursor.endswith(":"):
+        next_cursor, has_more = await _first_phase_with_content(
+            keys.index(next_cursor[:-1]), live, base, mongo=mongo
         )
-        has_more = len(fill) > remaining
-        taken = fill[:remaining]
-        page = items + taken
-        marker_id = taken[-1]["_id"] if taken else None
-        return _page(page, f"g:{marker_id}" if marker_id else None, has_more)
 
-    docs = await _fetch(_global_query(base, personal_clauses, marker), mongo=mongo, limit=limit + 1)
-    has_more = len(docs) > limit
-    page = docs[:limit]
-    return _page(page, f"g:{page[-1]['_id']}" if page and has_more else None, has_more)
+    return await _page(
+        collected, next_cursor, has_more, viewer_id=claims.user_id, mongo=mongo
+    )
 
 
 def _split_cursor(cursor: str | None) -> tuple[str, str | None]:
@@ -349,6 +446,60 @@ def _global_query(
     return query
 
 
+async def _slugs_for_categories(category_ids, mongo) -> list[str]:
+    if not category_ids:
+        return []
+    docs = (
+        await mongo[c.COMMUNITIES]
+        .find({"category_id": {"$in": list(category_ids)}}, {"_id": 1})
+        .to_list(length=500)
+    )
+    return [doc["_id"] for doc in docs]
+
+
+async def _interest_slugs(interests, mongo) -> list[str]:
+    if not interests:
+        return []
+    docs = (
+        await mongo[c.INTERESTS]
+        .find({"_id": {"$in": list(interests)}}, {"category_id": 1})
+        .to_list(length=100)
+    )
+    return await _slugs_for_categories({doc["category_id"] for doc in docs}, mongo)
+
+
+async def _uplifting_slugs(mongo) -> list[str]:
+    docs = (
+        await mongo[c.COMMUNITY_CATEGORIES]
+        .find({"tone": {"$in": list(c.UPLIFTING_TONES)}}, {"_id": 1})
+        .to_list(length=100)
+    )
+    return await _slugs_for_categories({doc["_id"] for doc in docs}, mongo)
+
+
+async def _first_phase_with_content(start_index, live, base, *, mongo):
+    for index in range(start_index, len(live)):
+        key, clause = live[index]
+        earlier = [c2 for _, c2 in live[:index] if c2 is not None]
+        probe = await _fetch(
+            _phase_query(base, clause, earlier, None), mongo=mongo, limit=1
+        )
+        if probe:
+            return f"{key}:", True
+    return None, False
+
+
+def _phase_query(base, clause, earlier, marker):
+    query = dict(base)
+    if clause:
+        query.update(clause)
+    if earlier:
+        query["$nor"] = earlier
+    if marker:
+        query["_id"] = {"$lt": marker}
+    return query
+
+
 async def _fetch(query: dict[str, Any], *, mongo, limit: int) -> list[dict[str, Any]]:
     return (
         await mongo[c.STORIES]
@@ -359,9 +510,17 @@ async def _fetch(query: dict[str, Any], *, mongo, limit: int) -> list[dict[str, 
     )
 
 
-def _page(docs, next_cursor, has_more) -> dict[str, Any]:
+async def _page(docs, next_cursor, has_more, *, viewer_id=None, mongo=None) -> dict[str, Any]:
+    liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in docs], mongo)
     return {
-        "items": [serialize_story(doc, include_body=False) for doc in docs],
+        "items": await _attach_shared(
+            [
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                for doc in docs
+            ],
+            docs,
+            mongo,
+        ),
         "next_cursor": next_cursor if has_more else None,
         "has_more": has_more,
     }
@@ -380,7 +539,9 @@ async def list_community_stories(
         "deleted_at": None,
         "moderation.state": "allowed",
     }
-    return await _paginate(query, mongo=mongo, limit=limit, cursor=cursor)
+    return await _paginate(
+        query, mongo=mongo, limit=limit, cursor=cursor, viewer_id=claims.user_id
+    )
 
 
 async def list_user_stories(
@@ -402,7 +563,12 @@ async def list_user_stories(
 
 
 async def _paginate(
-    query: dict[str, Any], *, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+    query: dict[str, Any],
+    *,
+    mongo: AsyncIOMotorDatabase,
+    limit: int,
+    cursor: str | None,
+    viewer_id: str | None = None,
 ) -> dict[str, Any]:
     limit = max(1, min(limit, c.FEED_MAX_LIMIT))
     if cursor:
@@ -418,8 +584,16 @@ async def _paginate(
 
     has_more = len(docs) > limit
     page = docs[:limit]
+    liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in page], mongo)
     return {
-        "items": [serialize_story(doc, include_body=False) for doc in page],
+        "items": await _attach_shared(
+            [
+                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                for doc in page
+            ],
+            page,
+            mongo,
+        ),
         "next_cursor": page[-1]["_id"] if page and has_more else None,
         "has_more": has_more,
     }
@@ -597,6 +771,16 @@ async def list_comments(
     }
 
 
+async def _liked_story_ids(user_id: str | None, story_ids, mongo) -> set[str]:
+    if not user_id or not story_ids:
+        return set()
+    reaction_ids = [f"{user_id}:story:{story_id}" for story_id in story_ids]
+    liked = set()
+    async for reaction in mongo[c.REACTIONS].find({"_id": {"$in": reaction_ids}}, {"target_id": 1}):
+        liked.add(reaction["target_id"])
+    return liked
+
+
 async def _liked_comment_ids(user_id: str, comment_ids, mongo) -> set[str]:
     if not comment_ids:
         return set()
@@ -671,11 +855,24 @@ async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase
     if not (is_owner or is_story_author):
         raise api_error(ErrorCode.COMMENT_NOT_FOUND)
 
-    await mongo[c.COMMENTS].update_one({"_id": comment_id}, {"$set": {"deleted_at": utc_now()}})
+    now = utc_now()
+    removed = 1
+
+    if comment.get("parent_id") is None:
+        replies = await mongo[c.COMMENTS].update_many(
+            {"parent_id": comment_id, "deleted_at": None}, {"$set": {"deleted_at": now}}
+        )
+        removed += replies.modified_count
+    else:
+        await mongo[c.COMMENTS].update_one(
+            {"_id": comment["parent_id"]}, {"$inc": {"counts.replies": -1}}
+        )
+
+    await mongo[c.COMMENTS].update_one({"_id": comment_id}, {"$set": {"deleted_at": now}})
     await mongo[c.STORIES].update_one(
-        {"_id": comment["story_id"]}, {"$inc": {"counts.comments": -1}}
+        {"_id": comment["story_id"]}, {"$inc": {"counts.comments": -removed}}
     )
-    return {"deleted": True, "comment_id": comment_id}
+    return {"deleted": True, "comment_id": comment_id, "removed": removed}
 
 
 async def set_comment_like(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_avatar.dart';
 import '../../../components/skeleton.dart';
 import '../../../routing/routes.dart';
+import '../../settings/providers/theme_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/widgets/story_post.dart';
@@ -18,6 +19,22 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
+  String _remembered = '';
+
+  void _rememberSettledQuery(SearchState state) {
+    final query = state.query.trim();
+    if (state.isLoading || query.isEmpty || query == _remembered) return;
+    if (state.results.users.isEmpty) return;
+
+    _remembered = query;
+    ref.read(prefsStoreProvider).rememberSearch(query);
+  }
+
+  Future<void> _pick(String username) async {
+    _controller.text = username;
+    ref.read(searchProvider.notifier).query(username);
+  }
+
   final _controller = TextEditingController();
 
   @override
@@ -30,6 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final state = ref.watch(searchProvider);
+    _rememberSettledQuery(state);
     final results = state.results;
 
     return Scaffold(
@@ -63,7 +81,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            if (state.query.isEmpty) return _Hint();
+            if (state.query.isEmpty) return _RecentSearches(onPick: _pick);
             if (state.isLoading) return const SkeletonList(count: 4);
             if (results.isEmpty) {
               return Center(
@@ -80,7 +98,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   _SectionHeader(label: 'People'),
                   for (final user in results.users)
                     ListTile(
-                      leading: AppAvatar(seed: user.avatarSeed, size: 40),
+                      leading: AppAvatar(
+                        seed: user.avatarSeed,
+                        size: 40,
+                        displayName: user.displayName,
+                        username: user.username,
+                      ),
                       title: Text(
                         user.displayName,
                         style: TextStyle(
@@ -92,7 +115,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         '@${user.username}',
                         style: TextStyle(color: colors.textMuted),
                       ),
-                      onTap: () => context.push('${Routes.user}/${user.username}'),
+                      onTap: () async {
+                        await ref
+                            .read(prefsStoreProvider)
+                            .rememberSearch(user.username);
+                        if (context.mounted) {
+                          await context.push('${Routes.user}/${user.username}');
+                        }
+                      },
                     ),
                 ],
                 if (results.communities.isNotEmpty) ...[
@@ -201,6 +231,84 @@ class _Hint extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+class _RecentSearches extends ConsumerStatefulWidget {
+  const _RecentSearches({required this.onPick});
+
+  final Future<void> Function(String username) onPick;
+
+  @override
+  ConsumerState<_RecentSearches> createState() => _RecentSearchesState();
+}
+
+class _RecentSearchesState extends ConsumerState<_RecentSearches> {
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final recent = ref.read(prefsStoreProvider).recentSearches;
+
+    if (recent.isEmpty) return _Hint();
+
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'RECENT',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () async {
+                  await ref.read(prefsStoreProvider).clearSearches();
+                  if (mounted) setState(() {});
+                },
+                child: Text(
+                  'Clear all',
+                  style: TextStyle(
+                    color: colors.accent,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        for (final username in recent)
+          ListTile(
+            leading: Icon(Icons.history, color: colors.textMuted),
+            title: Text(
+              '@$username',
+              style: TextStyle(color: colors.textPrimary),
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.close, size: 18, color: colors.textMuted),
+              onPressed: () async {
+                await ref.read(prefsStoreProvider).forgetSearch(username);
+                if (mounted) setState(() {});
+              },
+            ),
+            onTap: () => widget.onPick(username),
+          ),
+      ],
     );
   }
 }

@@ -74,7 +74,6 @@ void main() {
       plaintext: plain,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_compress',
       metadata: {'filename': 'letter.pdf'},
       kind: 'pdf',
     );
@@ -85,7 +84,6 @@ void main() {
       saltItem: payload.saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_compress',
     );
 
     expect(metadata['compression'], 'gzip');
@@ -101,7 +99,6 @@ void main() {
       plaintext: plain,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_round',
       metadata: {'filename': 'long.pdf'},
       kind: 'pdf',
     );
@@ -112,7 +109,6 @@ void main() {
       saltItem: payload.saltItem,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_round',
       compression: 'gzip',
     );
 
@@ -128,7 +124,6 @@ void main() {
       plaintext: plain,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_a',
       metadata: const {},
       kind: 'pdf',
     );
@@ -136,7 +131,6 @@ void main() {
       plaintext: plain,
       umk: umk,
       passcodeKey: passcodeKey,
-      itemId: 'vit_b',
       metadata: const {},
       kind: 'image',
     );

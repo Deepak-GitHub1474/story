@@ -16,3 +16,6 @@ admin/.next
 admin/node_modules
 admin/.env.local
 .storage
+
+# Playwright MCP session artifacts
+.playwright-mcp/

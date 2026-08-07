@@ -6,9 +6,7 @@ import { clearSession, saveSession, backendFetch } from '../server/session';
 import type { TEnvelope, TTokens } from '../types';
 import type { TMe } from '../types';
 
-export type TFormState = { error: string | null; field: string | null };
-
-export const EMPTY_FORM: TFormState = { error: null, field: null };
+import type { TAuthFormState as TFormState } from './state';
 
 type AuthPayload = { user: TMe; tokens: TTokens };
 
@@ -40,7 +38,7 @@ export async function signIn(
   if (!envelope.success || !envelope.data) return failure(envelope);
 
   await saveSession(envelope.data.tokens);
-  redirect('/feed');
+  return { error: null, field: null, userId: envelope.data.user.user_id };
 }
 
 export async function signUp(
@@ -59,7 +57,7 @@ export async function signUp(
   if (!envelope.success || !envelope.data) return failure(envelope);
 
   await saveSession(envelope.data.tokens);
-  redirect('/onboarding');
+  return { error: null, field: null, userId: envelope.data.user.user_id };
 }
 
 export async function signOut() {

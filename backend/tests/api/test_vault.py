@@ -392,3 +392,37 @@ async def test_the_vault_takes_only_images_video_and_pdf(client, signup_payload)
             "/v1/vault/items", json=item_body(passcode_id, kind=kind), headers=headers
         )
         assert response.status_code == 422, kind
+
+
+async def test_the_owner_gets_the_salt_they_need_to_derive_their_key(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await init_keys(client, headers)
+    await make_passcode(client, headers)
+
+    passcodes = (await client.get("/v1/vault/passcodes", headers=headers)).json()["data"][
+        "items"
+    ]
+
+    assert passcodes[0]["salt_pc"] == PASSCODE_BODY["salt_pc"]
+    assert passcodes[0]["kdf"]["algo"] == "argon2id"
+
+
+async def test_the_owner_never_gets_the_passcode_hash_or_escrow(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await init_keys(client, headers)
+    await make_passcode(client, headers)
+
+    body = (await client.get("/v1/vault/passcodes", headers=headers)).text
+
+    assert "passcode_hash" not in body
+    assert "escrow" not in body
+
+
+async def test_the_overview_carries_the_salt_too(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await init_keys(client, headers)
+    await make_passcode(client, headers)
+
+    overview = (await client.get("/v1/vault/overview", headers=headers)).json()["data"]
+
+    assert overview["passcodes"][0]["salt_pc"] == PASSCODE_BODY["salt_pc"]

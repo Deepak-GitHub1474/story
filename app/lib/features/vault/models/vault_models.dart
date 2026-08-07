@@ -24,17 +24,23 @@ class VaultPasscode {
     required this.passcodeId,
     required this.label,
     required this.scope,
+    required this.saltPc,
+    required this.kdf,
   });
 
   factory VaultPasscode.fromJson(Map<String, dynamic> json) => VaultPasscode(
     passcodeId: json['passcode_id'] as String,
     label: json['label'] as String,
     scope: json['scope'] as String? ?? 'vault',
+    saltPc: json['salt_pc'] as String? ?? '',
+    kdf: Map<String, dynamic>.from(json['kdf'] as Map? ?? {}),
   );
 
   final String passcodeId;
   final String label;
   final String scope;
+  final String saltPc;
+  final Map<String, dynamic> kdf;
 }
 
 class VaultItem {

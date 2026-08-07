@@ -44,8 +44,9 @@ class VaultRepository {
         VaultPasscode.fromJson(Map<String, dynamic>.from(data['passcode'] as Map)),
   );
 
-  Future<Result<List<VaultItem>>> items() => _client.get(
+  Future<Result<List<VaultItem>>> items({String? passcodeId}) => _client.get(
     Endpoints.vaultItems,
+    query: passcodeId == null ? null : {'passcode_id': passcodeId},
     parse: (data) => (data['items'] as List<dynamic>)
         .map((item) => VaultItem.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList(),

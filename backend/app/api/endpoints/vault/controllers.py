@@ -128,7 +128,15 @@ async def list_passcodes(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, An
         await mongo[c.PASSCODES]
         .find(
             {"user_id": claims.user_id},
-            {"_id": 1, "label": 1, "scope": 1, "created_at": 1, "last_used_at": 1},
+            {
+                "_id": 1,
+                "label": 1,
+                "scope": 1,
+                "salt_pc": 1,
+                "kdf": 1,
+                "created_at": 1,
+                "last_used_at": 1,
+            },
         )
         .to_list(length=c.LIST_LIMIT)
     )
@@ -139,6 +147,8 @@ async def list_passcodes(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, An
                 "passcode_id": doc["_id"],
                 "label": doc["label"],
                 "scope": doc["scope"],
+                "salt_pc": doc["salt_pc"],
+                "kdf": doc.get("kdf", {}),
                 "created_at": to_wire(doc.get("created_at")),
                 "last_used_at": to_wire(doc.get("last_used_at")),
             }
@@ -271,13 +281,16 @@ async def complete_item(
     return {"item": serialize_item(item)}
 
 
-async def list_items(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def list_items(
+    *, claims, mongo: AsyncIOMotorDatabase, passcode_id: str | None = None
+) -> dict[str, Any]:
+    query = {"user_id": claims.user_id, "visibility": "normal", "deleted_at": None}
+    if passcode_id is not None:
+        query["passcode_id"] = passcode_id
+
     docs = (
         await mongo[c.VAULT_ITEMS]
-        .find(
-            {"user_id": claims.user_id, "visibility": "normal", "deleted_at": None},
-            c.LIST_PROJECTION,
-        )
+        .find(query, c.LIST_PROJECTION)
         .sort("_id", -1)
         .limit(c.LIST_LIMIT)
         .to_list(length=c.LIST_LIMIT)

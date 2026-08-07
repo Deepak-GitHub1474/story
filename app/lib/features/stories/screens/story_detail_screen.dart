@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +21,8 @@ import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 import '../widgets/comment_composer.dart';
 import '../widgets/comment_tile.dart';
+import '../widgets/share_sheet.dart';
+import '../widgets/shared_story_card.dart';
 import '../widgets/story_post.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
@@ -121,26 +125,30 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final text = _comment.text.trim();
     if (text.isEmpty) return;
 
-    setState(() => _isSending = true);
-    final parent = _replyTarget;
-    final result = await ref
-        .read(storyRepositoryProvider)
-        .addComment(storyId, text, parentId: parent?.parentId ?? parent?.commentId);
+    final me = ref.read(authProvider).user;
+    if (me == null) return;
 
-    if (!mounted) return;
+    final parent = _replyTarget;
+    _comment.clear();
+    _commentFocus.unfocus();
     setState(() {
-      _isSending = false;
+      _isSending = true;
       _replyTarget = null;
     });
 
-    if (result.isSuccess) {
-      _comment.clear();
-      _commentFocus.unfocus();
+    final ok = await ref
+        .read(commentsProvider(storyId).notifier)
+        .add(text, replyTo: parent, me: me);
+
+    if (!mounted) return;
+    setState(() => _isSending = false);
+
+    if (ok) {
       _expanded.clear();
-      ref.invalidate(commentsProvider(storyId));
       ref.invalidate(storyDetailProvider(storyId));
     } else {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      _comment.text = text;
+      AppToast.show(context, 'That comment did not post.', kind: AppToastKind.error);
     }
   }
 
@@ -154,13 +162,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   Future<void> _editComment(Comment comment, String storyId) async {
     final controller = TextEditingController(text: comment.body);
 
-    final next = await showModalBottomSheet<String?>(
+    final next = await showAppSheet<String?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
           left: AppSpacing.xl,
@@ -224,22 +227,21 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   }
 
   Future<void> _deleteComment(Comment comment, String storyId) async {
+    ref.read(commentsProvider(storyId).notifier).removeLocally(comment.commentId);
+
     await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
     if (!mounted) return;
+
     _expanded.clear();
-    ref.invalidate(commentsProvider(storyId));
+    await ref.read(commentsProvider(storyId).notifier).refresh();
     ref.invalidate(storyDetailProvider(storyId));
   }
 
   Future<void> _openStoryMenu(Story story, {required bool isMine}) async {
     final colors = context.colors;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -343,7 +345,12 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        AppAvatar(seed: story.author.avatarSeed, size: 38),
+                        AppAvatar(
+                          seed: story.author.avatarSeed,
+                          size: 38,
+                          displayName: story.author.displayName,
+                          username: story.author.username,
+                        ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
@@ -386,14 +393,24 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                     ],
-                    SelectableText(
-                      story.body ?? story.excerpt,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: bodySize,
-                        height: 1.75,
+                    if ((story.body ?? story.excerpt).isNotEmpty)
+                      SelectableText(
+                        story.body ?? story.excerpt,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: bodySize,
+                          height: 1.75,
+                        ),
                       ),
-                    ),
+                    if (story.shared != null) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      SharedStoryCard(
+                        shared: story.shared!,
+                        onTap: () => context.push(
+                          '${Routes.story}/${story.shared!.storyId}',
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
@@ -423,6 +440,22 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             fontSize: AppTypeScale.label,
                           ),
                         ),
+                        if (story.isPublic) ...[
+                          const SizedBox(width: AppSpacing.xl),
+                          InkResponse(
+                            radius: 22,
+                            onTap: () => showShareSheet(
+                              context: context,
+                              ref: ref,
+                              story: story,
+                            ),
+                            child: Icon(
+                              Icons.ios_share,
+                              size: AppSizes.iconMd,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     Divider(color: colors.border, height: AppSpacing.xxl),

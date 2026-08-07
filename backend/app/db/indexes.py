@@ -152,6 +152,27 @@ INDEXES: dict[str, list[IndexSpec]] = {
             unique=True,
         ),
     ],
+    "chat_identities": [],
+    "chat_conversations": [
+        IndexSpec([("pair_key", ASCENDING)], "uq_chat_pair", unique=True),
+        IndexSpec(
+            [("participant_ids", ASCENDING), ("last_message_at", DESCENDING)],
+            "ix_chat_participant_recent",
+        ),
+        IndexSpec([("state", ASCENDING), ("requested_by", ASCENDING)], "ix_chat_requests"),
+    ],
+    "chat_conversation_keys": [
+        IndexSpec([("conversation_id", ASCENDING), ("user_id", ASCENDING)], "ix_chat_keys"),
+    ],
+    "chat_messages": [
+        IndexSpec(
+            [("conversation_id", ASCENDING), ("_id", DESCENDING)], "ix_chat_conversation_recent"
+        ),
+        IndexSpec([("sender_id", ASCENDING)], "ix_chat_sender"),
+    ],
+    "chat_reads": [
+        IndexSpec([("conversation_id", ASCENDING), ("user_id", ASCENDING)], "ix_chat_reads"),
+    ],
     "devices": [
         IndexSpec(
             [("user_id", ASCENDING), ("fingerprint", ASCENDING)],

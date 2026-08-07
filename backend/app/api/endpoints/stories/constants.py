@@ -24,9 +24,15 @@ FEED_PROJECTION = {
     "excerpt": 1,
     "visibility": 1,
     "slug": 1,
+    "shared_story_id": 1,
     "counts": 1,
     "reading_minutes": 1,
     "published_at": 1,
     "created_at": 1,
     "updated_at": 1,
 }
+
+UPLIFTING_TONES = ("joyful", "open")
+COMMUNITY_CATEGORIES = "community_categories"
+COMMUNITIES = "communities"
+INTERESTS = "interests"

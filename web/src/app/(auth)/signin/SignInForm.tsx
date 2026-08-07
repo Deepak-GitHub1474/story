@@ -1,19 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { EMPTY_FORM, signIn } from '@/lib/actions/auth';
+import { signIn } from '@/lib/actions/auth';
+import { EMPTY_FORM } from '@/lib/actions/state';
+import { bootstrapChat } from '@/lib/chat/useIdentity';
 
 export function SignInForm() {
+  const router = useRouter();
   const [state, action, isPending] = useActionState(signIn, EMPTY_FORM);
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (!state.userId) return;
+    void bootstrapChat(state.userId, password).then(() => router.push('/feed'));
+  }, [state.userId, password, router]);
 
   return (
     <form action={action} className="flex flex-col gap-6">
       <header>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Welcome back</h1>
+        <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">Welcome back</h1>
         <p className="mt-2 text-text-secondary">
           Your username and password are the only things we know about you.
         </p>
@@ -34,6 +44,8 @@ export function SignInForm() {
         name="password"
         type={showPassword ? 'text' : 'password'}
         autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
         required
         error={state.field === 'password' ? state.error : null}
         suffix={

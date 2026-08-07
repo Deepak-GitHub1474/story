@@ -5,9 +5,14 @@ import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
-import { EMPTY_FORM, checkUsername, signUp } from '@/lib/actions/auth';
+import { useRouter } from 'next/navigation';
+import { checkUsername, signUp } from '@/lib/actions/auth';
+import { EMPTY_FORM } from '@/lib/actions/state';
+import { bootstrapChat } from '@/lib/chat/useIdentity';
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+const USERNAME_MIN = 2;
+const USERNAME_MAX = 30;
 
 export function SignUpForm() {
   const [state, action, isPending] = useActionState(signUp, EMPTY_FORM);
@@ -15,9 +20,21 @@ export function SignUpForm() {
   const [password, setPassword] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    if (!USERNAME_PATTERN.test(username)) {
+    if (!state.userId) return;
+    void bootstrapChat(state.userId, password).then(() => router.push('/onboarding'));
+  }, [state.userId, password, router]);
+
+  const isWellFormed =
+    username.length >= USERNAME_MIN &&
+    username.length <= USERNAME_MAX &&
+    USERNAME_PATTERN.test(username) &&
+    !username.includes('--');
+
+  useEffect(() => {
+    if (!isWellFormed) {
       setAvailable(null);
       return;
     }
@@ -32,10 +49,10 @@ export function SignUpForm() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [username]);
+  }, [username, isWellFormed]);
 
   const canSubmit =
-    USERNAME_PATTERN.test(username) &&
+    isWellFormed &&
     password.length >= 10 &&
     accepted &&
     available !== false;
@@ -43,7 +60,7 @@ export function SignUpForm() {
   return (
     <form action={action} className="flex flex-col gap-6">
       <header>
-        <h1 className="text-[length:var(--text-title)] font-semibold">
+        <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">
           Create your account
         </h1>
         <p className="mt-2 text-text-secondary">

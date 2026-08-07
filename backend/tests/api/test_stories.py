@@ -24,6 +24,17 @@ async def create_story(client, headers, **overrides):
     return await client.post("/v1/stories", json=body, headers=headers)
 
 
+async def published(client, headers, **overrides):
+    story = (await create_story(client, headers, **overrides)).json()["data"]["story"]
+    return (
+        await client.post(
+            f"/v1/stories/{story['story_id']}/publish",
+            json={"visibility": "public"},
+            headers=headers,
+        )
+    ).json()["data"]["story"]
+
+
 async def test_create_returns_a_draft(client, signup_payload):
     headers = await auth_headers(client, signup_payload)
     response = await create_story(client, headers)
@@ -444,3 +455,112 @@ async def test_story_counts_update_on_the_author_profile(client, signup_payload)
     )
     user = (await client.get("/v1/auth/me", headers=headers)).json()["data"]["user"]
     assert user["counts"]["stories"] == 1
+
+
+async def test_a_story_i_liked_shows_as_liked_in_my_feed(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=headers)
+
+    feed = (await client.get("/v1/stories/feed", headers=headers)).json()["data"]["items"]
+    mine = next(item for item in feed if item["story_id"] == story["story_id"])
+
+    assert mine["is_liked"] is True
+
+
+async def test_a_story_i_liked_shows_as_liked_on_my_profile(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=headers)
+
+    items = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is True
+
+
+async def test_a_story_i_did_not_like_stays_unliked(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    await published(client, headers)
+
+    items = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is False
+
+
+async def test_someone_elses_like_is_not_mine(client, signup_payload, app_instance):
+    author = await auth_headers(client, signup_payload)
+    story = await published(client, author)
+
+    other = await auth_headers(
+        client,
+        {"username": "like_watcher", "password": "another-long-password", "tnc_accepted": True},
+    )
+    await client.post(f"/v1/stories/{story['story_id']}/like", headers=other)
+
+    items = (await client.get("/v1/stories/mine", headers=author)).json()["data"]["items"]
+
+    assert items[0]["is_liked"] is False
+    assert items[0]["counts"]["likes"] == 1
+
+
+async def comment_on(client, headers, story_id, body, parent=None):
+    return (
+        await client.post(
+            f"/v1/stories/{story_id}/comments",
+            json={"body": body, **({"parent_id": parent} if parent else {})},
+            headers=headers,
+        )
+    ).json()["data"]["comment"]
+
+
+async def test_deleting_a_parent_takes_its_replies_with_it(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+
+    parent = await comment_on(client, headers, story["story_id"], "The first thought.")
+    await comment_on(client, headers, story["story_id"], "A reply.", parent["comment_id"])
+    await comment_on(client, headers, story["story_id"], "Another reply.", parent["comment_id"])
+
+    await client.delete(f"/v1/comments/{parent['comment_id']}", headers=headers)
+
+    items = (
+        await client.get(f"/v1/stories/{story['story_id']}/comments", headers=headers)
+    ).json()["data"]["items"]
+
+    assert items == []
+
+
+async def test_the_count_matches_what_is_visible_after_a_delete(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+
+    parent = await comment_on(client, headers, story["story_id"], "The first thought.")
+    await comment_on(client, headers, story["story_id"], "A reply.", parent["comment_id"])
+    await comment_on(client, headers, story["story_id"], "Another reply.", parent["comment_id"])
+
+    await client.delete(f"/v1/comments/{parent['comment_id']}", headers=headers)
+
+    detail = (
+        await client.get(f"/v1/stories/{story['story_id']}", headers=headers)
+    ).json()["data"]["story"]
+
+    assert detail["counts"]["comments"] == 0
+
+
+async def test_deleting_one_reply_leaves_the_rest(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await published(client, headers)
+
+    parent = await comment_on(client, headers, story["story_id"], "The first thought.")
+    doomed = await comment_on(
+        client, headers, story["story_id"], "Goes away.", parent["comment_id"]
+    )
+    await comment_on(client, headers, story["story_id"], "Stays.", parent["comment_id"])
+
+    await client.delete(f"/v1/comments/{doomed['comment_id']}", headers=headers)
+
+    detail = (
+        await client.get(f"/v1/stories/{story['story_id']}", headers=headers)
+    ).json()["data"]["story"]
+
+    assert detail["counts"]["comments"] == 2

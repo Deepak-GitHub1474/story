@@ -1,3 +1,29 @@
+class SharedStory {
+  const SharedStory({
+    required this.storyId,
+    required this.excerpt,
+    required this.author,
+    this.title,
+    this.slug,
+  });
+
+  factory SharedStory.fromJson(Map<String, dynamic> json) => SharedStory(
+    storyId: json['story_id'] as String,
+    excerpt: json['excerpt'] as String? ?? '',
+    author: StoryAuthor.fromJson(
+      Map<String, dynamic>.from(json['author'] as Map? ?? {}),
+    ),
+    title: json['title'] as String?,
+    slug: json['slug'] as String?,
+  );
+
+  final String storyId;
+  final String excerpt;
+  final StoryAuthor author;
+  final String? title;
+  final String? slug;
+}
+
 class StoryAuthor {
   const StoryAuthor({
     required this.userId,
@@ -35,6 +61,7 @@ class Story {
     required this.publishedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.shared,
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
@@ -54,6 +81,9 @@ class Story {
       publishedAt: json['published_at'] as String?,
       createdAt: json['created_at'] as String? ?? '',
       updatedAt: json['updated_at'] as String? ?? '',
+      shared: json['shared'] == null
+          ? null
+          : SharedStory.fromJson(Map<String, dynamic>.from(json['shared'] as Map)),
     );
   }
 
@@ -71,6 +101,7 @@ class Story {
   final String? publishedAt;
   final String createdAt;
   final String updatedAt;
+  final SharedStory? shared;
 
   bool get isDraft => visibility == 'draft';
 
@@ -92,6 +123,19 @@ class Story {
     'published_at': publishedAt,
     'created_at': createdAt,
     'updated_at': updatedAt,
+    if (shared != null)
+      'shared': {
+        'story_id': shared!.storyId,
+        'title': shared!.title,
+        'excerpt': shared!.excerpt,
+        'slug': shared!.slug,
+        'author': {
+          'user_id': shared!.author.userId,
+          'display_name': shared!.author.displayName,
+          'avatar_seed': shared!.author.avatarSeed,
+          'username': shared!.author.username,
+        },
+      },
   };
 
   bool get isPublic => visibility == 'public';
@@ -99,6 +143,7 @@ class Story {
   bool get isScheduled => visibility == 'scheduled';
 
   Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(
+    shared: shared,
     storyId: storyId,
     author: author,
     title: title,

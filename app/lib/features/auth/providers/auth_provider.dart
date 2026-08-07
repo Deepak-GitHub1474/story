@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/result.dart';
 import '../../../core/storage/secure_store.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../data/auth_repository.dart';
 import '../models/auth_models.dart';
 
@@ -77,7 +78,7 @@ class AuthNotifier extends Notifier<AuthState> {
       tncAccepted: tncAccepted,
       referralCode: referralCode,
     );
-    return _completeSession(result);
+    return _completeSession(result, password: password);
   }
 
   Future<Failure<AuthSession>?> signin({
@@ -86,10 +87,13 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = state.copyWith(isBusy: true);
     final result = await _repository.signin(username: username, password: password);
-    return _completeSession(result);
+    return _completeSession(result, password: password);
   }
 
-  Future<Failure<AuthSession>?> _completeSession(Result<AuthSession> result) async {
+  Future<Failure<AuthSession>?> _completeSession(
+    Result<AuthSession> result, {
+    String? password,
+  }) async {
     final failure = result.failureOrNull;
     if (failure != null) {
       state = state.copyWith(isBusy: false);
@@ -102,6 +106,12 @@ class AuthNotifier extends Notifier<AuthState> {
       refreshToken: session.tokens.refreshToken,
     );
     state = AuthState(status: AuthStatus.signedIn, user: session.user);
+
+    if (password != null) {
+      await ref
+          .read(chatBootstrapProvider)
+          .afterSignIn(userId: session.user.userId, password: password);
+    }
     return null;
   }
 

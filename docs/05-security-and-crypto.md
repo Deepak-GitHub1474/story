@@ -480,3 +480,72 @@ The `compression` flag lives in the **encrypted metadata**, not in the database.
 `size_bytes` counts ciphertext, which is what actually occupies the bucket, so compression genuinely reduces what a user's quota is charged.
 
 **Deduplication is rejected, not deferred.** Convergent encryption would let identical files share one stored object, and would also tell anyone with database access that two accounts hold the same file. On a platform built for anonymity that is a worse trade than the storage it saves.
+
+
+## Chat keys and multiple devices
+
+A chat identity is an X25519 keypair. The private half never leaves the device in the clear, but it is also **wrapped by a key derived from the account password** and stored server-side, so signing in anywhere restores the same identity and the same history.
+
+```
+salt                = 16 random bytes, per account
+KEK_chat            = PBKDF2-HMAC-SHA256(password, salt, 600_000 iterations, 256 bits)
+wrapped_private_key = nonce || AES-256-GCM(KEK_chat, x25519_private,
+                                           aad = "story.chat.identity.v1|" || user_id)
+```
+
+The server stores `salt`, `wrapped_private_key` and the public key. It never sees the private key, and a test asserts the stored document has no `private_key` field.
+
+**Why PBKDF2 here when the vault uses Argon2id.** The vault runs only on a device we control, where Argon2id is available and memory-hardness is worth paying for. Chat must also work in a browser, and WebCrypto offers no Argon2. Shipping an Argon2 WASM build to get it would add a dependency and a download to every page. PBKDF2-HMAC-SHA256 at 600,000 iterations is the strongest KDF available natively on both, and it is what lets one identity work on a phone and a laptop at once. The interop is verified, not assumed: a backup produced by the Flutter app is unwrapped by WebCrypto in a check that runs against real output.
+
+**What this trades away.** Anyone with your password and a copy of the database can read your messages. That is the same bargain the vault already makes, and it is the bargain that makes multi-device possible at all — the alternative is per-device keys and no history on a new device, which is what Signal does and what people complain about.
+
+**Password reset destroys chat history**, for the same reason it destroys the vault: the new password derives a different key, and the old wrap cannot be opened. The reset warning must say so.
+
+**Still no forward secrecy.** One key per conversation, no Double Ratchet. A compromised conversation key opens the whole thread, past and future. A ratchet is the correct fix and is a large build; it also complicates multi-device, because each device needs its own ratchet state. Named here rather than implied.
+
+
+## Email OTP handling
+
+One Redis hash per account holds the code and its attempt count. Every rule below is enforced there, so there is no second place to keep in step.
+
+| Rule | How |
+|---|---|
+| Ten minute life | `EXPIRE` on the hash at issue, 600s |
+| Single use | The hash is `DEL`eted the moment a code verifies |
+| Five wrong tries locks | `HINCRBY attempts`, refused at 5 |
+| Locked for thirty seconds | The lock reply reports the hash's live TTL |
+| No new code while locked | `issue` checks the attempt count before anything else |
+| Thirty second resend cooldown | A separate key, so it survives independently |
+
+Two of these are subtle and worth stating.
+
+**The attempt counter is written with `HSETNX`, so asking for a new code does not reset it.** Without that, the lockout is decorative — five wrong guesses, request a fresh code, five more, forever. Refusing the request outright is the second half of the same defence.
+
+**Nothing about the reply distinguishes a real address from an unknown one.** A locked account and a wrong code both come back through the same generic shape used elsewhere in recovery, because a lockout that only ever happens to real accounts is an enumeration oracle.
+
+**A failed send never raises.** If SMTP is down the code is still stored and the endpoint still answers normally, for the same reason: only real addresses would hang, and the hang would be the answer.
+
+
+## Sealed vault files
+
+Every vault file is stored the same way. What differs is whether it is listed.
+
+| | Listed in the tabs | Found by |
+|---|---|---|
+| **Open** | Yes | Browsing Photos, Videos or PDFs |
+| **Sealed** | **No** | Typing its secret word, exactly |
+
+A sealed file's secret word is never stored. What is stored is `label_hash`:
+
+```
+label_key  = HKDF-SHA256(UMK, info = "story.vault.label.v1")
+label_hash = HMAC-SHA256(label_key, trim(secret_word))
+```
+
+Search sends only the hash. The server compares hashes and knows nothing about the word, and because `label_key` comes from the account's own UMK, the same word under two accounts produces two different hashes — nobody can build a rainbow table across users.
+
+**The match is exact and case-sensitive.** `DeV`, `dev` and `Dev` are three different files. Only surrounding whitespace is forgiven, because a trailing space is invisible and would otherwise lock someone out of their own file forever. Internal spacing counts: `my key` and `my  key` differ.
+
+The earlier version lowercased and collapsed whitespace before hashing. That made a secret word roughly as strong as its lowercase form and quietly shrank the search space; it is now exact.
+
+**There is no list of sealed files anywhere.** Not in the API, not in the admin surface, not in the database in a readable form. Forget the word and the file is unreachable — by the owner and by everyone else. That is the property being bought.

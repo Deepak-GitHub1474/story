@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from app.db.seed import seed_reference_data
 from app.error_handlers import register_exception_handlers
 from app.logging import configure_logging, get_logger
 from app.middleware import RequestContextMiddleware
+from app.realtime import bus
 from app.workers import scheduler
 
 settings = get_settings()
@@ -34,6 +36,8 @@ async def lifespan(app: FastAPI):
     if settings.RUN_BACKGROUND_JOBS:
         scheduler.start(app, app.state.mongo_db)
 
+    app.state.realtime_bus = asyncio.create_task(bus.listen(app.state.redis))
+
     logger.info(
         "startup_complete",
         service=settings.APP_NAME,
@@ -43,6 +47,12 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        listener = getattr(app.state, "realtime_bus", None)
+        if listener is not None:
+            listener.cancel()
+            with suppress(asyncio.CancelledError):
+                await listener
+
         await scheduler.stop(app)
         for name, close in (("redis", disconnect_redis), ("mongodb", disconnect_mongo)):
             try:

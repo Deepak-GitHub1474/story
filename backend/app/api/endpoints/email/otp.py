@@ -7,9 +7,21 @@ from app.core.crypto import constant_time_equals, hash_otp, new_otp
 from app.core.errors import ErrorCode, api_error
 
 
+async def _locked_for(key: str, redis: Redis, settings: Settings) -> int | None:
+    attempts = await redis.hget(key, "attempts")
+    if attempts is None or int(attempts) < settings.OTP_FAIL_THRESHOLD:
+        return None
+    ttl = await redis.ttl(key)
+    return max(ttl, 1) if ttl and ttl > 0 else settings.OTP_LOCKOUT_SECONDS
+
+
 async def issue(
     *, key: str, cooldown_key: str, redis: Redis, settings: Settings, enforce_cooldown: bool
 ) -> str:
+    locked_for = await _locked_for(key, redis, settings)
+    if locked_for is not None:
+        raise api_error(ErrorCode.OTP_LOCKED, extra={"retry_after_seconds": locked_for})
+
     if enforce_cooldown and await redis.exists(cooldown_key):
         retry_after = await redis.ttl(cooldown_key)
         raise api_error(ErrorCode.OTP_COOLDOWN, extra={"retry_after_seconds": max(retry_after, 1)})
@@ -29,10 +41,14 @@ async def verify(*, key: str, otp: str, redis: Redis, settings: Settings) -> Non
 
     attempts = int(record.get("attempts", 0))
     if attempts >= settings.OTP_FAIL_THRESHOLD:
-        await redis.expire(key, settings.OTP_LOCKOUT_SECONDS)
+        ttl = await redis.ttl(key)
         raise api_error(
             ErrorCode.OTP_LOCKED,
-            extra={"retry_after_seconds": settings.OTP_LOCKOUT_SECONDS},
+            extra={
+                "retry_after_seconds": max(ttl, 1)
+                if ttl and ttl > 0
+                else settings.OTP_LOCKOUT_SECONDS
+            },
         )
 
     expected = record.get("hash", "")

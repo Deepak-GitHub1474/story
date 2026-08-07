@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from app.adapters.mail_console import ConsoleMailAdapter
+from app.adapters.mail_smtp import SmtpMailAdapter
 from app.adapters.storage_local import LocalDiskAdapter
 from app.adapters.storage_s3 import S3Adapter
 from app.config import Settings
@@ -13,9 +14,39 @@ def _console() -> ConsoleMailAdapter:
     return ConsoleMailAdapter()
 
 
+@lru_cache
+def _smtp(
+    host: str, port: int, username: str, password: str, from_address: str, use_tls: bool
+) -> SmtpMailAdapter:
+    return SmtpMailAdapter(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        from_address=from_address,
+        use_tls=use_tls,
+    )
+
+
 def build_mail(settings: Settings) -> MailPort:
     if settings.MAIL_PROVIDER == "console":
         return _console()
+    if settings.MAIL_PROVIDER == "smtp":
+        missing = [
+            name
+            for name in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "MAIL_FROM")
+            if not getattr(settings, name)
+        ]
+        if missing:
+            raise ValueError(f"MAIL_PROVIDER=smtp needs: {', '.join(missing)}")
+        return _smtp(
+            settings.SMTP_HOST,
+            settings.SMTP_PORT,
+            settings.SMTP_USERNAME,
+            settings.SMTP_PASSWORD,
+            settings.MAIL_FROM,
+            settings.SMTP_USE_TLS,
+        )
     raise ValueError(f"Unknown mail provider: {settings.MAIL_PROVIDER}")
 
 
@@ -52,7 +83,7 @@ def build_storage(settings: Settings) -> StoragePort:
             settings.STORAGE_LOCAL_BASE_URL,
             settings.JWT_SECRET,
         )
-    if settings.STORAGE_PROVIDER == "s3":
+    if settings.STORAGE_PROVIDER in ("s3", "r2"):
         missing = [
             name
             for name in (

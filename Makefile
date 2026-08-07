@@ -48,17 +48,23 @@ app-test: ## Analyze and test the app
 app-run: ## Run the app on the connected device
 	cd app && flutter run
 
-backend-dev-testing: ## Run the API with rate limits off, for the e2e suite
-	cd backend && RATE_LIMIT_ENABLED=false uv run uvicorn app.main:app --host 127.0.0.1 --port 9000
+backend-dev-testing: ## Run the API with rate limits off against the e2e database
+	cd backend && RATE_LIMIT_ENABLED=false MONGODB_DB_NAME=story_e2e \
+		uv run uvicorn app.main:app --host 127.0.0.1 --port 9000
 
-e2e: ## Start a test-profile API, run the app suite against it, tear down
-	@cd backend && RATE_LIMIT_ENABLED=false uv run uvicorn app.main:app \
+e2e: ## Start a test-profile API on its own database, run the app suite, tear down
+	@cd backend && RATE_LIMIT_ENABLED=false MONGODB_DB_NAME=story_e2e \
+		uv run uvicorn app.main:app \
 		--host 127.0.0.1 --port 9000 > /tmp/story-e2e.log 2>&1 & \
 		echo $$! > /tmp/story-e2e.pid
 	@until curl -sf --max-time 2 http://127.0.0.1:9000/v1/health/ready >/dev/null; do sleep 1; done
-	@cd app && flutter test; status=$$?; \
+	@cd app && flutter test --run-skipped; status=$$?; \
 		kill `cat /tmp/story-e2e.pid` 2>/dev/null; rm -f /tmp/story-e2e.pid; \
 		exit $$status
+
+e2e-reset: ## Drop the e2e database
+	@mongosh --quiet --eval 'db.getSiblingDB("story_e2e").dropDatabase()' >/dev/null
+	@echo "story_e2e dropped"
 
 web-setup: ## Install web dependencies
 	cd web && pnpm install && cp -n .env.example .env.local || true

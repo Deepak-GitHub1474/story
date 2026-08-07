@@ -17,11 +17,14 @@ class Routes {
   static const String community = '/community';
   static const String user = '/u';
   static const String search = '/search';
+  static const String chats = '/chats';
+  static const String chat = '/chat';
   static const String following = '/people/following';
   static const String followers = '/people/followers';
   static const String blocked = '/people/blocked';
 
   static const String editProfile = '/settings/profile';
+  static const String avatar = '/settings/avatar';
   static const String interests = '/settings/interests';
   static const String changePassword = '/settings/password';
   static const String sessions = '/settings/sessions';
@@ -29,6 +32,7 @@ class Routes {
   static const String dangerZone = '/settings/leaving';
   static const String vault = '/vault';
   static const String vaultRecovery = '/vault/recovery';
+  static const String vaultSetup = '/vault/setup';
   static const String forgotPassword = '/forgot-password';
   static const String onboardingInterests = '/onboarding/interests';
 

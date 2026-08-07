@@ -28,6 +28,13 @@ class ErrorCode(StrEnum):
     TOTP_INVALID = "TOTP_INVALID"
     TOTP_REUSED = "TOTP_REUSED"
     TOTP_ALREADY_ENABLED = "TOTP_ALREADY_ENABLED"
+    CHAT_NO_IDENTITY = "CHAT_NO_IDENTITY"
+    CHAT_NO_BACKUP = "CHAT_NO_BACKUP"
+    CHAT_SELF = "CHAT_SELF"
+    CHAT_BLOCKED = "CHAT_BLOCKED"
+    CHAT_NOT_YOURS_TO_ACCEPT = "CHAT_NOT_YOURS_TO_ACCEPT"
+    CONVERSATION_NOT_FOUND = "CONVERSATION_NOT_FOUND"
+    MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND"
 
     EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
     EMAIL_IN_USE = "EMAIL_IN_USE"
@@ -91,7 +98,8 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.USERNAME_TAKEN: (409, "That username is already taken."),
     ErrorCode.USERNAME_INVALID: (
         422,
-        "Usernames use 3 to 20 lowercase letters, numbers, or underscores.",
+        "Use 2 to 30 letters, numbers, underscores or hyphens. It must "
+        "start and end with a letter or number.",
     ),
     ErrorCode.PASSWORD_TOO_WEAK: (422, "Choose a longer, less common password."),
     ErrorCode.ACCOUNT_BLOCKED: (403, "This account cannot be used right now."),
@@ -109,6 +117,13 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.TOTP_INVALID: (403, "That code is not right."),
     ErrorCode.TOTP_REUSED: (403, "That code has already been used. Wait for the next one."),
     ErrorCode.TOTP_ALREADY_ENABLED: (409, "An authenticator is already set up on this account."),
+    ErrorCode.CHAT_NO_IDENTITY: (404, "That account has not set up chat yet."),
+    ErrorCode.CHAT_NO_BACKUP: (404, "No chat key backup on this account yet."),
+    ErrorCode.CHAT_SELF: (422, "You cannot message yourself."),
+    ErrorCode.CHAT_BLOCKED: (403, "You cannot message this account."),
+    ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT: (403, "Only the person who received it can accept."),
+    ErrorCode.CONVERSATION_NOT_FOUND: (404, "We could not find that chat."),
+    ErrorCode.MESSAGE_NOT_FOUND: (404, "We could not find that message."),
     ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
     ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),

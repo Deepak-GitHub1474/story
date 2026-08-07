@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,7 +10,6 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../settings/providers/settings_provider.dart';
 
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
@@ -52,6 +52,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ..removeListener(_onTabChanged)
       ..dispose();
     super.dispose();
+  }
+
+  void _onTabSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 240) return;
+
+    final next = velocity < 0
+        ? _tabController.index + 1
+        : _tabController.index - 1;
+    if (next < 0 || next >= _tabs.length) return;
+
+    HapticFeedback.selectionClick();
+    _tabController.animateTo(next);
   }
 
   Future<bool> _onSwipe(Story story, SwipeAction action) async {
@@ -103,8 +116,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
 
     return SafeArea(
-      child: Column(
-        children: [
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: _onTabSwipe,
+        child: Column(
+          children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
@@ -131,7 +147,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 ),
                 IconButton(
                   icon: Icon(Icons.settings_outlined, color: colors.textMuted),
-                  onPressed: () => context.go(Routes.settings),
+                  onPressed: () => context.push(Routes.settings),
                 ),
               ],
             ),
@@ -143,6 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               onSwipe: _onSwipe,
               onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
               onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
+              onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),
               onOpen: (story) => story.isDraft
                   ? context.push('${Routes.compose}?id=${story.storyId}')
                   : context.push('${Routes.story}/${story.storyId}'),
@@ -153,18 +170,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Row(
                     children: [
                       GestureDetector(
-                        onLongPress: () async {
-                          final result = await ref
-                              .read(profileRepositoryProvider)
-                              .regenerateAvatar();
-                          if (!context.mounted) return;
-                          if (result.isSuccess) {
-                            await ref.read(authProvider.notifier).refreshUser();
-                            if (!context.mounted) return;
-                            AppToast.show(context, 'New avatar.');
-                          }
-                        },
-                        child: AppAvatar(seed: user.avatarSeed, size: 72),
+                        onTap: () => context.push(Routes.avatar),
+                        child: AppAvatar(
+                          seed: user.avatarSeed,
+                          size: 72,
+                          displayName: user.displayName,
+                          username: user.username,
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.xl),
                       Expanded(
@@ -270,7 +282,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

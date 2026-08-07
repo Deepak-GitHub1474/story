@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../components/app_sheet.dart';
 
 import '../../../components/app_button.dart';
 import '../../../components/app_card.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
+import '../../../core/files/file_picker.dart';
 import '../../../core/security/secure_screen.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../data/file_kind.dart';
+import '../data/vault_selection.dart';
 import '../models/vault_models.dart';
 import '../providers/vault_providers.dart';
 import '../widgets/vault_tile.dart';
@@ -31,7 +34,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
   bool _isBusy = false;
   String? _error;
+  String? _chosenVaultId;
   VaultItem? _found;
+  String? _kindFilter;
 
   @override
   void initState() {
@@ -57,7 +62,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     final ok = await ref
         .read(vaultSessionProvider.notifier)
-        .unlock(password: _password.text, passcode: _passcode.text);
+        .unlock(
+          password: _password.text,
+          passcode: _passcode.text,
+          passcodeId: _chosenVaultId,
+        );
 
     if (!mounted) return;
     setState(() {
@@ -72,20 +81,24 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
-  Future<void> _addFile() async {
-    final picked = await FilePicker.platform.pickFiles(
-      withData: true,
-      type: FileType.custom,
-      allowedExtensions: const [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif',
-        'mp4', 'mov', 'm4v',
-        'pdf',
-      ],
+  Future<void> _newVault() async {
+    final created = await showAppSheet<bool>(
+      context: context,
+      title: 'New vault',
+      builder: (sheetContext) => const _NewVaultSheet(),
     );
-    final file = picked?.files.singleOrNull;
-    if (file?.bytes == null || !mounted) return;
 
-    final kind = detectKind(file!.bytes!, file.name);
+    if (created == true && mounted) {
+      ref.invalidate(vaultOverviewProvider);
+      AppToast.show(context, 'Vault created.', kind: AppToastKind.success);
+    }
+  }
+
+  Future<void> _addFile() async {
+    final file = await FilePicking.pick();
+    if (file == null || !mounted) return;
+
+    final kind = detectKind(file.bytes, file.name);
     if (kind == null) {
       AppToast.show(
         context,
@@ -95,20 +108,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       return;
     }
 
-    final label = await showModalBottomSheet<String?>(
+    final label = await showAppSheet<String?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => _HideSheet(filename: file.name),
     );
 
     if (!mounted) return;
 
     final ok = await ref.read(vaultUploadProvider.notifier).addFile(
-      bytes: file.bytes!,
+      bytes: file.bytes,
       filename: file.name,
       kind: kind,
       label: label,
@@ -143,6 +151,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final session = ref.watch(vaultSessionProvider);
     final overview = ref.watch(vaultOverviewProvider);
 
+    final vaults = vaultsOnly(overview.valueOrNull?.passcodes ?? const []);
+    final chosenId = _chosenVaultId ?? vaults.firstOrNull?.passcodeId;
+
     if (!session.isUnlocked) {
       return AppScaffold(
         title: 'Vault',
@@ -169,6 +180,32 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   ),
                 ),
               ),
+              if (vaults.length > 1) ...[
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'Which vault',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    for (final entry in vaults)
+                      _VaultChip(
+                        label: entry.label,
+                        isChosen: entry.passcodeId == chosenId,
+                        onTap: () =>
+                            setState(() => _chosenVaultId = entry.passcodeId),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
                 controller: _password,
@@ -195,13 +232,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               if (overview.valueOrNull?.hasPasscode == false) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'No vault passcode yet. Set one up from Settings before you can '
-                  'store anything.',
+                  'You have not set up a vault yet.',
                   style: TextStyle(
                     color: colors.textMuted,
                     fontSize: AppTypeScale.caption,
                     height: 1.5,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppButton(
+                  label: 'Set up your vault',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => context.push(Routes.vaultSetup),
                 ),
               ],
             ],
@@ -214,7 +256,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final upload = ref.watch(vaultUploadProvider);
 
     return AppScaffold(
-      title: 'Vault',
+      title: session.label ?? 'Vault',
       leading: BackButton(
         onPressed: () {
           ref.read(vaultSessionProvider.notifier).lock();
@@ -225,6 +267,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         IconButton(
           icon: Icon(Icons.add, color: colors.textPrimary),
           onPressed: upload.isBusy ? null : _addFile,
+        ),
+        IconButton(
+          icon: Icon(Icons.create_new_folder_outlined, color: colors.textMuted),
+          onPressed: upload.isBusy ? null : _newVault,
         ),
         IconButton(
           icon: Icon(Icons.lock_outline, color: colors.textMuted),
@@ -281,9 +327,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           const SizedBox(height: AppSpacing.lg),
           AppTextField(
             controller: _label,
-            label: 'Find a hidden item',
-            hint: 'Type the exact label',
-            helperText: 'Exact match only. There is no list of hidden items.',
+            label: 'Find a sealed file',
+            hint: 'Type its secret word',
+            helperText: 'Exact match, capitals included. Sealed files are in no list.',
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _searchHidden(),
           ),
@@ -291,7 +337,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             const SizedBox(height: AppSpacing.md),
             VaultTile(item: _found!, isHiddenResult: true),
           ],
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.lg),
+          _KindTabs(
+            selected: _kindFilter,
+            onSelect: (kind) => setState(() => _kindFilter = kind),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: items.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -301,7 +352,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   style: TextStyle(color: colors.textSecondary),
                 ),
               ),
-              data: (list) => list.isEmpty
+              data: (list) {
+                final shown = _kindFilter == null
+                    ? list
+                    : list.where((item) => item.kind == _kindFilter).toList();
+                return shown.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -339,11 +394,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       ),
                     )
                   : ListView.separated(
-                      itemCount: list.length,
+                      itemCount: shown.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) => VaultTile(item: list[index]),
-                    ),
+                      itemBuilder: (context, index) => VaultTile(item: shown[index]),
+                    );
+              },
             ),
           ),
         ],
@@ -413,11 +469,12 @@ class _HideSheetState extends State<_HideSheet> {
             contentPadding: EdgeInsets.zero,
             activeThumbColor: colors.accent,
             title: Text(
-              'Hide this item',
+              'Seal this file',
               style: TextStyle(color: colors.textPrimary),
             ),
             subtitle: Text(
-              'It will not appear in any list. Only typing the exact label finds it.',
+              'A sealed file never appears in any tab. It is found only by '
+              'typing its secret word exactly, capitals and all.',
               style: TextStyle(
                 color: colors.textMuted,
                 fontSize: AppTypeScale.caption,
@@ -428,9 +485,9 @@ class _HideSheetState extends State<_HideSheet> {
             const SizedBox(height: AppSpacing.md),
             AppTextField(
               controller: _label,
-              label: 'Label',
+              label: 'Secret word',
               hint: 'Something only you would type',
-              helperText: 'Forget it and the item is gone for good.',
+              helperText: 'Case matters. Forget it and the file is gone for good.',
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
@@ -439,6 +496,224 @@ class _HideSheetState extends State<_HideSheet> {
             onPressed: _isHidden && _label.text.trim().isEmpty
                 ? null
                 : () => Navigator.of(context).pop(_isHidden ? _label.text : null),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _KindTabs extends StatelessWidget {
+  const _KindTabs({required this.selected, required this.onSelect});
+
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+
+  static const _tabs = [
+    (null, 'All', Icons.grid_view_outlined),
+    ('image', 'Photos', Icons.image_outlined),
+    ('video', 'Videos', Icons.videocam_outlined),
+    ('pdf', 'PDFs', Icons.picture_as_pdf_outlined),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      children: [
+        for (final (kind, label, icon) in _tabs) ...[
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onSelect(kind),
+              child: AnimatedContainer(
+                duration: AppMotion.fast,
+                curve: AppMotion.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: selected == kind ? colors.accent : colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: selected == kind ? colors.accent : colors.border,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      icon,
+                      size: AppSizes.iconSm,
+                      color: selected == kind
+                          ? colors.accentText
+                          : colors.textSecondary,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: selected == kind
+                            ? colors.accentText
+                            : colors.textSecondary,
+                        fontSize: AppTypeScale.caption,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (kind != 'pdf') const SizedBox(width: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+}
+
+class _VaultChip extends StatelessWidget {
+  const _VaultChip({
+    required this.label,
+    required this.isChosen,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isChosen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isChosen ? colors.accent : Colors.transparent,
+          border: Border.all(color: isChosen ? colors.accent : colors.border),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: AppSizes.iconSm,
+              color: isChosen ? colors.accentText : colors.textMuted,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: TextStyle(
+                color: isChosen ? colors.accentText : colors.textSecondary,
+                fontSize: AppTypeScale.label,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NewVaultSheet extends ConsumerStatefulWidget {
+  const _NewVaultSheet();
+
+  @override
+  ConsumerState<_NewVaultSheet> createState() => _NewVaultSheetState();
+}
+
+class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
+  final _name = TextEditingController();
+  final _passcode = TextEditingController();
+  bool _isBusy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _passcode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    setState(() {
+      _isBusy = true;
+      _error = null;
+    });
+
+    final ok = await ref
+        .read(vaultSessionProvider.notifier)
+        .createPasscode(
+          password: '',
+          passcode: _passcode.text,
+          label: _name.text.trim(),
+        );
+
+    if (!mounted) return;
+    setState(() {
+      _isBusy = false;
+      _error = ok ? null : 'That vault could not be created.';
+    });
+
+    if (ok) Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final insets = MediaQuery.of(context).viewInsets.bottom;
+    final isReady = _name.text.trim().isNotEmpty && _passcode.text.length >= 8;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl + insets,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'A second vault has its own passcode. Nothing in one opens the '
+            'other, and forgetting a passcode loses only that vault.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppTextField(
+            controller: _name,
+            label: 'Name it',
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppTextField(
+            controller: _passcode,
+            label: 'Its passcode',
+            obscureText: true,
+            errorText: _error,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Create vault',
+            isLoading: _isBusy,
+            onPressed: isReady ? _create : null,
           ),
         ],
       ),

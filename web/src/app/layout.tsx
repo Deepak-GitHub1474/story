@@ -25,7 +25,12 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="min-h-dvh bg-bg text-text-primary antialiased">{children}</body>
+      <body
+        suppressHydrationWarning
+        className="min-h-dvh bg-bg text-text-primary antialiased"
+      >
+        {children}
+      </body>
     </html>
   );
 }

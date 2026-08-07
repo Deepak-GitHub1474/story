@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -171,12 +173,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
   Future<void> _openPublishSheet() async {
     final colors = context.colors;
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showAppSheet<String>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -446,13 +444,9 @@ class _CommunityPicker extends ConsumerWidget {
 
         return InkWell(
           onTap: () async {
-            final choice = await showModalBottomSheet<String?>(
-              context: context,
-              backgroundColor: colors.surface,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-              ),
-              builder: (sheetContext) => SafeArea(
+            final choice = await showAppSheet<String?>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
                 child: ListView(
                   shrinkWrap: true,
                   children: [

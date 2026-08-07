@@ -5,6 +5,7 @@ import '../../../core/utils/time_ago.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/story_models.dart';
+import 'shared_story_card.dart';
 
 class StoryPost extends StatelessWidget {
   const StoryPost({
@@ -15,6 +16,7 @@ class StoryPost extends StatelessWidget {
     this.onComment,
     this.onAuthorTap,
     this.onShare,
+    this.onSharedTap,
     this.showVisibility = false,
   });
 
@@ -24,6 +26,7 @@ class StoryPost extends StatelessWidget {
   final VoidCallback? onComment;
   final VoidCallback? onAuthorTap;
   final VoidCallback? onShare;
+  final VoidCallback? onSharedTap;
   final bool showVisibility;
 
   @override
@@ -44,7 +47,12 @@ class StoryPost extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onAuthorTap,
-                  child: AppAvatar(seed: story.author.avatarSeed, size: 34),
+                  child: AppAvatar(
+                    seed: story.author.avatarSeed,
+                    size: 34,
+                    displayName: story.author.displayName,
+                    username: story.author.username,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -73,6 +81,29 @@ class StoryPost extends StatelessWidget {
                 if (showVisibility) VisibilityBadge(visibility: story.visibility),
               ],
             ),
+            if (story.shared != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Icon(
+                    Icons.repeat_rounded,
+                    size: AppSizes.iconSm,
+                    color: colors.textMuted,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Shared ${story.shared!.author.displayName}\'s story',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: AppTypeScale.caption,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             if (story.title != null && story.title!.isNotEmpty) ...[
               Text(
@@ -86,16 +117,22 @@ class StoryPost extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
-            Text(
-              story.excerpt,
-              maxLines: 6,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: AppTypeScale.reading,
-                height: 1.6,
+            if (story.excerpt.isNotEmpty)
+              Text(
+                story.excerpt,
+                maxLines: 6,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: AppTypeScale.reading,
+                  height: 1.6,
+                ),
               ),
-            ),
+            if (story.shared != null) ...[
+              if (story.excerpt.isNotEmpty)
+                const SizedBox(height: AppSpacing.md),
+              SharedStoryCard(shared: story.shared!, onTap: onSharedTap),
+            ],
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [

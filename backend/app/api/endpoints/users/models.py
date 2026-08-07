@@ -10,12 +10,14 @@ class PrefsPatch(BaseModel):
     reading_size: Literal["reading", "readingLg"] | None = None
     notify_in_app: bool | None = None
     notify_email: bool | None = None
+    show_online_status: bool | None = None
 
 
 class UpdateProfileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     display_name: Annotated[str, Field(min_length=1, max_length=40)] | None = None
+    avatar_seed: Annotated[str, Field(pattern=r"^[0-9a-fA-F]{16}$")] | None = None
     bio: Annotated[str, Field(max_length=200)] | None = None
     interests: Annotated[list[str], Field(max_length=12)] | None = None
     prefs: PrefsPatch | None = None
@@ -24,6 +26,11 @@ class UpdateProfileRequest(BaseModel):
     @classmethod
     def strip_display_name(cls, value: str | None) -> str | None:
         return value.strip() if value else value
+
+    @field_validator("avatar_seed")
+    @classmethod
+    def normalize_avatar_seed(cls, value: str | None) -> str | None:
+        return value.lower() if value else value
 
 
 class ChangePasswordRequest(BaseModel):

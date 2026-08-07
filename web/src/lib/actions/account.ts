@@ -173,3 +173,23 @@ export async function signOutEverywhere() {
   await clearSession();
   redirect('/signin');
 }
+
+export async function setAvatarSeed(seed: string) {
+  const result = await backendFetch('/users/me', {
+    method: 'PATCH',
+    body: { avatar_seed: seed },
+  });
+  if (!result.ok) return { error: result.message };
+  revalidatePath('/profile');
+  revalidatePath('/settings');
+  revalidatePath('/settings/avatar');
+  return { error: null };
+}
+
+export async function setOnlineStatus(visible: boolean) {
+  await backendFetch('/users/me', {
+    method: 'PATCH',
+    body: { prefs: { show_online_status: visible } },
+  });
+  revalidatePath('/settings');
+}

@@ -283,3 +283,62 @@ async def test_comment_likes_are_counted(client, signup_payload, reader_payload)
     reader = await auth_headers(client, reader_payload)
     response = await client.post(f"/v1/comments/{comment['comment_id']}/like", headers=reader)
     assert response.json()["data"]["likes"] == 1
+
+
+async def test_commenting_twice_on_the_same_story_does_not_error(client, signup_payload):
+    author = await auth_headers(client, signup_payload)
+    story = (
+        await client.post("/v1/stories", json={"body": "Say something."}, headers=author)
+    ).json()["data"]["story"]
+    await client.post(
+        f"/v1/stories/{story['story_id']}/publish",
+        json={"visibility": "public"},
+        headers=author,
+    )
+
+    reader = await auth_headers(
+        client,
+        {"username": "twice_over", "password": "another-long-password", "tnc_accepted": True},
+    )
+
+    first = await client.post(
+        f"/v1/stories/{story['story_id']}/comments",
+        json={"body": "The first thing I thought."},
+        headers=reader,
+    )
+    second = await client.post(
+        f"/v1/stories/{story['story_id']}/comments",
+        json={"body": "And then another thing."},
+        headers=reader,
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+
+async def test_replying_to_your_own_comment_works(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = (
+        await client.post("/v1/stories", json={"body": "Say something."}, headers=headers)
+    ).json()["data"]["story"]
+    await client.post(
+        f"/v1/stories/{story['story_id']}/publish",
+        json={"visibility": "public"},
+        headers=headers,
+    )
+
+    comment = (
+        await client.post(
+            f"/v1/stories/{story['story_id']}/comments",
+            json={"body": "A thought of my own."},
+            headers=headers,
+        )
+    ).json()["data"]["comment"]
+
+    reply = await client.post(
+        f"/v1/stories/{story['story_id']}/comments",
+        json={"body": "Following up on myself.", "parent_id": comment["comment_id"]},
+        headers=headers,
+    )
+
+    assert reply.status_code == 201

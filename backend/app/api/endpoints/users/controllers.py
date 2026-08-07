@@ -40,6 +40,9 @@ async def update_profile(
     if body.display_name is not None:
         update["display_name"] = body.display_name
 
+    if body.avatar_seed is not None:
+        update["avatar_seed"] = body.avatar_seed
+
     if body.bio is not None:
         if contains_link(body.bio):
             raise api_error(

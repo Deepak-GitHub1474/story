@@ -8,7 +8,11 @@ router = APIRouter(tags=["interests"])
 
 @router.get("/interests", status_code=status.HTTP_200_OK)
 async def list_interests(mongo: MongoDatabase):
-    cursor = mongo["interests"].find({}, {"_id": 1, "name": 1, "category_id": 1}).sort("_id", 1)
+    cursor = (
+        mongo["interests"]
+        .find({}, {"_id": 1, "name": 1, "category_id": 1})
+        .sort([("category_order", 1), ("sort_order", 1), ("_id", 1)])
+    )
     items = [
         {"slug": doc["_id"], "name": doc["name"], "category_id": doc["category_id"]}
         async for doc in cursor

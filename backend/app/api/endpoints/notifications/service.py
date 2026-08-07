@@ -58,7 +58,14 @@ async def notify(
         )
         return
 
-    await mongo[NOTIFICATIONS].insert_one({"_id": new_id("not"), **document})
+    notification_id = new_id("not")
+    await mongo[NOTIFICATIONS].insert_one(
+        {
+            "_id": notification_id,
+            **document,
+            "dedupe_key": f"{document['dedupe_key']}:{notification_id}",
+        }
+    )
 
 
 async def withdraw(
