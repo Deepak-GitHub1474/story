@@ -135,3 +135,66 @@ async def test_nonsense_back_from_the_model_is_not_a_silent_pass():
 
 async def test_an_adapter_with_a_key_reports_itself_available():
     assert adapter(lambda request: reply({"allowed": True})).is_available
+
+
+async def test_a_busy_model_is_retried_before_giving_up():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) < 2:
+            return httpx.Response(503)
+        return reply({"allowed": True})
+
+    review = await adapter(handler, retries=2, backoff=0).review_story(
+        title=None, body="hello", community=None
+    )
+
+    assert review.is_allowed
+    assert len(calls) == 2
+
+
+async def test_a_timeout_is_retried_too():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) < 2:
+            raise httpx.ReadTimeout("slow")
+        return reply({"allowed": True})
+
+    review = await adapter(handler, retries=2, backoff=0).review_story(
+        title=None, body="hello", community=None
+    )
+
+    assert review.is_allowed
+
+
+async def test_retries_do_not_go_on_forever():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(503)
+
+    with pytest.raises(ModerationUnavailable):
+        await adapter(handler, retries=2, backoff=0).review_story(
+            title=None, body="hello", community=None
+        )
+
+    assert len(calls) == 2
+
+
+async def test_a_rejected_key_is_not_retried():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(403)
+
+    with pytest.raises(ModerationUnavailable):
+        await adapter(handler, retries=3, backoff=0).review_story(
+            title=None, body="hello", community=None
+        )
+
+    assert len(calls) == 1

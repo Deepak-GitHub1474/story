@@ -124,8 +124,11 @@ async def test_the_author_can_publish_anyway(client, signup_payload, use_ai):
 
 
 async def test_a_room_suggestion_never_stops_publishing(client, signup_payload, use_ai):
-    use_ai(FakeAI(StoryReview(suggested_community="job-hunting")))
     headers = await auth_headers(client, signup_payload)
+    rooms = (await client.get("/v1/communities", headers=headers)).json()["data"]["items"]
+    slug = rooms[0]["slug"]
+
+    use_ai(FakeAI(StoryReview(suggested_community=slug)))
     story_id = await draft(client, headers)
 
     response = await client.post(
@@ -133,7 +136,7 @@ async def test_a_room_suggestion_never_stops_publishing(client, signup_payload, 
     )
 
     assert response.status_code == 200
-    assert response.json()["data"]["suggested_community"] == "job-hunting"
+    assert response.json()["data"]["suggested_community"] == slug
 
 
 async def test_someone_in_distress_is_never_blocked(client, signup_payload, use_ai):
@@ -216,3 +219,34 @@ async def test_with_no_provider_configured_publishing_still_works(client, signup
     )
 
     assert response.status_code == 200
+
+
+async def test_a_room_that_does_not_exist_is_not_suggested(client, signup_payload, use_ai):
+    use_ai(FakeAI(StoryReview(suggested_community="a-room-nobody-made")))
+    headers = await auth_headers(client, signup_payload)
+    story_id = await draft(client, headers)
+
+    response = await client.post(
+        f"/v1/stories/{story_id}/publish", json={"visibility": "public"}, headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["suggested_community"] is None
+
+
+async def test_a_room_you_are_already_in_is_not_suggested_back(client, signup_payload, use_ai):
+    headers = await auth_headers(client, signup_payload)
+    rooms = (await client.get("/v1/communities", headers=headers)).json()["data"]["items"]
+    slug = rooms[0]["slug"]
+    await client.post(f"/v1/communities/{slug}/join", headers=headers)
+
+    use_ai(FakeAI(StoryReview(suggested_community=slug)))
+    story_id = await draft(client, headers)
+
+    response = await client.post(
+        f"/v1/stories/{story_id}/publish",
+        json={"visibility": "public", "community_slug": slug},
+        headers=headers,
+    )
+
+    assert response.json()["data"]["suggested_community"] is None

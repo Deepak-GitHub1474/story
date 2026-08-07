@@ -184,3 +184,59 @@ def test_smtp_mail_with_credentials_builds():
     )
 
     assert hasattr(mail, "send_otp")
+
+
+def test_a_placeholder_key_is_refused_rather_than_failing_at_publish_time():
+    from app.config import Settings
+    from app.ports.factory import build_ai
+
+    settings = Settings(AI_PROVIDER="gemini", AI_API_KEY="replace-with-your-google-ai-studio-key")
+
+    with pytest.raises(ValueError, match="AI_API_KEY"):
+        build_ai(settings)
+
+
+def test_a_dummy_key_is_refused_too():
+    from app.config import Settings
+    from app.ports.factory import build_ai
+
+    with pytest.raises(ValueError, match="AI_API_KEY"):
+        build_ai(Settings(AI_PROVIDER="gemini", AI_API_KEY="dummy-google-ai-studio-key"))
+
+
+def test_a_real_looking_key_is_accepted():
+    from app.config import Settings
+    from app.ports.factory import build_ai
+
+    adapter = build_ai(
+        Settings(AI_PROVIDER="gemini", AI_API_KEY="AIzaSyD-a-real-looking-key-000000000000")
+    )
+
+    assert adapter.is_available
+
+
+def test_r2_storage_needs_no_code_change_only_credentials():
+    from app.config import Settings
+    from app.ports.factory import build_storage
+
+    adapter = build_storage(
+        Settings(
+            STORAGE_PROVIDER="r2",
+            STORAGE_S3_ENDPOINT="https://acct.r2.cloudflarestorage.com",
+            STORAGE_S3_ACCESS_KEY="an-access-key",
+            STORAGE_S3_SECRET_KEY="a-secret-key",
+            STORAGE_S3_BUCKET_VAULT="story-vault",
+            STORAGE_S3_BUCKET_MEDIA="story-media",
+        )
+    )
+
+    assert adapter.key_for(owner_id="usr_1", item_id="vit_1")
+
+
+def test_the_suite_never_calls_a_real_provider():
+    from app.config import Settings
+
+    settings = Settings()
+
+    assert settings.AI_PROVIDER == "none"
+    assert settings.MAIL_PROVIDER == "console"

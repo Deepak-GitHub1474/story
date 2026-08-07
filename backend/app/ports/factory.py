@@ -120,11 +120,21 @@ def _gemini(api_key: str, model: str, timeout: float) -> GeminiAdapter:
     return GeminiAdapter(api_key=api_key, model=model, timeout=timeout)
 
 
+PLACEHOLDER_MARKERS = ("replace-with", "dummy", "changeme", "your-key")
+
+
+def _is_placeholder(value: str) -> bool:
+    lowered = value.lower()
+    return any(marker in lowered for marker in PLACEHOLDER_MARKERS)
+
+
 def build_ai(settings: Settings) -> AIPort:
     if settings.AI_PROVIDER == "none":
         return _no_ai()
     if settings.AI_PROVIDER == "gemini":
-        if not settings.AI_API_KEY:
-            raise ValueError("AI_PROVIDER=gemini needs: AI_API_KEY")
+        if not settings.AI_API_KEY or _is_placeholder(settings.AI_API_KEY):
+            raise ValueError(
+                "AI_PROVIDER=gemini needs a real AI_API_KEY from aistudio.google.com/apikey"
+            )
         return _gemini(settings.AI_API_KEY, settings.AI_MODEL, settings.AI_TIMEOUT_SECONDS)
     raise ValueError(f"Unknown AI provider: {settings.AI_PROVIDER}")

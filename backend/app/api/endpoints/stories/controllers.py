@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta
 from typing import Any
 
@@ -206,7 +207,7 @@ async def publish_story(
     story = await _owned_story(story_id, claims.user_id, mongo)
     now = utc_now()
 
-    review = await _review(story, body, ai=ai)
+    review = await _review(story, body, ai=ai, mongo=mongo)
 
     update: dict[str, Any] = {
         "visibility": body.visibility,
@@ -269,7 +270,13 @@ async def publish_story(
     }
 
 
-async def _review(story, body: PublishStoryRequest, *, ai: AIPort | None) -> StoryReview:
+async def _review(
+    story,
+    body: PublishStoryRequest,
+    *,
+    ai: AIPort | None,
+    mongo: AsyncIOMotorDatabase,
+) -> StoryReview:
     if ai is None or body.visibility == "private":
         return ALLOWED
 
@@ -295,7 +302,24 @@ async def _review(story, body: PublishStoryRequest, *, ai: AIPort | None) -> Sto
             extra={"exposes": review.exposes},
         )
 
-    return review
+    return replace(
+        review,
+        suggested_community=await _real_room(
+            review.suggested_community, body.community_slug, mongo
+        ),
+    )
+
+
+async def _real_room(
+    suggested: str | None, chosen: str | None, mongo: AsyncIOMotorDatabase
+) -> str | None:
+    if suggested is None or suggested == chosen:
+        return None
+
+    room = await mongo["communities"].find_one(
+        {"slug": suggested, "status": "active"}, {"_id": 1}
+    )
+    return suggested if room else None
 
 
 async def _notify_community(

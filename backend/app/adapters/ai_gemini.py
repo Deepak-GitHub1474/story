@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 
@@ -33,13 +34,20 @@ Return JSON with these fields:
 - allowed: false only when a rule above is broken, otherwise true.
 - rule: the rule name when blocking, otherwise null.
 - reason: one plain sentence a person would understand, when blocking.
-- exposes: list of things in the story that could identify its own author to a
-  reader who knows them, such as "employer", "phone number", "street name",
-  "school", "rare job title". Empty when nothing does. This never blocks.
+- exposes: short list of the things in this story that could identify its own
+  author to somebody who already knows them. Name the kind of detail, two or
+  three words each, for example "employer", "phone number", "street name",
+  "school", "rare job title", "full name", "car registration". Include a detail
+  when it is rare enough to narrow the author down to a handful of people, even
+  when it seems harmless on its own. Empty list when nothing does. This never
+  blocks.
 - suggested_community: a better community slug when the story clearly belongs in
   a different room from the one chosen, otherwise null. This never blocks.
-- needs_care: true when the author sounds at risk of harming themselves. This
-  never blocks and never changes what is published."""
+- needs_care: true when the author sounds at risk of ending their life or
+  hurting themselves. Read what they mean, not the words they use. Statements
+  like "everyone would be better off without me", "I do not want to wake up",
+  "I am done", or planning language all count. Ordinary grief, exhaustion and
+  despair do not. This never blocks and never changes what is published."""
 
 SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -55,6 +63,9 @@ SCHEMA: dict[str, Any] = {
 }
 
 
+RETRYABLE = frozenset({408, 429, 500, 502, 503, 504})
+
+
 class ModerationUnavailable(Exception):
     pass
 
@@ -66,11 +77,15 @@ class GeminiAdapter:
         api_key: str,
         model: str,
         timeout: float,
+        retries: int = 3,
+        backoff: float = 0.4,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self._api_key = api_key
         self._model = model
         self._timeout = timeout
+        self._retries = max(1, retries)
+        self._backoff = backoff
         self._transport = transport
 
     @property
@@ -92,25 +107,43 @@ class GeminiAdapter:
             },
         }
 
+    async def _ask(self, payload: dict) -> httpx.Response:
+        last_error: Exception | None = None
+
+        for attempt in range(self._retries):
+            if attempt:
+                await asyncio.sleep(self._backoff * attempt)
+
+            try:
+                async with httpx.AsyncClient(
+                    timeout=self._timeout, transport=self._transport
+                ) as client:
+                    response = await client.post(
+                        ENDPOINT.format(model=self._model),
+                        headers={"x-goog-api-key": self._api_key},
+                        json=payload,
+                    )
+            except httpx.HTTPError as error:
+                logger.warning("ai_unreachable", error=type(error).__name__)
+                last_error = error
+                continue
+
+            if response.status_code == 200:
+                return response
+
+            logger.warning("ai_refused", status=response.status_code)
+            if response.status_code not in RETRYABLE:
+                raise ModerationUnavailable
+            last_error = None
+
+        raise ModerationUnavailable from last_error
+
     async def review_story(
         self, *, title: str | None, body: str, community: str | None
     ) -> StoryReview:
-        try:
-            async with httpx.AsyncClient(
-                timeout=self._timeout, transport=self._transport
-            ) as client:
-                response = await client.post(
-                    ENDPOINT.format(model=self._model),
-                    headers={"x-goog-api-key": self._api_key},
-                    json=self._payload(title=title, body=body, community=community),
-                )
-        except httpx.HTTPError as error:
-            logger.error("ai_unreachable", error=type(error).__name__)
-            raise ModerationUnavailable from error
-
-        if response.status_code != 200:
-            logger.error("ai_refused", status=response.status_code)
-            raise ModerationUnavailable
+        response = await self._ask(
+            self._payload(title=title, body=body, community=community)
+        )
 
         try:
             candidates = response.json()["candidates"]
