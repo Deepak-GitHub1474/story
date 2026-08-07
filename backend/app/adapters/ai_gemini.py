@@ -1,5 +1,7 @@
 import asyncio
+import hashlib
 import json
+from collections import OrderedDict
 from typing import Any
 
 import httpx
@@ -63,7 +65,8 @@ SCHEMA: dict[str, Any] = {
 }
 
 
-RETRYABLE = frozenset({408, 429, 500, 502, 503, 504})
+RETRYABLE = frozenset({408, 500, 502, 503, 504})
+CACHE_LIMIT = 256
 
 
 class ModerationUnavailable(Exception):
@@ -87,6 +90,7 @@ class GeminiAdapter:
         self._retries = max(1, retries)
         self._backoff = backoff
         self._transport = transport
+        self._seen: OrderedDict[str, StoryReview] = OrderedDict()
 
     @property
     def is_available(self) -> bool:
@@ -138,9 +142,24 @@ class GeminiAdapter:
 
         raise ModerationUnavailable from last_error
 
+    def _fingerprint(self, title: str | None, body: str, community: str | None) -> str:
+        digest = hashlib.sha256()
+        digest.update(f"{title}\x00{body}\x00{community}".encode())
+        return digest.hexdigest()
+
+    def _remember(self, fingerprint: str, review: StoryReview) -> None:
+        self._seen[fingerprint] = review
+        while len(self._seen) > CACHE_LIMIT:
+            self._seen.popitem(last=False)
+
     async def review_story(
         self, *, title: str | None, body: str, community: str | None
     ) -> StoryReview:
+        fingerprint = self._fingerprint(title, body, community)
+        remembered = self._seen.get(fingerprint)
+        if remembered is not None:
+            return remembered
+
         response = await self._ask(
             self._payload(title=title, body=body, community=community)
         )
@@ -158,7 +177,7 @@ class GeminiAdapter:
             raise ModerationUnavailable
 
         exposes = verdict.get("exposes") or []
-        return StoryReview(
+        review = StoryReview(
             is_allowed=bool(verdict["allowed"]),
             rule=verdict.get("rule"),
             reason=verdict.get("reason"),
@@ -166,3 +185,5 @@ class GeminiAdapter:
             suggested_community=verdict.get("suggested_community"),
             needs_care=bool(verdict.get("needs_care", False)),
         )
+        self._remember(fingerprint, review)
+        return review

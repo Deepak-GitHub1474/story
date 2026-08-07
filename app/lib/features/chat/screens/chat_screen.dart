@@ -169,7 +169,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final me = ref.watch(authProvider).user?.userId ?? '';
     final other = state.conversation?.other;
     final isPending = state.conversation?.isPending ?? false;
-    final canWrite = !isPending || (state.conversation?.isRequester ?? false);
+    final canWrite =
+        (!isPending || (state.conversation?.isRequester ?? false)) && state.canSend;
 
     return Scaffold(
       backgroundColor: colors.bg,

@@ -77,6 +77,8 @@ class ConversationState {
   final String? error;
   final bool needsRekey;
 
+  bool get canSend => !needsRekey && !isLoading;
+
   ConversationState copyWith({
     List<ChatMessage>? messages,
     Conversation? conversation,
@@ -158,6 +160,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
               'Resetting starts it fresh and clears what came before.',
           needsRekey: true,
         );
+        _watchPresence();
         return;
       }
     }
@@ -165,6 +168,14 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     state = state.copyWith(conversation: conversation, isLoading: false);
     await _loadLatest();
     _startPolling();
+  }
+
+  void _watchPresence() {
+    _poll?.cancel();
+    _poll = Timer.periodic(
+      const Duration(seconds: 20),
+      (_) => unawaited(_refreshConversation()),
+    );
   }
 
   void _startPolling() {

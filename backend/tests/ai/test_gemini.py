@@ -198,3 +198,79 @@ async def test_a_rejected_key_is_not_retried():
         )
 
     assert len(calls) == 1
+
+
+async def test_a_daily_quota_rejection_is_not_retried():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(429)
+
+    with pytest.raises(ModerationUnavailable):
+        await adapter(handler, retries=3, backoff=0).review_story(
+            title=None, body="hello", community=None
+        )
+
+    assert len(calls) == 1
+
+
+async def test_the_same_story_is_only_reviewed_once():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return reply({"allowed": True})
+
+    gate = adapter(handler)
+    for _ in range(3):
+        await gate.review_story(title="A title", body="The words.", community="grief")
+
+    assert len(calls) == 1
+
+
+async def test_a_changed_story_is_reviewed_again():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return reply({"allowed": True})
+
+    gate = adapter(handler)
+    await gate.review_story(title=None, body="first words", community=None)
+    await gate.review_story(title=None, body="second words", community=None)
+
+    assert len(calls) == 2
+
+
+async def test_the_same_words_in_a_different_room_are_reviewed_again():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return reply({"allowed": True})
+
+    gate = adapter(handler)
+    await gate.review_story(title=None, body="same words", community="grief")
+    await gate.review_story(title=None, body="same words", community="joy")
+
+    assert len(calls) == 2
+
+
+async def test_a_failed_review_is_not_remembered_as_a_pass():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429)
+        return reply({"allowed": True})
+
+    gate = adapter(handler, retries=1, backoff=0)
+    with pytest.raises(ModerationUnavailable):
+        await gate.review_story(title=None, body="hello", community=None)
+
+    review = await gate.review_story(title=None, body="hello", community=None)
+
+    assert review.is_allowed
+    assert len(calls) == 2
