@@ -43,16 +43,36 @@ class StoryRepository {
 
   final ApiClient _client;
 
+  Future<Result<String>> uploadImage({
+    required String kind,
+    required String base64Data,
+  }) => _client.post(
+    Endpoints.mediaImages,
+    body: {'kind': kind, 'data': base64Data},
+    parse: (data) => data['url'] as String,
+  );
+
+  Future<Result<String>> polish({
+    required String text,
+    required String instruction,
+  }) => _client.post(
+    Endpoints.aiPolish,
+    body: {'text': text, 'instruction': instruction},
+    parse: (data) => data['text'] as String,
+  );
+
   Future<Result<Story>> create({
     String? title,
     required String body,
     String? sharedStoryId,
+    List<String> images = const [],
   }) => _client.post(
     Endpoints.stories,
     body: {
       'title': title,
       'body': body,
       'shared_story_id': ?sharedStoryId,
+      if (images.isNotEmpty) 'images': images,
     },
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );

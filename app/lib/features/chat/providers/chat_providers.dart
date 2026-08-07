@@ -223,6 +223,12 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     final now = DateTime.now();
     if (_lastTyping != null && now.difference(_lastTyping!).inSeconds < 4) return;
     _lastTyping = now;
+
+    final realtime = ref.read(realtimeProvider);
+    if (realtime.isConnected) {
+      realtime.send({'type': 'typing', 'conversation_id': arg});
+      return;
+    }
     await _repository.typing(arg);
   }
 

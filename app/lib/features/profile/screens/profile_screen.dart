@@ -8,6 +8,7 @@ import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -149,7 +150,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final stories = ref.watch(myStoriesProvider);
 
     if (user == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonList(count: 4);
     }
 
     return SafeArea(

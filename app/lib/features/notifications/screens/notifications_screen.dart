@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_avatar.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/notification_models.dart';
@@ -66,7 +67,7 @@ class NotificationsScreen extends ConsumerWidget {
           ),
           Expanded(
             child: notifications.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SkeletonList(count: 6),
               error: (error, _) => Center(
                 child: Text(
                   'Could not load your activity.',

@@ -6,6 +6,7 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/story_models.dart';
 import 'shared_story_card.dart';
+import 'story_images.dart';
 
 class StoryPost extends StatelessWidget {
   const StoryPost({
@@ -131,6 +132,10 @@ class StoryPost extends StatelessWidget {
                   height: 1.6,
                 ),
               ),
+            if (story.images.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              StoryImages(images: story.images, height: 180),
+            ],
             if (story.shared != null) ...[
               if (story.excerpt.isNotEmpty)
                 const SizedBox(height: AppSpacing.md),

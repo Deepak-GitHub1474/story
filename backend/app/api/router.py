@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.endpoints.admin.router import router as admin_router
 from app.api.endpoints.admin.vault_router import router as admin_vault_router
+from app.api.endpoints.ai.router import router as ai_router
 from app.api.endpoints.auth.router import router as auth_router
 from app.api.endpoints.chat.router import router as chat_router
 from app.api.endpoints.communities.router import router as communities_router
@@ -9,6 +10,7 @@ from app.api.endpoints.connections.router import router as connections_router
 from app.api.endpoints.email.router import router as email_router
 from app.api.endpoints.health.router import router as health_router
 from app.api.endpoints.interests.router import router as interests_router
+from app.api.endpoints.media.router import router as media_router
 from app.api.endpoints.notifications.router import router as notifications_router
 from app.api.endpoints.public.router import router as public_router
 from app.api.endpoints.realtime.router import router as realtime_router
@@ -28,6 +30,8 @@ api_router.include_router(auth_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_vault_router)
 api_router.include_router(chat_router)
+api_router.include_router(ai_router)
+api_router.include_router(media_router)
 api_router.include_router(realtime_router)
 api_router.include_router(suggestions_router)
 api_router.include_router(tickets_router)

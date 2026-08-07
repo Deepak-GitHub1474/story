@@ -45,3 +45,20 @@ String? detectKind(Uint8List bytes, String filename) {
   if (sniffed == null) return null;
   return sniffed == _fromExtension(filename) ? sniffed : null;
 }
+
+String? imageMimeOf(Uint8List bytes, String filename) {
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xFF &&
+      bytes[1] == 0xD8 &&
+      bytes[2] == 0xFF) {
+    return 'image/jpeg';
+  }
+  if (bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47) {
+    return 'image/png';
+  }
+  return null;
+}

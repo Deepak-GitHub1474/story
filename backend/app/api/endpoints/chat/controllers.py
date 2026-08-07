@@ -640,6 +640,25 @@ async def heartbeat(*, claims, redis) -> dict[str, Any]:
     return {"online": True}
 
 
+async def typing_from_socket(
+    conversation_id: str, *, user_id: str, mongo: AsyncIOMotorDatabase, redis
+) -> None:
+    conversation = await mongo[c.CONVERSATIONS].find_one(
+        {"_id": conversation_id, "participant_ids": user_id}, {"participant_ids": 1}
+    )
+    if conversation is None:
+        return
+
+    await redis.set(
+        keys.typing(conversation_id, user_id), "1", ex=c.TYPING_TTL_SECONDS
+    )
+    await bus.publish(
+        redis,
+        [_other_id(conversation, user_id)],
+        {"type": "typing", "conversation_id": conversation_id},
+    )
+
+
 async def set_typing(
     conversation_id: str, *, claims, mongo: AsyncIOMotorDatabase, redis
 ) -> dict[str, Any]:

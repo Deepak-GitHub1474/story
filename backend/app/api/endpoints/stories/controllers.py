@@ -107,6 +107,7 @@ async def create_story(
         "slug": None,
         "media": [],
         "shared_story_id": shared_id,
+        "images": body.images,
         "counts": {"likes": 0, "comments": 0, "shares": 0, "views": 0},
         "moderation": {"state": "unreviewed", "verdict": None, "rule": None},
         "published_at": None,

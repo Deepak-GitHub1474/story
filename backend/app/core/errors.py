@@ -70,6 +70,9 @@ class ErrorCode(StrEnum):
     SCHEDULE_REQUIRED = "SCHEDULE_REQUIRED"
     MODERATION_BLOCKED = "MODERATION_BLOCKED"
     MODERATION_UNAVAILABLE = "MODERATION_UNAVAILABLE"
+    AI_UNAVAILABLE = "AI_UNAVAILABLE"
+    UNSUPPORTED_IMAGE = "UNSUPPORTED_IMAGE"
+    IMAGE_TOO_BIG = "IMAGE_TOO_BIG"
     EXPOSURE_ACK_REQUIRED = "EXPOSURE_ACK_REQUIRED"
     SCHEDULE_IN_PAST = "SCHEDULE_IN_PAST"
     COMMENT_NOT_EDITABLE = "COMMENT_NOT_EDITABLE"
@@ -165,6 +168,12 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.MODERATION_UNAVAILABLE: (
         503,
         "The safety check is down, so nothing publishes right now. Your story is saved.",
+    ),
+    ErrorCode.UNSUPPORTED_IMAGE: (422, "Pictures can be JPEG or PNG."),
+    ErrorCode.IMAGE_TOO_BIG: (422, "That picture is too large."),
+    ErrorCode.AI_UNAVAILABLE: (
+        503,
+        "The writing helper is not answering right now. Your words are untouched.",
     ),
     ErrorCode.EXPOSURE_ACK_REQUIRED: (
         422,

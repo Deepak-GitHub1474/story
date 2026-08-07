@@ -1,3 +1,4 @@
+from app.adapters.ai_gemini import ModerationUnavailable as AIUnavailable
 from app.ports.ai import ALLOWED, StoryReview
 
 
@@ -10,3 +11,6 @@ class NoAIAdapter:
         self, *, title: str | None, body: str, community: str | None
     ) -> StoryReview:
         return ALLOWED
+
+    async def polish(self, *, text: str, instruction: str) -> str:
+        raise AIUnavailable

@@ -90,6 +90,24 @@ class S3Adapter:
             return None
         return int(response.headers.get("content-length", 0))
 
+    async def write(self, *, profile: str, key: str, payload: bytes) -> int:
+        url = await self.presign_put(profile=profile, key=key, expires_in=300)
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.put(
+                url, content=payload, headers={"content-type": "application/octet-stream"}
+            )
+        response.raise_for_status()
+        return len(payload)
+
+    async def read(self, *, profile: str, key: str) -> bytes | None:
+        url = await self.presign_get(profile=profile, key=key, expires_in=300)
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(url)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.content
+
     async def delete(self, *, profile: str, key: str) -> None:
         url = self._url(profile, key, "DELETE", 60)
         async with httpx.AsyncClient(timeout=10) as client:

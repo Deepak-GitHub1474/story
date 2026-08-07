@@ -18,6 +18,7 @@ ID_PREFIXES: frozenset[str] = frozenset(
         "rev",
         "cnv",
         "msg",
+        "med",
     }
 )
 

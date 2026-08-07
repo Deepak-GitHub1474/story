@@ -6,6 +6,7 @@ import '../../../components/app_button.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -68,7 +69,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
             ]
           : null,
       child: interests.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonList(count: 5),
         error: (error, _) => Center(
           child: Text(
             'Could not load interests.',

@@ -60,6 +60,12 @@ class RealtimeClient {
     }
   }
 
+  void send(Map<String, dynamic> event) {
+    final socket = _socket;
+    if (socket == null || socket.readyState != WebSocket.open) return;
+    socket.add(jsonEncode(event));
+  }
+
   void _startPing() {
     _ping?.cancel();
     _ping = Timer.periodic(const Duration(seconds: 45), (_) {

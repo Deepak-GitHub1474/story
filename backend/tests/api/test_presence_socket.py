@@ -44,3 +44,64 @@ async def test_presence_expires_on_its_own_if_a_socket_dies_badly(app_instance):
     ttl = await redis.ttl(keys.presence("usr_c"))
 
     assert 0 < ttl <= 120
+
+
+async def test_typing_over_the_socket_reaches_the_other_person(client, app_instance):
+    from app.api.endpoints.realtime import router as realtime_router
+
+    redis = app_instance.state.redis
+    mongo = app_instance.state.mongo_db
+
+    await mongo["chat_conversations"].insert_one(
+        {
+            "_id": "cnv_socket",
+            "pair_key": "usr_x:usr_y",
+            "participant_ids": ["usr_x", "usr_y"],
+            "state": "accepted",
+        }
+    )
+
+    await realtime_router._handle(
+        '{"type": "typing", "conversation_id": "cnv_socket"}',
+        user_id="usr_x",
+        redis=redis,
+        mongo=mongo,
+    )
+
+    assert await redis.get(keys.typing("cnv_socket", "usr_x")) is not None
+
+
+async def test_typing_in_a_chat_you_are_not_in_does_nothing(client, app_instance):
+    from app.api.endpoints.realtime import router as realtime_router
+
+    redis = app_instance.state.redis
+    mongo = app_instance.state.mongo_db
+
+    await mongo["chat_conversations"].insert_one(
+        {
+            "_id": "cnv_private",
+            "pair_key": "usr_p:usr_q",
+            "participant_ids": ["usr_p", "usr_q"],
+            "state": "accepted",
+        }
+    )
+
+    await realtime_router._handle(
+        '{"type": "typing", "conversation_id": "cnv_private"}',
+        user_id="usr_stranger",
+        redis=redis,
+        mongo=mongo,
+    )
+
+    assert await redis.get(keys.typing("cnv_private", "usr_stranger")) is None
+
+
+async def test_rubbish_over_the_socket_is_ignored(client, app_instance):
+    from app.api.endpoints.realtime import router as realtime_router
+
+    await realtime_router._handle(
+        "not json at all",
+        user_id="usr_x",
+        redis=app_instance.state.redis,
+        mongo=app_instance.state.mongo_db,
+    )

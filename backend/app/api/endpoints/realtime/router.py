@@ -36,7 +36,9 @@ async def realtime(websocket: WebSocket, ticket: str = Query(default="")):
     try:
         while True:
             raw = await websocket.receive_text()
-            await _handle(raw, user_id=user_id, redis=redis)
+            await _handle(
+                raw, user_id=user_id, redis=redis, mongo=websocket.app.state.mongo_db
+            )
     except WebSocketDisconnect:
         pass
     finally:
@@ -45,7 +47,7 @@ async def realtime(websocket: WebSocket, ticket: str = Query(default="")):
             await chat_controllers.mark_offline(user_id, redis=redis)
 
 
-async def _handle(raw: str, *, user_id: str, redis) -> None:
+async def _handle(raw: str, *, user_id: str, redis, mongo) -> None:
     try:
         event = json.loads(raw)
     except ValueError:
@@ -54,5 +56,15 @@ async def _handle(raw: str, *, user_id: str, redis) -> None:
     if not isinstance(event, dict):
         return
 
-    if event.get("type") == "ping":
+    kind = event.get("type")
+
+    if kind == "ping":
         await chat_controllers.mark_online(user_id, redis=redis)
+        return
+
+    if kind == "typing":
+        conversation_id = event.get("conversation_id")
+        if isinstance(conversation_id, str):
+            await chat_controllers.typing_from_socket(
+                conversation_id, user_id=user_id, mongo=mongo, redis=redis
+            )

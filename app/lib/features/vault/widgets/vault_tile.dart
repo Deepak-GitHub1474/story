@@ -6,10 +6,18 @@ import '../../../theme/tokens.dart';
 import '../models/vault_models.dart';
 
 class VaultTile extends StatelessWidget {
-  const VaultTile({super.key, required this.item, this.isHiddenResult = false});
+  const VaultTile({
+    super.key,
+    required this.item,
+    this.isHiddenResult = false,
+    this.onTap,
+    this.onRemove,
+  });
 
   final VaultItem item;
   final bool isHiddenResult;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
 
   IconData get _icon => switch (item.kind) {
     'image' => Icons.image_outlined,
@@ -23,7 +31,11 @@ class VaultTile extends StatelessWidget {
     final colors = context.colors;
     final megabytes = item.sizeBytes / 1048576;
 
-    return AppCard(
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onRemove,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: AppCard(
       child: Row(
         children: [
           Container(
@@ -70,6 +82,7 @@ class VaultTile extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2, color: colors.textMuted),
             ),
         ],
+      ),
       ),
     );
   }

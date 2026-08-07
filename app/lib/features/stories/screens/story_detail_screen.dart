@@ -13,6 +13,7 @@ import '../../../components/app_toast.dart';
 import '../../../components/report_sheet.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -23,6 +24,7 @@ import '../widgets/comment_composer.dart';
 import '../widgets/comment_tile.dart';
 import '../widgets/share_sheet.dart';
 import '../widgets/shared_story_card.dart';
+import '../widgets/story_images.dart';
 import '../widgets/story_post.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
@@ -323,7 +325,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       backgroundColor: colors.bg,
       appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
       body: asyncStory.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonList(count: 3),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
@@ -402,6 +404,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           height: 1.75,
                         ),
                       ),
+                    if (story.images.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      StoryImages(images: story.images, height: 240),
+                    ],
                     if (story.shared != null) ...[
                       const SizedBox(height: AppSpacing.lg),
                       SharedStoryCard(
@@ -460,7 +466,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                     ),
                     Divider(color: colors.border, height: AppSpacing.xxl),
                     comments.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () => const SkeletonList(count: 3),
                       error: (error, _) => const SizedBox.shrink(),
                       data: (items) => items.isEmpty
                           ? Padding(

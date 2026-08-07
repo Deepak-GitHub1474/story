@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,13 +8,17 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_button.dart';
 import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
+import '../../../core/files/file_picker.dart';
 import '../../../core/result.dart';
+import '../../vault/data/file_kind.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../communities/providers/community_providers.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
+import '../widgets/polish_sheet.dart';
+import '../widgets/story_images.dart';
 
 class ComposerScreen extends ConsumerStatefulWidget {
   const ComposerScreen({super.key, this.storyId});
@@ -36,6 +41,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   bool _isPublishing = false;
   bool _isDirty = false;
   String _savedLabel = '';
+  final _images = <String>[];
+  bool _isUploading = false;
 
   static const _bodyMax = 20000;
 
@@ -85,7 +92,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     final repository = ref.read(storyRepositoryProvider);
     final result = _storyId == null
-        ? await repository.create(title: _titleOrNull, body: _body.text)
+        ? await repository.create(
+            title: _titleOrNull,
+            body: _body.text,
+            images: _images,
+          )
         : await repository.update(_storyId!, title: _title.text, body: _body.text);
 
     if (!mounted) return null;
@@ -123,6 +134,53 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     if (time == null) return null;
 
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  Future<void> _addImage() async {
+    final file = await FilePicking.pick();
+    if (file == null || !mounted) return;
+
+    final kind = imageMimeOf(file.bytes, file.name);
+    if (kind == null) {
+      AppToast.show(
+        context,
+        'Pictures can be JPEG or PNG.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
+    setState(() => _isUploading = true);
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .uploadImage(kind: kind, base64Data: base64Encode(file.bytes));
+
+    if (!mounted) return;
+    setState(() => _isUploading = false);
+
+    result.fold(
+      onSuccess: (success) {
+        setState(() {
+          _images.add(success.value);
+          _isDirty = true;
+        });
+        unawaited(_save());
+      },
+      onFailure: (failure) =>
+          AppToast.show(context, failure.message, kind: AppToastKind.error),
+    );
+  }
+
+  Future<void> _polish() async {
+    final polished = await showAppSheet<String>(
+      context: context,
+      title: 'Another go at it',
+      builder: (sheetContext) => PolishSheet(text: _body.text),
+    );
+
+    if (polished == null || !mounted) return;
+    setState(() => _body.text = polished);
+    AppToast.show(context, 'Swapped in. Yours is one undo away.');
   }
 
   Future<void> _publish(String visibility, {bool exposureAck = false}) async {
@@ -278,6 +336,22 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Add a picture',
+            icon: _isUploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.image_outlined, color: colors.textPrimary),
+            onPressed: _isUploading ? null : _addImage,
+          ),
+          IconButton(
+            tooltip: 'Ask for a tidier version',
+            icon: Icon(Icons.auto_awesome_outlined, color: colors.textPrimary),
+            onPressed: _body.text.trim().isEmpty ? null : _polish,
+          ),
           TextButton(
             onPressed: canPublish && !_isPublishing ? _openPublishSheet : null,
             child: Text(
@@ -332,6 +406,17 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                   setState(() => _communitySlug = slug),
                             ),
                             const SizedBox(height: AppSpacing.md),
+                            if (_images.isNotEmpty) ...[
+                              StoryImages(
+                                images: _images,
+                                height: 140,
+                                onRemove: (path) {
+                                  setState(() => _images.remove(path));
+                                  unawaited(_save());
+                                },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                            ],
                             TextField(
                               controller: _body,
                               focusNode: _bodyFocus,

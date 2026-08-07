@@ -51,6 +51,25 @@ Return JSON with these fields:
   "I am done", or planning language all count. Ordinary grief, exhaustion and
   despair do not. This never blocks and never changes what is published."""
 
+POLISH_INSTRUCTION = """You help someone improve writing they already wrote for
+STORY, an anonymous place for personal stories.
+
+Rules you never break:
+- The story stays theirs. Keep their voice, their words where you can, their
+  meaning exactly. You are tidying, not rewriting them into someone else.
+- Never invent events, names, places or feelings they did not write.
+- Never soften what they meant. If they wrote something raw, it stays raw.
+- Do only what they asked for. Nothing extra.
+- Return the whole piece, not a fragment and not a commentary on it.
+
+Reply as JSON: {"text": "the improved writing"}"""
+
+POLISH_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {"text": {"type": "string"}},
+    "required": ["text"],
+}
+
 SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -141,6 +160,42 @@ class GeminiAdapter:
             last_error = None
 
         raise ModerationUnavailable from last_error
+
+    async def polish(self, *, text: str, instruction: str) -> str:
+        response = await self._ask(
+            {
+                "system_instruction": {"parts": [{"text": POLISH_INSTRUCTION}]},
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": json.dumps(
+                                    {"writing": text, "asked_for": instruction},
+                                    ensure_ascii=False,
+                                )
+                            }
+                        ],
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "responseMimeType": "application/json",
+                    "responseSchema": POLISH_SCHEMA,
+                },
+            }
+        )
+
+        try:
+            raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            polished = json.loads(raw)["text"]
+        except (KeyError, IndexError, ValueError, TypeError) as error:
+            logger.error("ai_unreadable", error=type(error).__name__)
+            raise ModerationUnavailable from error
+
+        if not isinstance(polished, str) or not polished.strip():
+            raise ModerationUnavailable
+        return polished.strip()
 
     def _fingerprint(self, title: str | None, body: str, community: str | None) -> str:
         digest = hashlib.sha256()

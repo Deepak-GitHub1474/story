@@ -12,6 +12,7 @@ class CreateStoryRequest(BaseModel):
     title: Annotated[str, Field(max_length=TITLE_MAX)] | None = None
     body: Annotated[str, Field(max_length=BODY_MAX)] = ""
     shared_story_id: Annotated[str, Field(max_length=64)] | None = None
+    images: Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=8)] = []
 
     @model_validator(mode="after")
     def needs_words_or_something_to_share(self):

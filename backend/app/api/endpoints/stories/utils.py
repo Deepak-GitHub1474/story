@@ -41,6 +41,7 @@ def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) ->
         "slug": doc.get("slug"),
         "counts": doc.get("counts", {}),
         "reading_minutes": doc.get("reading_minutes", 1),
+        "images": doc.get("images", []),
         "is_liked": is_liked,
         "published_at": to_wire(doc.get("published_at")),
         "created_at": to_wire(doc.get("created_at")),

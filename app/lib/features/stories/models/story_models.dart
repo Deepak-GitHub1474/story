@@ -62,6 +62,7 @@ class Story {
     required this.createdAt,
     required this.updatedAt,
     this.shared,
+    this.images = const [],
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
@@ -81,6 +82,9 @@ class Story {
       publishedAt: json['published_at'] as String?,
       createdAt: json['created_at'] as String? ?? '',
       updatedAt: json['updated_at'] as String? ?? '',
+      images: (json['images'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
       shared: json['shared'] == null
           ? null
           : SharedStory.fromJson(Map<String, dynamic>.from(json['shared'] as Map)),
@@ -102,6 +106,7 @@ class Story {
   final String createdAt;
   final String updatedAt;
   final SharedStory? shared;
+  final List<String> images;
 
   bool get isDraft => visibility == 'draft';
 
@@ -123,6 +128,7 @@ class Story {
     'published_at': publishedAt,
     'created_at': createdAt,
     'updated_at': updatedAt,
+    'images': images,
     if (shared != null)
       'shared': {
         'story_id': shared!.storyId,
@@ -144,6 +150,7 @@ class Story {
 
   Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(
     shared: shared,
+    images: images,
     storyId: storyId,
     author: author,
     title: title,

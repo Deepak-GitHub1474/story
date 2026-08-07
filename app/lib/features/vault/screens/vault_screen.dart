@@ -9,9 +9,11 @@ import '../../../components/app_card.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/confirm_dialog.dart';
 import '../../../core/files/file_picker.dart';
 import '../../../core/security/secure_screen.dart';
 import '../../../routing/routes.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../data/file_kind.dart';
@@ -130,6 +132,48 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           : ref.read(vaultUploadProvider).error ?? 'Could not store that file.',
       kind: ok ? AppToastKind.success : AppToastKind.error,
     );
+  }
+
+  Future<void> _openItem(VaultItem item) async {
+    final bytes = await ref.read(vaultUploadProvider.notifier).openItem(item);
+    if (!mounted) return;
+
+    if (bytes == null) {
+      final drop = await confirmAction(
+        context,
+        title: 'This one cannot be opened',
+        body: 'It was locked with keys that no longer exist, so nothing can '
+            'read it now. Removing it frees the space it is using.',
+        confirmLabel: 'Remove it',
+        cancelLabel: 'Keep it',
+      );
+      if (drop && mounted) await _removeItem(item, isConfirmed: true);
+      return;
+    }
+
+    AppToast.show(
+      context,
+      'Opened on this device. ${bytes.length ~/ 1024} KB decrypted.',
+      kind: AppToastKind.success,
+    );
+  }
+
+  Future<void> _removeItem(VaultItem item, {bool isConfirmed = false}) async {
+    if (!isConfirmed) {
+      final sure = await confirmAction(
+        context,
+        title: 'Remove this file?',
+        body: 'It leaves the vault for good. Nobody can bring it back.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Keep',
+      );
+      if (!sure || !mounted) return;
+    }
+
+    await ref.read(vaultRepositoryProvider).deleteItem(item.itemId);
+    ref.invalidate(vaultItemsProvider);
+    ref.invalidate(vaultOverviewProvider);
+    if (mounted) setState(() => _found = null);
   }
 
   Future<void> _searchHidden() async {
@@ -335,7 +379,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           ),
           if (_found != null) ...[
             const SizedBox(height: AppSpacing.md),
-            VaultTile(item: _found!, isHiddenResult: true),
+            VaultTile(
+              item: _found!,
+              isHiddenResult: true,
+              onTap: () => _openItem(_found!),
+              onRemove: () => _removeItem(_found!),
+            ),
           ],
           const SizedBox(height: AppSpacing.lg),
           _KindTabs(
@@ -345,7 +394,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: items.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SkeletonList(count: 4),
               error: (error, _) => Center(
                 child: Text(
                   'Could not load your vault.',
@@ -397,7 +446,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       itemCount: shown.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) => VaultTile(item: shown[index]),
+                      itemBuilder: (context, index) => VaultTile(
+                        item: shown[index],
+                        onTap: () => _openItem(shown[index]),
+                        onRemove: () => _removeItem(shown[index]),
+                      ),
                     );
               },
             ),
