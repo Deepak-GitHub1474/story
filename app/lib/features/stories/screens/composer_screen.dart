@@ -74,6 +74,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     if (story != null) {
       _title.text = story.title ?? '';
       _body.text = story.body ?? '';
+      _images
+        ..clear()
+        ..addAll(story.images);
     }
     setState(() => _isLoading = false);
   }
@@ -97,7 +100,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             body: _body.text,
             images: _images,
           )
-        : await repository.update(_storyId!, title: _title.text, body: _body.text);
+        : await repository.update(
+            _storyId!,
+            title: _title.text,
+            body: _body.text,
+            images: _images,
+          );
 
     if (!mounted) return null;
 

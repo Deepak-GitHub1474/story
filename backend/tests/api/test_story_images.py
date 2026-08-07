@@ -198,3 +198,67 @@ async def test_a_story_can_still_point_at_a_real_picture(client, signup_payload)
     )
 
     assert response.status_code == 201
+
+
+async def test_a_picture_can_be_added_to_a_draft_that_already_exists(
+    client, signup_payload
+):
+    headers = await auth_headers(client, signup_payload)
+    story = (
+        await client.post("/v1/stories", json={"body": "No picture yet."}, headers=headers)
+    ).json()["data"]["story"]["story_id"]
+    url = (await upload(client, headers)).json()["data"]["url"]
+
+    response = await client.patch(
+        f"/v1/stories/{story}", json={"body": "Now with one.", "images": [url]}, headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["story"]["images"] == [url]
+
+
+async def test_a_picture_can_be_taken_off_a_draft(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+    story = (
+        await client.post(
+            "/v1/stories", json={"body": "With one.", "images": [url]}, headers=headers
+        )
+    ).json()["data"]["story"]["story_id"]
+
+    response = await client.patch(
+        f"/v1/stories/{story}", json={"images": []}, headers=headers
+    )
+
+    assert response.json()["data"]["story"]["images"] == []
+
+
+async def test_editing_the_words_alone_leaves_the_pictures_alone(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+    story = (
+        await client.post(
+            "/v1/stories", json={"body": "With one.", "images": [url]}, headers=headers
+        )
+    ).json()["data"]["story"]["story_id"]
+
+    response = await client.patch(
+        f"/v1/stories/{story}", json={"body": "Different words."}, headers=headers
+    )
+
+    assert response.json()["data"]["story"]["images"] == [url]
+
+
+async def test_an_edit_cannot_smuggle_in_an_outside_picture(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = (
+        await client.post("/v1/stories", json={"body": "Words."}, headers=headers)
+    ).json()["data"]["story"]["story_id"]
+
+    response = await client.patch(
+        f"/v1/stories/{story}",
+        json={"images": ["https://tracker.example.com/pixel.png"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 422

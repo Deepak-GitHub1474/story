@@ -3,10 +3,11 @@ import '../../../core/api/endpoints.dart';
 import '../../../core/result.dart';
 import '../models/story_models.dart';
 
-Map<String, dynamic> _patch({String? title, String? body}) {
+Map<String, dynamic> _patch({String? title, String? body, List<String>? images}) {
   final patch = <String, dynamic>{};
   if (title != null) patch['title'] = title;
   if (body != null) patch['body'] = body;
+  if (images != null) patch['images'] = images;
   return patch;
 }
 
@@ -77,9 +78,14 @@ class StoryRepository {
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
-  Future<Result<Story>> update(String storyId, {String? title, String? body}) => _client.patch(
+  Future<Result<Story>> update(
+    String storyId, {
+    String? title,
+    String? body,
+    List<String>? images,
+  }) => _client.patch(
     Endpoints.story(storyId),
-    body: _patch(title: title, body: body),
+    body: _patch(title: title, body: body, images: images),
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 

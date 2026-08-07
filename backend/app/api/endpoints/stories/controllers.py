@@ -189,6 +189,8 @@ async def update_story(
         update["body"] = body.body
         update["excerpt"] = build_excerpt(body.body)
         update["reading_minutes"] = reading_minutes(body.body)
+    if body.images is not None:
+        update["images"] = body.images
     if story["visibility"] != "draft":
         update["edited_at"] = utc_now()
 

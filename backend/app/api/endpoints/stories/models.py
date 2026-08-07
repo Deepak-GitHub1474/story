@@ -37,6 +37,19 @@ class UpdateStoryRequest(BaseModel):
 
     title: Annotated[str, Field(max_length=TITLE_MAX)] | None = None
     body: Annotated[str, Field(min_length=1, max_length=BODY_MAX)] | None = None
+    images: (
+        Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=8)] | None
+    ) = None
+
+    @field_validator("images")
+    @classmethod
+    def only_our_own_pictures(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        for url in value:
+            if not MEDIA_URL.match(url):
+                raise ValueError("A story can only carry pictures uploaded to Story.")
+        return value
 
 
 class PublishStoryRequest(BaseModel):
