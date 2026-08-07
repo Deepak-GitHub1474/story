@@ -274,3 +274,29 @@ async def test_a_failed_review_is_not_remembered_as_a_pass():
 
     assert review.is_allowed
     assert len(calls) == 2
+
+
+async def test_the_model_is_told_which_rooms_actually_exist():
+    seen = {}
+
+    def handler(request):
+        seen["body"] = request.content.decode()
+        return reply({"allowed": True})
+
+    await adapter(handler).review_story(
+        title=None,
+        body="hello",
+        community="grief",
+        rooms=["grief", "job-hunting", "good-day"],
+    )
+
+    assert "job-hunting" in seen["body"]
+    assert "good-day" in seen["body"]
+
+
+async def test_a_review_without_rooms_still_works():
+    review = await adapter(lambda request: reply({"allowed": True})).review_story(
+        title=None, body="hello", community=None
+    )
+
+    assert review.is_allowed

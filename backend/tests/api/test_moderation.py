@@ -14,7 +14,7 @@ class FakeAI:
     def is_available(self) -> bool:
         return True
 
-    async def review_story(self, *, title, body, community):
+    async def review_story(self, *, title, body, community, rooms=None):
         self.seen.append({"title": title, "body": body, "community": community})
         if self.error:
             raise self.error
@@ -312,3 +312,40 @@ async def test_a_reshare_is_never_reviewed_even_with_your_own_note(
 
     assert response.status_code == 200
     assert fake.seen == []
+
+
+async def test_distress_is_noticed_even_with_no_model_at_all(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story_id = await draft(
+        client, headers, body="I keep thinking everyone would be better off without me."
+    )
+
+    response = await client.post(
+        f"/v1/stories/{story_id}/publish", json={"visibility": "public"}, headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["needs_care"] is True
+
+
+async def test_an_ordinary_story_is_not_flagged_as_distress(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story_id = await draft(client, headers, body="Something went right today.")
+
+    response = await client.post(
+        f"/v1/stories/{story_id}/publish", json={"visibility": "public"}, headers=headers
+    )
+
+    assert response.json()["data"]["needs_care"] is False
+
+
+async def test_the_model_can_still_raise_it_on_its_own(client, signup_payload, use_ai):
+    use_ai(FakeAI(StoryReview(needs_care=True)))
+    headers = await auth_headers(client, signup_payload)
+    story_id = await draft(client, headers, body="Words the phrase list would miss.")
+
+    response = await client.post(
+        f"/v1/stories/{story_id}/publish", json={"visibility": "public"}, headers=headers
+    )
+
+    assert response.json()["data"]["needs_care"] is True

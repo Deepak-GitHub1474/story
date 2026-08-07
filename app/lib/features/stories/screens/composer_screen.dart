@@ -10,6 +10,7 @@ import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
 import '../../../core/files/file_picker.dart';
 import '../../../core/result.dart';
+import '../../../routing/routes.dart';
 import '../../vault/data/file_kind.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -220,6 +221,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     setState(() => _isPublishing = false);
 
     if (result.isSuccess) {
+      final outcome = result.valueOrNull!;
       unawaited(ref.read(feedProvider.notifier).refresh());
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
       await ref.read(authProvider.notifier).refreshUser();
@@ -233,13 +235,29 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         },
         kind: AppToastKind.success,
       );
+
+      if (outcome.needsCare || outcome.suggestedCommunity != null) {
+        await showAppSheet<void>(
+          context: context,
+          title: outcome.needsCare ? 'Before you go' : 'One more room',
+          builder: (sheetContext) => _AfterPublishSheet(
+            needsCare: outcome.needsCare,
+            suggestedCommunity: outcome.suggestedCommunity,
+          ),
+        );
+      }
+
+      if (!mounted) return;
       context.pop();
     } else {
       await _handlePublishFailure(result.failureOrNull!, visibility);
     }
   }
 
-  Future<void> _handlePublishFailure(Failure<Story> failure, String visibility) async {
+  Future<void> _handlePublishFailure(
+    Failure<PublishOutcome> failure,
+    String visibility,
+  ) async {
     if (failure.code == 'EXPOSURE_ACK_REQUIRED') {
       final goAhead = await showAppSheet<bool>(
         context: context,
@@ -787,6 +805,125 @@ class _BlockedSheet extends StatelessWidget {
           AppButton(
             label: 'Back to the draft',
             onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AfterPublishSheet extends StatelessWidget {
+  const _AfterPublishSheet({
+    required this.needsCare,
+    required this.suggestedCommunity,
+  });
+
+  final bool needsCare;
+  final String? suggestedCommunity;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (needsCare) ...[
+            Text(
+              'It sounds like a heavy night. Your story is up and nobody has '
+              'touched a word of it.',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: AppTypeScale.body,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'If you want to talk to somebody tonight, there are people who '
+              'answer at any hour. Nobody here will know you looked.',
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: AppTypeScale.label,
+                height: 1.55,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _Line(label: 'India', number: 'Tele-MANAS 14416'),
+            _Line(label: 'UK and Ireland', number: 'Samaritans 116 123'),
+            _Line(label: 'US and Canada', number: 'Call or text 988'),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          if (suggestedCommunity != null) ...[
+            Text(
+              needsCare
+                  ? 'There is also a room for this.'
+                  : 'This might land better in another room.',
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: AppTypeScale.label,
+                height: 1.55,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: 'Open ${suggestedCommunity!.replaceAll('-', ' ')}',
+              variant: AppButtonVariant.secondary,
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('${Routes.community}/$suggestedCommunity');
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          AppButton(
+            label: 'Close',
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Line extends StatelessWidget {
+  const _Line({required this.label, required this.number});
+
+  final String label;
+  final String number;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.label,
+              ),
+            ),
+          ),
+          Text(
+            number,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.label,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

@@ -43,8 +43,10 @@ Return JSON with these fields:
   when it is rare enough to narrow the author down to a handful of people, even
   when it seems harmless on its own. Empty list when nothing does. This never
   blocks.
-- suggested_community: a better community slug when the story clearly belongs in
-  a different room from the one chosen, otherwise null. This never blocks.
+- suggested_community: a better room for this story, chosen only from
+  rooms_that_exist and only when it clearly belongs somewhere other than the
+  one already chosen. Null when the choice is fine or nothing fits. Never
+  invent a slug. This never blocks.
 - needs_care: true when the author sounds at risk of ending their life or
   hurting themselves. Read what they mean, not the words they use. Statements
   like "everyone would be better off without me", "I do not want to wake up",
@@ -115,9 +117,21 @@ class GeminiAdapter:
     def is_available(self) -> bool:
         return bool(self._api_key)
 
-    def _payload(self, *, title: str | None, body: str, community: str | None) -> dict:
+    def _payload(
+        self,
+        *,
+        title: str | None,
+        body: str,
+        community: str | None,
+        rooms: list[str] | None = None,
+    ) -> dict:
         story = json.dumps(
-            {"title": title, "body": body, "community": community},
+            {
+                "title": title,
+                "body": body,
+                "community": community,
+                "rooms_that_exist": rooms or [],
+            },
             ensure_ascii=False,
         )
         return {
@@ -208,7 +222,12 @@ class GeminiAdapter:
             self._seen.popitem(last=False)
 
     async def review_story(
-        self, *, title: str | None, body: str, community: str | None
+        self,
+        *,
+        title: str | None,
+        body: str,
+        community: str | None,
+        rooms: list[str] | None = None,
     ) -> StoryReview:
         fingerprint = self._fingerprint(title, body, community)
         remembered = self._seen.get(fingerprint)
@@ -216,7 +235,7 @@ class GeminiAdapter:
             return remembered
 
         response = await self._ask(
-            self._payload(title=title, body=body, community=community)
+            self._payload(title=title, body=body, community=community, rooms=rooms)
         )
 
         try:

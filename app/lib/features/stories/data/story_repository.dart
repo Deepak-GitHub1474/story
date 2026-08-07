@@ -89,7 +89,7 @@ class StoryRepository {
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
-  Future<Result<Story>> publish(
+  Future<Result<PublishOutcome>> publish(
     String storyId, {
     required String visibility,
     String? communitySlug,
@@ -98,7 +98,7 @@ class StoryRepository {
   }) => _client.post(
     Endpoints.publishStory(storyId),
     body: _publishBody(visibility, communitySlug, scheduledFor, exposureAck),
-    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+    parse: PublishOutcome.fromJson,
   );
 
   Future<Result<Story>> unpublish(String storyId) => _client.post(

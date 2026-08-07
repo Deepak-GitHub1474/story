@@ -245,3 +245,21 @@ class Comment {
     replies: replies ?? this.replies,
   );
 }
+
+class PublishOutcome {
+  const PublishOutcome({
+    required this.story,
+    this.suggestedCommunity,
+    this.needsCare = false,
+  });
+
+  factory PublishOutcome.fromJson(Map<String, dynamic> json) => PublishOutcome(
+    story: Story.fromJson(Map<String, dynamic>.from(json['story'] as Map)),
+    suggestedCommunity: json['suggested_community'] as String?,
+    needsCare: json['needs_care'] as bool? ?? false,
+  );
+
+  final Story story;
+  final String? suggestedCommunity;
+  final bool needsCare;
+}

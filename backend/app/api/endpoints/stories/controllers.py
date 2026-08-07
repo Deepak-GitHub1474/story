@@ -23,6 +23,7 @@ from app.api.endpoints.stories.utils import (
     serialize_comment,
     serialize_story,
 )
+from app.core.care import sounds_at_risk
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_storage, utc_now
@@ -269,7 +270,7 @@ async def publish_story(
     return {
         "story": serialize_story(story, include_body=True),
         "suggested_community": review.suggested_community,
-        "needs_care": review.needs_care,
+        "needs_care": review.needs_care or sounds_at_risk(story.get("body") or ""),
     }
 
 
@@ -291,6 +292,7 @@ async def _review(
             title=story.get("title"),
             body=story.get("body") or "",
             community=body.community_slug,
+            rooms=await _room_slugs(mongo),
         )
     except ModerationUnavailable:
         raise api_error(ErrorCode.MODERATION_UNAVAILABLE) from None
@@ -314,6 +316,10 @@ async def _review(
             review.suggested_community, body.community_slug, mongo
         ),
     )
+
+
+async def _room_slugs(mongo: AsyncIOMotorDatabase) -> list[str]:
+    return await mongo["communities"].distinct("slug", {"status": "active"})
 
 
 async def _real_room(

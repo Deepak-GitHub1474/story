@@ -8,7 +8,12 @@ class NoAIAdapter:
         return False
 
     async def review_story(
-        self, *, title: str | None, body: str, community: str | None
+        self,
+        *,
+        title: str | None,
+        body: str,
+        community: str | None,
+        rooms: list[str] | None = None,
     ) -> StoryReview:
         return ALLOWED
 
