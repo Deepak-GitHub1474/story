@@ -80,7 +80,6 @@ class AppRadius {
 class AppTypeScale {
   const AppTypeScale._();
 
-  static const double display = 32;
   static const double title = 24;
   static const double heading = 20;
   static const double body = 16;

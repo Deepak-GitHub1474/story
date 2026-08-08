@@ -183,7 +183,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           style: TextStyle(
                             color: colors.danger,
                             fontSize: AppTypeScale.body,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],

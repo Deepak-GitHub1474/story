@@ -69,8 +69,8 @@ function Stat({
       <dd
         className={
           isAlert
-            ? 'text-[length:var(--text-title)] font-bold text-danger'
-            : 'text-[length:var(--text-title)] font-bold'
+            ? 'text-[length:var(--text-title)] font-semibold text-danger'
+            : 'text-[length:var(--text-title)] font-semibold'
         }
       >
         {value}

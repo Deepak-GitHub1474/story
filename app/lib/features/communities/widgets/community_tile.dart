@@ -42,7 +42,7 @@ class CommunityTile extends StatelessWidget {
                 style: TextStyle(
                   color: colors.accent,
                   fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

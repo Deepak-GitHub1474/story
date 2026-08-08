@@ -58,7 +58,7 @@ class SharedStoryCard extends StatelessWidget {
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: AppTypeScale.label,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   height: 1.35,
                 ),
               ),

@@ -68,7 +68,7 @@ export function Composer({
           onChange={(event) => setTitle(event.target.value)}
           maxLength={120}
           placeholder="Title, if you want one"
-          className="w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-bold outline-none placeholder:text-text-muted focus:border-accent"
+          className="w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-semibold outline-none placeholder:text-text-muted focus:border-accent"
         />
         <textarea
           name="body"
@@ -176,7 +176,7 @@ export function Composer({
         onChange={(event) => setTitle(event.target.value)}
         maxLength={120}
         placeholder="Title, if you want one"
-        className="mt-8 w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-bold outline-none placeholder:text-text-muted focus:border-accent"
+        className="mt-8 w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-semibold outline-none placeholder:text-text-muted focus:border-accent"
       />
 
       <textarea

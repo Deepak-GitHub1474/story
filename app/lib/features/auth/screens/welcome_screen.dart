@@ -23,8 +23,8 @@ class WelcomeScreen extends StatelessWidget {
             'STORY',
             style: TextStyle(
               color: colors.textPrimary,
-              fontSize: AppTypeScale.display,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTypeScale.title,
+              fontWeight: FontWeight.w600,
               letterSpacing: 6,
             ),
           ),

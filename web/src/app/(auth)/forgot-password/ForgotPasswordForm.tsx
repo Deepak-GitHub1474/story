@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
       <Otp hasError={Boolean(resetState.error)} />
 
       <div className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
-        <h2 className="font-bold text-danger">Read this before continuing</h2>
+        <h2 className="font-semibold text-danger">Read this before continuing</h2>
         <p className="mt-2 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           A reset gives you back your account, not your vault. Anything encrypted with
           your old password becomes permanently unreadable. Nobody can undo this,

@@ -205,7 +205,7 @@ class _Section extends StatelessWidget {
             style: TextStyle(
               color: isDanger ? colors.danger : colors.textPrimary,
               fontSize: AppTypeScale.heading,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

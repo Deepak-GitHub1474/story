@@ -67,17 +67,17 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
                 >
                   {link.label}
                   {link.href === '/chats' && chatUnread > 0 ? (
-                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-bold text-accent-text">
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
                       {chatUnread}
                     </span>
                   ) : null}
                   {link.href === '/chats' && chatUnread > 0 ? (
-                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-bold text-accent-text">
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
                       {chatUnread > 99 ? '99+' : chatUnread}
                     </span>
                   ) : null}
                   {link.href === '/activity' && unread > 0 ? (
-                    <span className="ml-1.5 inline-flex min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] bg-danger px-1 text-[10px] font-bold text-bg">
+                    <span className="ml-1.5 inline-flex min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] bg-danger px-1 text-[10px] font-semibold text-bg">
                       {unread > 99 ? '99+' : unread}
                     </span>
                   ) : null}

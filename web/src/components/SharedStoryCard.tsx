@@ -18,7 +18,7 @@ export function SharedStoryCard({
         </span>
       </div>
       {shared.title ? (
-        <p className="mt-2 line-clamp-2 text-[length:var(--text-label)] leading-snug font-bold">
+        <p className="mt-2 line-clamp-2 text-[length:var(--text-label)] leading-snug font-semibold">
           {shared.title}
         </p>
       ) : null}

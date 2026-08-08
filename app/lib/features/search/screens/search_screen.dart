@@ -189,7 +189,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           color: colors.textMuted,
           fontSize: AppTypeScale.caption,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
         ),
       ),

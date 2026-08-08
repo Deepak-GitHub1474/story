@@ -65,7 +65,7 @@ export default async function PublicStoryPage({ params }: Props) {
 
       <article className="mt-10">
         {title ? (
-          <h1 className="text-3xl leading-tight font-bold text-balance sm:text-4xl">
+          <h1 className="text-3xl leading-tight font-semibold text-balance sm:text-4xl">
             {title}
           </h1>
         ) : null}

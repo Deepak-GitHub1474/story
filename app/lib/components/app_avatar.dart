@@ -63,7 +63,7 @@ class AppAvatar extends StatelessWidget {
         style: TextStyle(
           color: const Color(0xFF0B0D12),
           fontSize: size * 0.4,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

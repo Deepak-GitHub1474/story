@@ -61,7 +61,7 @@ export function StoryRow({
 
       <Link href={href} className="mt-3 block">
         {story.title ? (
-          <h2 className="text-[length:var(--text-heading)] leading-snug font-bold text-balance transition-colors group-hover:text-accent">
+          <h2 className="text-[length:var(--text-heading)] leading-snug font-semibold text-balance transition-colors group-hover:text-accent">
             {story.title}
           </h2>
         ) : null}

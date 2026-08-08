@@ -69,7 +69,7 @@ class CommunityDetailScreen extends ConsumerWidget {
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: AppTypeScale.title,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),

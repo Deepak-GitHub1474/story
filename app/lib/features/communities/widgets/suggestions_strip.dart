@@ -132,7 +132,7 @@ class _RoomCard extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.body,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),

@@ -61,7 +61,7 @@ export default async function StoryPage({ params }: Props) {
 
       <article className="mt-10">
         {story.title ? (
-          <h1 className="text-[length:var(--text-title)] leading-tight font-bold text-balance sm:text-4xl">
+          <h1 className="text-[length:var(--text-title)] leading-tight font-semibold text-balance sm:text-4xl">
             {story.title}
           </h1>
         ) : null}

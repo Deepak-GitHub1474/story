@@ -14,7 +14,7 @@ export default async function VaultEscrowPage() {
       <h1 className="text-[length:var(--text-title)] font-semibold">Vault escrow</h1>
 
       <div className="mt-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
-        <h2 className="font-bold text-danger">Read before using this</h2>
+        <h2 className="font-semibold text-danger">Read before using this</h2>
         <ul className="mt-3 space-y-1.5 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           <li>You can see passcode names. Not values, not hashes, not key material.</li>
           <li>

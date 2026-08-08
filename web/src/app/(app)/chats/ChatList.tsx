@@ -91,7 +91,7 @@ export function ChatList({ userId }: { userId: string }) {
                     className={cn(
                       'block truncate',
                       conversation.unread_count > 0
-                        ? 'font-bold'
+                        ? 'font-semibold'
                         : 'font-semibold',
                     )}
                   >
@@ -117,7 +117,7 @@ export function ChatList({ userId }: { userId: string }) {
                   </span>
                 ) : null}
                 {conversation.unread_count > 0 ? (
-                  <span className="rounded-[length:var(--radius-pill)] bg-accent px-2 py-0.5 text-[length:var(--text-caption)] font-bold text-accent-text">
+                  <span className="rounded-[length:var(--radius-pill)] bg-accent px-2 py-0.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
                     {conversation.unread_count}
                   </span>
                 ) : null}

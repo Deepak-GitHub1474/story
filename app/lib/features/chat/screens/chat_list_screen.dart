@@ -81,7 +81,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.title,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const Spacer(),
@@ -233,7 +233,7 @@ class _ConversationRow extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.body,
-                      fontWeight: unread > 0 ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -272,7 +272,7 @@ class _ConversationRow extends StatelessWidget {
                   style: TextStyle(
                     color: colors.accentText,
                     fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

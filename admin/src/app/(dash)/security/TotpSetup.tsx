@@ -21,7 +21,7 @@ export function TotpSetup({
   if (backupCodes) {
     return (
       <div className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
-        <h2 className="font-bold text-danger">Save these now</h2>
+        <h2 className="font-semibold text-danger">Save these now</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">
           Each one works once, in place of a code, if you lose your phone. They are
           shown here and nowhere else, ever.

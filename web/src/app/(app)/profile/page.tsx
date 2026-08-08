@@ -43,7 +43,7 @@ export default async function ProfilePage({ searchParams }: Props) {
       </header>
 
       <div className="mt-6">
-        <h1 className="font-bold">{user.display_name}</h1>
+        <h1 className="font-semibold">{user.display_name}</h1>
         <p className="text-[length:var(--text-caption)] text-text-muted">
           @{user.username}
         </p>
@@ -142,7 +142,7 @@ function Stat({
   const inner = (
     <>
       <dt className="sr-only">{label}</dt>
-      <dd className="text-[length:var(--text-heading)] font-bold">{value}</dd>
+      <dd className="text-[length:var(--text-heading)] font-semibold">{value}</dd>
       <p className="text-[length:var(--text-caption)] text-text-muted">{label}</p>
     </>
   );

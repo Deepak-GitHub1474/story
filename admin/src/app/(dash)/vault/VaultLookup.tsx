@@ -95,7 +95,7 @@ export function VaultLookup() {
               }}
               className="flex flex-col gap-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5"
             >
-              <h2 className="font-bold text-danger">Release to the owner</h2>
+              <h2 className="font-semibold text-danger">Release to the owner</h2>
               <Field
                 label="Ticket id"
                 value={ticketId}
