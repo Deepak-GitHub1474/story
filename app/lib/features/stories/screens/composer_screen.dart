@@ -445,10 +445,33 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                             ),
                             Divider(color: colors.border, height: 1),
                             const SizedBox(height: AppSpacing.md),
-                            _CommunityPicker(
-                              slug: _communitySlug,
-                              onPick: (slug) =>
-                                  setState(() => _communitySlug = slug),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _CommunityPicker(
+                                    slug: _communitySlug,
+                                    onPick: (slug) =>
+                                        setState(() => _communitySlug = slug),
+                                  ),
+                                ),
+                                if (_images.isNotEmpty)
+                                  IconButton(
+                                    tooltip: 'Remove the picture',
+                                    icon: Icon(
+                                      Icons.cancel_outlined,
+                                      color: colors.textMuted,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _images.clear();
+                                        _imageRatio = null;
+                                        _imageFit = 'cover';
+                                        _canFit = false;
+                                      });
+                                      unawaited(_save());
+                                    },
+                                  ),
+                              ],
                             ),
                             const SizedBox(height: AppSpacing.md),
                             if (_images.isNotEmpty) ...[
@@ -456,34 +479,20 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                 images: _images,
                                 ratio: _imageRatio,
                                 fit: _imageFit,
-                                onRemove: (path) {
-                                  setState(() {
-                                    _images.remove(path);
-                                    if (_images.isEmpty) {
-                                      _imageRatio = null;
-                                      _imageFit = 'cover';
-                                      _canFit = false;
-                                    }
-                                  });
-                                  unawaited(_save());
-                                },
+                                overlay: _canFit
+                                    ? _FitToggle(
+                                        isFitting: _imageFit == 'contain',
+                                        onTap: () {
+                                          setState(
+                                            () => _imageFit = _imageFit == 'contain'
+                                                ? 'cover'
+                                                : 'contain',
+                                          );
+                                          unawaited(_save());
+                                        },
+                                      )
+                                    : null,
                               ),
-                              if (_canFit) ...[
-                                const SizedBox(height: AppSpacing.sm),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _FitToggle(
-                                    isFitting: _imageFit == 'contain',
-                                    onTap: () {
-                                      setState(
-                                        () => _imageFit =
-                                            _imageFit == 'contain' ? 'cover' : 'contain',
-                                      );
-                                      unawaited(_save());
-                                    },
-                                  ),
-                                ),
-                              ],
                               const SizedBox(height: AppSpacing.md),
                             ],
                             TextField(
@@ -982,38 +991,19 @@ class _FitToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          border: Border.all(color: isFitting ? colors.accent : colors.border),
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isFitting ? Icons.fullscreen_exit : Icons.fullscreen,
-              size: AppSizes.iconSm,
-              color: isFitting ? colors.accent : colors.textSecondary,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              isFitting ? 'Whole picture' : 'Fill the frame',
-              style: TextStyle(
-                color: isFitting ? colors.accent : colors.textSecondary,
-                fontSize: AppTypeScale.caption,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+    return Material(
+      color: Colors.black.withValues(alpha: 0.6),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Icon(
+            isFitting ? Icons.crop_free_rounded : Icons.fullscreen_rounded,
+            size: AppSizes.iconMd,
+            color: Colors.white,
+          ),
         ),
       ),
     );

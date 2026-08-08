@@ -14,13 +14,13 @@ class StoryImages extends StatefulWidget {
     required this.images,
     this.ratio,
     this.fit = 'cover',
-    this.onRemove,
+    this.overlay,
   });
 
   final List<String> images;
   final double? ratio;
   final String fit;
-  final void Function(String path)? onRemove;
+  final Widget? overlay;
 
   @override
   State<StoryImages> createState() => _StoryImagesState();
@@ -58,9 +58,14 @@ class _StoryImagesState extends State<StoryImages> {
                 itemBuilder: (context, index) => _Frame(
                   path: widget.images[index],
                   fit: widget.fit == 'contain' ? BoxFit.contain : BoxFit.cover,
-                  onRemove: widget.onRemove,
                 ),
               ),
+              if (widget.overlay != null)
+                Positioned(
+                  left: AppSpacing.md,
+                  bottom: AppSpacing.md,
+                  child: widget.overlay!,
+                ),
               if (widget.images.length > 1)
                 Positioned(
                   top: AppSpacing.md,
@@ -112,11 +117,10 @@ class _StoryImagesState extends State<StoryImages> {
 }
 
 class _Frame extends StatelessWidget {
-  const _Frame({required this.path, required this.fit, this.onRemove});
+  const _Frame({required this.path, required this.fit});
 
   final String path;
   final BoxFit fit;
-  final void Function(String path)? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -135,22 +139,6 @@ class _Frame extends StatelessWidget {
           loadingBuilder: (context, child, progress) =>
               progress == null ? child : Container(color: colors.surfaceRaised),
         ),
-        if (onRemove != null)
-          Positioned(
-            top: AppSpacing.sm,
-            right: AppSpacing.sm,
-            child: InkWell(
-              onTap: () => onRemove!(path),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, size: AppSizes.iconSm, color: Colors.white),
-              ),
-            ),
-          ),
       ],
     );
   }
