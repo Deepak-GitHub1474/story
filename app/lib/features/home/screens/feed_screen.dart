@@ -47,9 +47,9 @@ class FeedScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
+              AppSpacing.xs,
               AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.md,
+              AppSpacing.xs,
             ),
             child: Row(
               children: [

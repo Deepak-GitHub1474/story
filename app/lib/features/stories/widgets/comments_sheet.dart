@@ -159,7 +159,12 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                     )
                   : ListView.separated(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                      ),
                       itemCount: items.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 2),
                       itemBuilder: (context, index) {
