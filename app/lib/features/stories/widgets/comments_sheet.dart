@@ -87,8 +87,12 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
     final me = ref.watch(authProvider).user?.userId;
     final media = MediaQuery.of(context);
 
-    return Container(
-      constraints: BoxConstraints(maxHeight: media.size.height * 0.9),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.68,
+      minChildSize: 0.45,
+      maxChildSize: 1,
+      expand: false,
+      builder: (context, scrollController) => Container(
       decoration: BoxDecoration(
         color: colors.bg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
@@ -119,7 +123,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
             ),
           ),
           Divider(height: 1, color: colors.border),
-          Flexible(
+          Expanded(
             child: comments.when(
               loading: () => const SkeletonList(count: 4),
               error: (error, _) => Padding(
@@ -130,9 +134,11 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                 ),
               ),
               data: (items) => items.isEmpty
-                  ? Padding(
+                  ? ListView(
+                      controller: scrollController,
                       padding: const EdgeInsets.all(AppSpacing.xxl),
-                      child: Column(
+                      children: [
+                        Column(
                         children: [
                           Text(
                             'No comments yet',
@@ -148,11 +154,12 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                             style: TextStyle(color: colors.textMuted),
                           ),
                         ],
-                      ),
+                        ),
+                      ],
                     )
                   : ListView.separated(
+                      controller: scrollController,
                       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                      shrinkWrap: true,
                       itemCount: items.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 2),
                       itemBuilder: (context, index) {
@@ -192,6 +199,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -24,7 +24,6 @@ class CommentComposer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final canSend = controller.text.trim().isNotEmpty && !isSending;
 
     return Container(
       decoration: BoxDecoration(
@@ -119,23 +118,30 @@ class CommentComposer extends StatelessWidget {
                       ),
                     ),
                   ),
-                  AnimatedScale(
-                    scale: canSend ? 1 : 0.85,
-                    duration: AppMotion.fast,
-                    curve: AppMotion.easeOut,
-                    child: IconButton(
-                      icon: isSending
-                          ? const SizedBox(
-                              width: AppSizes.iconSm,
-                              height: AppSizes.iconSm,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(
-                              Icons.send_rounded,
-                              color: canSend ? colors.accent : colors.textMuted,
-                            ),
-                      onPressed: canSend ? onSend : null,
-                    ),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, child) {
+                      final canSend = value.text.trim().isNotEmpty && !isSending;
+
+                      return AnimatedScale(
+                        scale: canSend ? 1 : 0.85,
+                        duration: AppMotion.fast,
+                        curve: AppMotion.easeOut,
+                        child: IconButton(
+                          icon: isSending
+                              ? const SizedBox(
+                                  width: AppSizes.iconSm,
+                                  height: AppSizes.iconSm,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  Icons.send_rounded,
+                                  color: canSend ? colors.accent : colors.textMuted,
+                                ),
+                          onPressed: canSend ? onSend : null,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
