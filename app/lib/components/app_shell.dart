@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -57,10 +55,11 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(chatIdentityProvider);
-    unawaited(ref.read(realtimeProvider).connect());
+    ref.watch(liveBadgesProvider);
 
     final colors = context.colors;
     final unread = ref.watch(unreadCountProvider);
+    final chatUnread = ref.watch(chatUnreadProvider).valueOrNull;
 
     return DoubleBackToExit(
       onBack: currentIndex == 0
@@ -111,9 +110,12 @@ class AppShell extends ConsumerWidget {
                       destination: destinations[index],
                       isActive: index == currentIndex,
                       onTap: () => context.go(destinations[index].route),
-                      badgeCount: destinations[index].route == Routes.activity
-                          ? unread
-                          : 0,
+                      badgeCount: switch (destinations[index].route) {
+                        Routes.activity => unread,
+                        Routes.chats =>
+                          (chatUnread?.unread ?? 0) + (chatUnread?.requests ?? 0),
+                        _ => 0,
+                      },
                     ),
                   ),
               ],

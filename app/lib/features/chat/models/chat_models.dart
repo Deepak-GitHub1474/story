@@ -180,3 +180,29 @@ class ChatUnread {
 
   int get total => unread + requests;
 }
+
+class ChatPerson {
+  const ChatPerson({
+    required this.userId,
+    required this.displayName,
+    required this.opensStraightAway,
+    this.username,
+    this.avatarSeed = '',
+  });
+
+  factory ChatPerson.fromJson(Map<String, dynamic> json) => ChatPerson(
+    userId: json['user_id'] as String,
+    displayName: json['display_name'] as String? ?? 'Someone',
+    opensStraightAway: json['opens_straight_away'] as bool? ?? false,
+    username: json['username'] as String?,
+    avatarSeed: json['avatar_seed'] as String? ?? '',
+  );
+
+  final String userId;
+  final String displayName;
+  final bool opensStraightAway;
+  final String? username;
+  final String avatarSeed;
+
+  String get handle => username ?? displayName;
+}

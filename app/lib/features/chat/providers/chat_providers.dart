@@ -7,6 +7,7 @@ import '../../../core/crypto/chat_crypto.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/crypto/vault_crypto.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/providers/notification_providers.dart';
 import '../data/chat_repository.dart';
 import '../models/chat_models.dart';
 
@@ -50,6 +51,30 @@ final conversationsProvider =
       final result = await ref.watch(chatRepositoryProvider).conversations(state: state);
       return result.valueOrNull ?? const [];
     });
+
+final liveBadgesProvider = Provider<void>((ref) {
+  final realtime = ref.watch(realtimeProvider);
+  unawaited(realtime.connect());
+
+  final listener = realtime.events.listen((event) {
+    switch (event['type']) {
+      case 'message':
+      case 'unsent':
+        ref.invalidate(chatUnreadProvider);
+        ref.invalidate(conversationsProvider(null));
+        ref.invalidate(conversationsProvider('pending'));
+      case 'notification':
+        ref.invalidate(unreadCountProvider);
+    }
+  });
+
+  ref.onDispose(listener.cancel);
+});
+
+final chatPeopleProvider = FutureProvider<List<ChatPerson>>((ref) async {
+  final result = await ref.watch(chatRepositoryProvider).people();
+  return result.valueOrNull ?? const [];
+});
 
 final chatUnreadProvider = FutureProvider<ChatUnread>((ref) async {
   final result = await ref.watch(chatRepositoryProvider).unread();

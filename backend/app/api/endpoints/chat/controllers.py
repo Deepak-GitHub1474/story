@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -6,7 +7,7 @@ from app.api.endpoints.chat import constants as c
 from app.api.endpoints.connections import controllers as connection_controllers
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
-from app.core.time import to_wire, utc_now
+from app.core.time import to_storage, to_wire, utc_now
 from app.db import keys
 from app.realtime import bus
 
@@ -178,6 +179,73 @@ async def _serialize_conversation(
     }
 
 
+async def people_to_message(
+    *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+) -> dict[str, Any]:
+    limit = max(1, min(limit, 50))
+
+    query: dict[str, Any] = {"follower_id": claims.user_id, "status": "active"}
+    if cursor:
+        query["_id"] = {"$lt": cursor}
+
+    follows = (
+        await mongo["connections"]
+        .find(query, {"followee_id": 1})
+        .sort("_id", -1)
+        .limit(limit + 1)
+        .to_list(length=limit + 1)
+    )
+
+    has_more = len(follows) > limit
+    page = follows[:limit]
+    if not page:
+        return {"items": [], "next_cursor": None, "has_more": False}
+
+    ids = [row["followee_id"] for row in page]
+
+    talking = await mongo[c.CONVERSATIONS].distinct(
+        "participant_ids", {"participant_ids": claims.user_id}
+    )
+    blocked = await connection_controllers.blocked_ids(claims.user_id, mongo)
+    skip = set(talking) | set(blocked) | {claims.user_id}
+
+    back = set(
+        await mongo["connections"].distinct(
+            "follower_id",
+            {"follower_id": {"$in": ids}, "followee_id": claims.user_id, "status": "active"},
+        )
+    )
+
+    people = await mongo[c.USERS].find(
+        {"_id": {"$in": [uid for uid in ids if uid not in skip]}, "status": "active"},
+        {"username": 1, "display_name": 1, "avatar_seed": 1},
+    ).to_list(length=len(ids))
+    by_id = {row["_id"]: row for row in people}
+
+    items = []
+    for user_id in ids:
+        row = by_id.get(user_id)
+        if row is None:
+            continue
+        items.append(
+            {
+                "user_id": row["_id"],
+                "username": row.get("username"),
+                "display_name": row.get("display_name", "Someone"),
+                "avatar_seed": row.get("avatar_seed", ""),
+                "opens_straight_away": user_id in back,
+            }
+        )
+
+    items.sort(key=lambda row: not row["opens_straight_away"])
+
+    return {
+        "items": items,
+        "next_cursor": page[-1]["_id"] if has_more else None,
+        "has_more": has_more,
+    }
+
+
 async def start_conversation(
     body, *, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
@@ -245,12 +313,22 @@ async def start_conversation(
 
 
 async def list_conversations(
-    *, claims, mongo: AsyncIOMotorDatabase, state: str | None, redis=None
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    state: str | None,
+    redis=None,
+    limit: int = c.CONVERSATION_LIMIT,
+    cursor: str | None = None,
 ) -> dict[str, Any]:
+    limit = max(1, min(limit, c.CONVERSATION_LIMIT))
+
     query: dict[str, Any] = {
         "participant_ids": claims.user_id,
         "deleted_by": {"$ne": claims.user_id},
     }
+    if cursor:
+        query["last_message_at"] = {"$lt": to_storage(datetime.fromisoformat(cursor))}
 
     if state == c.PENDING:
         query["state"] = c.PENDING
@@ -262,9 +340,11 @@ async def list_conversations(
         await mongo[c.CONVERSATIONS]
         .find(query)
         .sort("last_message_at", -1)
-        .limit(c.CONVERSATION_LIMIT)
-        .to_list(length=c.CONVERSATION_LIMIT)
+        .limit(limit + 1)
+        .to_list(length=limit + 1)
     )
+    has_more = len(docs) > limit
+    docs = docs[:limit]
 
     return {
         "items": [
@@ -272,7 +352,9 @@ async def list_conversations(
                 doc, user_id=claims.user_id, mongo=mongo, redis=redis
             )
             for doc in docs
-        ]
+        ],
+        "next_cursor": to_wire(docs[-1]["last_message_at"]) if docs and has_more else None,
+        "has_more": has_more,
     }
 
 

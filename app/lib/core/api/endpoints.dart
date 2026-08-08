@@ -75,6 +75,7 @@ class Endpoints {
 
   static String chatTyping(String id) => '/chat/conversations/$id/typing';
   static const String chatConversations = '/chat/conversations';
+  static const String chatPeople = '/chat/people';
 
   static String chatIdentityOf(String username) => '/chat/identity/$username';
 

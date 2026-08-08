@@ -98,6 +98,15 @@ class ChatRepository {
     parse: (data) => data['rekeyed'] as bool? ?? true,
   );
 
+  Future<Result<List<ChatPerson>>> people({String? cursor, int limit = 20}) =>
+      _client.get(
+        Endpoints.chatPeople,
+        query: {'limit': limit, 'cursor': ?cursor},
+        parse: (data) => (data['items'] as List<dynamic>)
+            .map((item) => ChatPerson.fromJson(Map<String, dynamic>.from(item as Map)))
+            .toList(),
+      );
+
   Future<Result<bool>> reject(String id) => _client.post(
     '${Endpoints.chatConversations}/$id/reject',
     parse: (data) => data['rejected'] as bool? ?? true,

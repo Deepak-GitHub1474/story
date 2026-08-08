@@ -128,13 +128,12 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                 body: 'Check your connection and pull to refresh.',
               ),
               data: (items) => items.isEmpty
-                  ? _Empty(
-                      title: _showRequests ? 'No requests' : 'No messages yet',
-                      body: _showRequests
-                          ? 'People who do not follow you back land here first.'
-                          : 'Find someone from search and say something. '
-                                'If you both follow each other it opens straight away.',
-                    )
+                  ? (_showRequests
+                        ? _Empty(
+                            title: 'No requests',
+                            body: 'People who do not follow you back land here first.',
+                          )
+                        : const _PeopleToMessage())
                   : RefreshIndicator(
                       onRefresh: () async {
                         ref.invalidate(
@@ -377,6 +376,89 @@ class _LockedBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PeopleToMessage extends ConsumerWidget {
+  const _PeopleToMessage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final people = ref.watch(chatPeopleProvider);
+
+    return people.when(
+      loading: () => const SkeletonList(count: 6),
+      error: (error, _) => const _Empty(
+        title: 'No messages yet',
+        body: 'Find someone from search and say something.',
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return const _Empty(
+            title: 'No messages yet',
+            body: 'Follow someone first. If you both follow each other, '
+                'the chat opens straight away.',
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+          itemCount: items.length + 1,
+          separatorBuilder: (context, index) => const SizedBox(height: 2),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: Text(
+                  'People you follow',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              );
+            }
+
+            final person = items[index - 1];
+
+            return ListTile(
+              onTap: () => context.push('${Routes.user}/${person.username ?? ''}'),
+              leading: AppAvatar(
+                seed: person.avatarSeed,
+                size: 44,
+                displayName: person.displayName,
+                username: person.username,
+              ),
+              title: Text(
+                person.handle,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: AppTypeScale.body,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                person.opensStraightAway
+                    ? 'Opens straight away'
+                    : 'They will get a request',
+                style: TextStyle(
+                  color: person.opensStraightAway ? colors.success : colors.textMuted,
+                  fontSize: AppTypeScale.caption,
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

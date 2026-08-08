@@ -78,6 +78,19 @@ async def unread_count(claims: CurrentClaims, mongo: MongoDatabase):
     return ok_response("Unread chats.", data=data)
 
 
+@router.get("/people", status_code=status.HTTP_200_OK)
+async def people_to_message(
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    limit: int = 20,
+    cursor: str | None = None,
+):
+    data = await controllers.people_to_message(
+        claims=claims, mongo=mongo, limit=limit, cursor=cursor
+    )
+    return ok_response("People you follow.", data=data)
+
+
 @router.post("/conversations", status_code=status.HTTP_201_CREATED)
 async def start_conversation(
     body: StartConversationRequest,
@@ -101,9 +114,16 @@ async def list_conversations(
     mongo: MongoDatabase,
     redis: RedisClient,
     state: str | None = Query(default=None),
+    limit: int = 20,
+    cursor: str | None = None,
 ):
     data = await controllers.list_conversations(
-        claims=claims, mongo=mongo, state=state, redis=redis
+        claims=claims,
+        mongo=mongo,
+        state=state,
+        redis=redis,
+        limit=limit,
+        cursor=cursor,
     )
     return ok_response("Chats loaded.", data=data)
 
