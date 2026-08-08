@@ -271,36 +271,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       ),
                     ),
                   ],
-                  if (user.interests.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        children: [
-                          for (final slug in user.interests.take(6))
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.xs,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceRaised,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                              ),
-                              child: Text(
-                                slug.replaceAll('-', ' '),
-                                style: TextStyle(
-                                  color: colors.textSecondary,
-                                  fontSize: AppTypeScale.caption,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: AppSpacing.lg),
                   TabBar(
                     controller: _tabController,

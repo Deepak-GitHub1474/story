@@ -204,7 +204,8 @@ async def people_to_message(
     ids = [row["followee_id"] for row in page]
 
     talking = await mongo[c.CONVERSATIONS].distinct(
-        "participant_ids", {"participant_ids": claims.user_id}
+        "participant_ids",
+        {"participant_ids": claims.user_id, "deleted_by": {"$ne": claims.user_id}},
     )
     blocked = await connection_controllers.blocked_ids(claims.user_id, mongo)
     skip = set(talking) | set(blocked) | {claims.user_id}
@@ -259,6 +260,13 @@ async def start_conversation(
     key = pair_key(claims.user_id, other["_id"])
     existing = await mongo[c.CONVERSATIONS].find_one({"pair_key": key})
     if existing is not None:
+        if claims.user_id in (existing.get("deleted_by") or []):
+            await mongo[c.CONVERSATIONS].update_one(
+                {"_id": existing["_id"]}, {"$pull": {"deleted_by": claims.user_id}}
+            )
+            existing["deleted_by"] = [
+                who for who in existing["deleted_by"] if who != claims.user_id
+            ]
         return {
             "conversation": await _serialize_conversation(
                 existing, user_id=claims.user_id, mongo=mongo, redis=redis

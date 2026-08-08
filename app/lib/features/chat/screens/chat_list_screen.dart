@@ -80,7 +80,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   'Messages',
                   style: TextStyle(
                     color: colors.textPrimary,
-                    fontSize: AppTypeScale.title,
+                    fontSize: AppTypeScale.body,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

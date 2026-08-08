@@ -203,3 +203,53 @@ async def test_a_new_message_lifts_that_chat_to_the_top(client, signup_payload):
     listed = (await client.get("/v1/chat/conversations", headers=mine)).json()["data"]
 
     assert listed["items"][0]["conversation_id"] == oldest
+
+
+async def _mutual_pair(client, signup_payload, name):
+    mine = await signed(client, signup_payload["username"])
+    other = await signed(client, name)
+    await follow(client, mine, name)
+    await follow(client, other, signup_payload["username"])
+    for headers in (mine, other):
+        await client.post("/v1/chat/identity", json={"public_key": "a" * 44}, headers=headers)
+    return mine, other
+
+
+async def _start(client, mine, name):
+    response = await client.post(
+        "/v1/chat/conversations",
+        json={
+            "username": name,
+            "wrapped_cek_for_me": "x" * 40,
+            "wrapped_cek_for_them": "y" * 40,
+            "sender_public_key": "a" * 44,
+        },
+        headers=mine,
+    )
+    return response.json()["data"]["conversation"]["conversation_id"]
+
+
+async def test_someone_whose_chat_you_deleted_is_offered_again(client, signup_payload):
+    mine, _ = await _mutual_pair(client, signup_payload, "chat_deleted")
+    conversation = await _start(client, mine, "chat_deleted")
+    await client.delete(f"/v1/chat/conversations/{conversation}", headers=mine)
+
+    data = await people(client, mine)
+
+    assert "chat_deleted" in [row["username"] for row in data["items"]]
+
+
+async def test_starting_again_brings_the_deleted_chat_back(client, signup_payload):
+    mine, _ = await _mutual_pair(client, signup_payload, "chat_return")
+    conversation = await _start(client, mine, "chat_return")
+    await client.delete(f"/v1/chat/conversations/{conversation}", headers=mine)
+
+    assert (await client.get("/v1/chat/conversations", headers=mine)).json()["data"][
+        "items"
+    ] == []
+
+    again = await _start(client, mine, "chat_return")
+    listed = (await client.get("/v1/chat/conversations", headers=mine)).json()["data"]
+
+    assert again == conversation
+    assert [row["conversation_id"] for row in listed["items"]] == [conversation]

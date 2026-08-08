@@ -29,7 +29,9 @@ class CommunitiesScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: SizedBox(
               height: 44,
               child: categories.when(
                 loading: () => const SizedBox.shrink(),
@@ -54,6 +56,7 @@ class CommunitiesScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
+              ),
               ),
             ),
             Expanded(
