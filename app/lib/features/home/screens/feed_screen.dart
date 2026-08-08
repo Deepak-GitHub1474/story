@@ -7,6 +7,7 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/comments_sheet.dart';
 import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/story_list_view.dart';
 
@@ -83,6 +84,10 @@ class FeedScreen extends ConsumerWidget {
                 '${Routes.user}/${story.author.username}',
               ),
               onLike: (story) => _like(ref, story),
+              onComment: (story) => showCommentsSheet(
+                context: context,
+                storyId: story.storyId,
+              ),
               onShare: (story) => _share(context, ref, story),
               onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),
               endLabel: 'You are all caught up',

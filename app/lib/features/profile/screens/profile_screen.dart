@@ -15,6 +15,7 @@ import '../../auth/providers/auth_provider.dart';
 
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/comments_sheet.dart';
 import '../../stories/widgets/story_list_view.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -195,6 +196,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               state: stories,
               showVisibility: true,
               onLongPress: _openStoryActions,
+              onComment: (story) => showCommentsSheet(
+                context: context,
+                storyId: story.storyId,
+              ),
               onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
               onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
               onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),

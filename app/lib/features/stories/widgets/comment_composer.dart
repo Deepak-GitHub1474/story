@@ -155,21 +155,15 @@ class _EmojiChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Material(
-      color: colors.surfaceRaised,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.xs,
-          ),
-          child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+    return InkResponse(
+      onTap: onTap,
+      radius: 24,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
+        child: Text(emoji, style: const TextStyle(fontSize: 24)),
       ),
     );
   }

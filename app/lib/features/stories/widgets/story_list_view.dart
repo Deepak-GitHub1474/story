@@ -21,6 +21,7 @@ class StoryListView extends StatefulWidget {
     this.onShare,
     this.onOpenShared,
     this.onLongPress,
+    this.onComment,
     this.emptyTitle = 'Nothing here yet',
     this.emptyBody = '',
     this.endLabel = 'You are all caught up',
@@ -37,6 +38,7 @@ class StoryListView extends StatefulWidget {
   final void Function(Story story)? onShare;
   final void Function(String storyId)? onOpenShared;
   final void Function(Story story)? onLongPress;
+  final void Function(Story story)? onComment;
   final String emptyTitle;
   final String emptyBody;
   final String endLabel;
@@ -129,6 +131,7 @@ class _StoryListViewState extends State<StoryListView> {
       showVisibility: widget.showVisibility,
       onTap: () => widget.onOpen(story),
       onLike: widget.onLike == null ? null : () => widget.onLike!(story),
+      onComment: widget.onComment == null ? null : () => widget.onComment!(story),
       onAuthorTap:
           widget.onAuthorTap == null ? null : () => widget.onAuthorTap!(story),
       onShare: widget.onShare == null || !story.isPublic

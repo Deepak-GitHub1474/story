@@ -435,7 +435,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                             if (_images.isNotEmpty) ...[
                               StoryImages(
                                 images: _images,
-                                height: 140,
                                 onRemove: (path) {
                                   setState(() => _images.remove(path));
                                   unawaited(_save());
