@@ -43,6 +43,8 @@ class StoryAuthor {
   final String displayName;
   final String avatarSeed;
   final String? username;
+
+  String get handle => username ?? displayName;
 }
 
 class Story {

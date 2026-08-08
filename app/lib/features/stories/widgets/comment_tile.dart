@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/expandable_text.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -63,7 +64,8 @@ class CommentTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RichText(
+                    ExpandableText(
+                      collapsedLines: 4,
                       text: TextSpan(
                         style: TextStyle(
                           color: colors.textSecondary,
@@ -72,7 +74,7 @@ class CommentTile extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text: comment.author.displayName,
+                            text: comment.author.handle,
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontWeight: FontWeight.w600,

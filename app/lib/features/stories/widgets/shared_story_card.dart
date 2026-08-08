@@ -32,13 +32,13 @@ class SharedStoryCard extends StatelessWidget {
                 AppAvatar(
                   seed: shared.author.avatarSeed,
                   size: 22,
-                  displayName: shared.author.displayName,
+                  displayName: shared.author.handle,
                   username: shared.author.username,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    shared.author.displayName,
+                    shared.author.handle,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: colors.textSecondary,

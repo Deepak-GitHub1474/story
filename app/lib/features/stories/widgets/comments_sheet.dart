@@ -194,7 +194,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
               controller: _composer,
               isSending: _isSending,
               onSend: _send,
-              replyingTo: _replyingTo?.author.displayName,
+              replyingTo: _replyingTo?.author.handle,
               onCancelReply: () => setState(() => _replyingTo = null),
             ),
           ),

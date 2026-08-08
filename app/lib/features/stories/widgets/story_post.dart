@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/expandable_text.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -37,8 +38,6 @@ class StoryPost extends StatefulWidget {
 }
 
 class _StoryPostState extends State<StoryPost> {
-  bool _isExpanded = false;
-
   static const _collapsedLines = 3;
 
   Story get story => widget.story;
@@ -77,7 +76,7 @@ class _StoryPostState extends State<StoryPost> {
                     GestureDetector(
                       onTap: widget.onAuthorTap,
                       child: Text(
-                        story.author.displayName,
+                        story.author.handle,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: colors.textPrimary,
@@ -88,7 +87,7 @@ class _StoryPostState extends State<StoryPost> {
                     ),
                     Text(
                       story.shared != null
-                          ? 'Shared ${story.shared!.author.displayName}\'s story'
+                          ? 'Shared ${story.shared!.author.handle}\'s story'
                           : '${timeAgo(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -167,9 +166,7 @@ class _StoryPostState extends State<StoryPost> {
               const SizedBox(height: AppSpacing.sm),
               _Caption(
                 story: story,
-                isExpanded: _isExpanded,
                 collapsedLines: _collapsedLines,
-                onToggle: () => setState(() => _isExpanded = !_isExpanded),
                 onOpen: widget.onTap,
               ),
               if (story.shared != null) ...[
@@ -211,16 +208,12 @@ class _StoryPostState extends State<StoryPost> {
 class _Caption extends StatelessWidget {
   const _Caption({
     required this.story,
-    required this.isExpanded,
     required this.collapsedLines,
-    required this.onToggle,
     this.onOpen,
   });
 
   final Story story;
-  final bool isExpanded;
   final int collapsedLines;
-  final VoidCallback onToggle;
   final VoidCallback? onOpen;
 
   @override
@@ -233,76 +226,40 @@ class _Caption extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final text = TextSpan(
-      children: [
-        TextSpan(
-          text: story.author.displayName,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: AppTypeScale.label,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const TextSpan(text: '  '),
-        if (title != null && title.isNotEmpty)
+    return ExpandableText(
+      collapsedLines: collapsedLines,
+      onTapWhenShort: onOpen,
+      text: TextSpan(
+        children: [
           TextSpan(
-            text: '$title\n',
+            text: story.author.handle,
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.label,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          const TextSpan(text: '  '),
+          if (title != null && title.isNotEmpty)
+            TextSpan(
+              text: '$title\n',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: AppTypeScale.label,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          TextSpan(
+            text: body,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
               height: 1.5,
             ),
           ),
-        TextSpan(
-          text: body,
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: AppTypeScale.label,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final painter = TextPainter(
-          text: text,
-          maxLines: collapsedLines,
-          textDirection: Directionality.of(context),
-        )..layout(maxWidth: constraints.maxWidth);
-        final overflows = painter.didExceedMaxLines;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: overflows ? onToggle : onOpen,
-              child: RichText(
-                text: text,
-                maxLines: isExpanded ? null : collapsedLines,
-                overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
-              ),
-            ),
-            if (overflows)
-              GestureDetector(
-                onTap: onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    isExpanded ? 'less' : 'more',
-                    style: TextStyle(
-                      color: colors.textMuted,
-                      fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 }

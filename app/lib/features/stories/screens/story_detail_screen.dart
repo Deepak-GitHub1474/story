@@ -359,7 +359,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                story.author.displayName,
+                                story.author.handle,
                                 style: TextStyle(
                                   color: colors.textPrimary,
                                   fontSize: AppTypeScale.body,
@@ -533,7 +533,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
               CommentComposer(
                 controller: _comment,
                 isSending: _isSending,
-                replyingTo: _replyTarget?.author.displayName,
+                replyingTo: _replyTarget?.author.handle,
                 onCancelReply: () => setState(() => _replyTarget = null),
                 onSend: () => _send(story.storyId),
               ),
