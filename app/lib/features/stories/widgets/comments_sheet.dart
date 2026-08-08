@@ -122,7 +122,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
               ),
             ),
           ),
-          Divider(height: 1, color: colors.border),
+          Divider(height: 1, thickness: 0.5, color: colors.border),
           Expanded(
             child: comments.when(
               loading: () => const SkeletonList(count: 4),
@@ -187,7 +187,6 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                     ),
             ),
           ),
-          Divider(height: 1, color: colors.border),
           Padding(
             padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
             child: CommentComposer(

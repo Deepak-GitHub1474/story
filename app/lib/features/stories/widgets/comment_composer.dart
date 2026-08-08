@@ -28,7 +28,7 @@ class CommentComposer extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border(top: BorderSide(color: colors.border)),
+        border: Border(top: BorderSide(color: colors.border, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
