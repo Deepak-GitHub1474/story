@@ -15,7 +15,7 @@ export default async function DashLayout({
     <div className="min-h-dvh">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-          <span className="text-xs font-semibold tracking-[0.35em]">STORY ADMIN</span>
+          <span className="text-xs font-medium tracking-[0.35em]">STORY ADMIN</span>
 
           <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
             <NavLink href="/queue" label="Queue" />

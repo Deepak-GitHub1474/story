@@ -66,7 +66,7 @@ class AppSheet extends StatelessWidget {
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

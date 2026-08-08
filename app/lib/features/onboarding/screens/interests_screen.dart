@@ -111,7 +111,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                           style: TextStyle(
                             color: colors.textMuted,
                             fontSize: AppTypeScale.caption,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -197,7 +197,7 @@ class _InterestChip extends StatelessWidget {
               style: TextStyle(
                 color: isSelected ? colors.accentText : colors.textSecondary,
                 fontSize: AppTypeScale.label,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
               ),
             ),
           ),

@@ -58,14 +58,14 @@ export default async function PublicStoryPage({ params }: Props) {
     <main className="mx-auto max-w-2xl px-6 py-12 sm:py-20">
       <Link
         href="/"
-        className="text-xs font-semibold tracking-[0.4em] text-text-muted transition-colors hover:text-text-secondary"
+        className="text-xs font-medium tracking-[0.4em] text-text-muted transition-colors hover:text-text-secondary"
       >
         STORY
       </Link>
 
       <article className="mt-10">
         {title ? (
-          <h1 className="text-3xl leading-tight font-semibold text-balance sm:text-4xl">
+          <h1 className="text-3xl leading-tight font-medium text-balance sm:text-4xl">
             {title}
           </h1>
         ) : null}
@@ -73,7 +73,7 @@ export default async function PublicStoryPage({ params }: Props) {
         <div className="mt-6 flex items-center gap-3">
           <Avatar seed={story.author.avatar_seed} size={40} />
           <div className="text-sm">
-            <p className="font-semibold">{story.author.display_name}</p>
+            <p className="font-medium">{story.author.display_name}</p>
             <p className="text-text-muted">
               {[
                 formatDate(story.published_at),
@@ -94,14 +94,14 @@ export default async function PublicStoryPage({ params }: Props) {
       </article>
 
       <aside className="mt-16 rounded-xl border border-border bg-surface p-6">
-        <h2 className="font-semibold">Written anonymously on STORY</h2>
+        <h2 className="font-medium">Written anonymously on STORY</h2>
         <p className="mt-2 text-sm leading-relaxed text-text-secondary">
           The person who wrote this has no name here, no email on file, and no
           profile photo. That is what let them write it.
         </p>
         <Link
           href="/signup"
-          className="mt-5 inline-block rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-text transition-opacity hover:opacity-90"
+          className="mt-5 inline-block rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-accent-text transition-opacity hover:opacity-90"
         >
           Write your own
         </Link>

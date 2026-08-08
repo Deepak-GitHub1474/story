@@ -20,7 +20,7 @@ export function Avatar({ seed, size = 40 }: { seed: string; size?: number }) {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-[#0B0D12]"
+      className="inline-flex shrink-0 items-center justify-center rounded-full border border-border font-medium text-[#0B0D12]"
       style={{
         width: size,
         height: size,

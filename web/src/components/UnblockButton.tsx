@@ -11,7 +11,7 @@ export function UnblockButton({ username }: { username: string }) {
       type="button"
       disabled={isPending}
       onClick={() => startTransition(async () => void (await unblockUser(username)))}
-      className="text-[length:var(--text-label)] font-semibold text-accent hover:underline disabled:opacity-50"
+      className="text-[length:var(--text-label)] font-medium text-accent hover:underline disabled:opacity-50"
     >
       Unblock
     </button>

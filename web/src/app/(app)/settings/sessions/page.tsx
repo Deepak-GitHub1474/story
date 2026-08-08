@@ -17,7 +17,7 @@ export default async function SessionsPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Active sessions</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Active sessions</h1>
       <p className="mt-2 leading-relaxed text-text-secondary">
         Every device signed in to this account. Revoking one signs it out within a
         minute.
@@ -27,7 +27,7 @@ export default async function SessionsPage() {
         {sessions.map((session) => (
           <li key={session.family_id} className="flex items-center gap-4 py-4">
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold">{session.label}</span>
+              <span className="block font-medium">{session.label}</span>
               <span
                 className={
                   session.is_current

@@ -27,7 +27,7 @@ export function ChatUnlock({ userId }: { userId: string }) {
       }}
     >
       <div>
-        <h2 className="font-semibold">Unlock your messages here</h2>
+        <h2 className="font-medium">Unlock your messages here</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">
           Your usual account password — the same one you sign in with. Your chat key
           is stored encrypted and only that password opens it, so this browser can

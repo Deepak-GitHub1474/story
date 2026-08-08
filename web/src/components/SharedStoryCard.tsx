@@ -13,12 +13,12 @@ export function SharedStoryCard({
     <>
       <div className="flex items-center gap-2">
         <Avatar seed={shared.author.avatar_seed} size={22} />
-        <span className="truncate text-[length:var(--text-caption)] font-semibold text-text-secondary">
+        <span className="truncate text-[length:var(--text-caption)] font-medium text-text-secondary">
           {shared.author.display_name}
         </span>
       </div>
       {shared.title ? (
-        <p className="mt-2 line-clamp-2 text-[length:var(--text-label)] leading-snug font-semibold">
+        <p className="mt-2 line-clamp-2 text-[length:var(--text-label)] leading-snug font-medium">
           {shared.title}
         </p>
       ) : null}

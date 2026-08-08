@@ -73,7 +73,7 @@ export default function HomePage() {
 
       <div className="min-h-dvh bg-bg text-text-primary">
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7 sm:px-10">
-          <span className="rise text-[length:var(--text-label)] font-semibold tracking-[0.42em]">
+          <span className="rise text-[length:var(--text-label)] font-medium tracking-[0.42em]">
             STORY
           </span>
           <nav className="rise flex items-center gap-6" style={{ animationDelay: '80ms' }}>
@@ -85,7 +85,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-[length:var(--radius-pill)] bg-accent px-5 py-2.5 text-[length:var(--text-label)] font-semibold text-accent-text transition-transform hover:-translate-y-0.5"
+              className="rounded-[length:var(--radius-pill)] bg-accent px-5 py-2.5 text-[length:var(--text-label)] font-medium text-accent-text transition-transform hover:-translate-y-0.5"
             >
               Start writing
             </Link>
@@ -126,7 +126,7 @@ export default function HomePage() {
               >
                 <Link
                   href="/signup"
-                  className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-semibold text-accent-text transition-transform hover:-translate-y-0.5"
+                  className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-medium text-accent-text transition-transform hover:-translate-y-0.5"
                 >
                   Create an account
                 </Link>
@@ -257,13 +257,13 @@ export default function HomePage() {
                 <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
                   <Link
                     href="/signup"
-                    className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-semibold text-accent-text transition-transform hover:-translate-y-0.5"
+                    className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-medium text-accent-text transition-transform hover:-translate-y-0.5"
                   >
                     Create an account
                   </Link>
                   <Link
                     href="/signin"
-                    className="text-[length:var(--text-label)] font-semibold text-text-secondary underline-offset-4 transition-colors hover:text-text-primary hover:underline"
+                    className="text-[length:var(--text-label)] font-medium text-text-secondary underline-offset-4 transition-colors hover:text-text-primary hover:underline"
                   >
                     I already have one
                   </Link>

@@ -43,7 +43,7 @@ export default async function ProfilePage({ searchParams }: Props) {
       </header>
 
       <div className="mt-6">
-        <h1 className="font-semibold">{user.display_name}</h1>
+        <h1 className="font-medium">{user.display_name}</h1>
         <p className="text-[length:var(--text-caption)] text-text-muted">
           @{user.username}
         </p>
@@ -89,7 +89,7 @@ export default async function ProfilePage({ searchParams }: Props) {
               aria-current={isActive ? 'page' : undefined}
               className={
                 isActive
-                  ? 'border-b-2 border-accent px-4 py-3 text-[length:var(--text-label)] font-semibold'
+                  ? 'border-b-2 border-accent px-4 py-3 text-[length:var(--text-label)] font-medium'
                   : 'border-b-2 border-transparent px-4 py-3 text-[length:var(--text-label)] text-text-muted hover:text-text-secondary'
               }
             >
@@ -142,7 +142,7 @@ function Stat({
   const inner = (
     <>
       <dt className="sr-only">{label}</dt>
-      <dd className="text-[length:var(--text-heading)] font-semibold">{value}</dd>
+      <dd className="text-[length:var(--text-heading)] font-medium">{value}</dd>
       <p className="text-[length:var(--text-caption)] text-text-muted">{label}</p>
     </>
   );

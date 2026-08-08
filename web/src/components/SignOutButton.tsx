@@ -15,7 +15,7 @@ export function SignOutButton() {
           startTransition(async () => void (await signOut()));
         }
       }}
-      className="text-[length:var(--text-label)] font-semibold text-danger hover:underline disabled:opacity-50"
+      className="text-[length:var(--text-label)] font-medium text-danger hover:underline disabled:opacity-50"
     >
       Sign out
     </button>

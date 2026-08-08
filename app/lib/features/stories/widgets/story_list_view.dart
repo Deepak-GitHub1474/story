@@ -169,7 +169,7 @@ class _StoryListViewState extends State<StoryListView> {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.heading,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           if (widget.emptyBody.isNotEmpty) ...[

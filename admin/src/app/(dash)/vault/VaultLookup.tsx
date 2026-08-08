@@ -64,7 +64,7 @@ export function VaultLookup() {
             <ul className="divide-y divide-border rounded-[length:var(--radius-md)] border border-border">
               {passcodes.map((passcode) => (
                 <li key={passcode.passcode_id} className="px-4 py-3">
-                  <p className="font-semibold">{passcode.label}</p>
+                  <p className="font-medium">{passcode.label}</p>
                   <p className="text-[length:var(--text-caption)] text-text-muted">
                     {passcode.scope} · {passcode.failed_attempts} failed attempts
                   </p>
@@ -95,7 +95,7 @@ export function VaultLookup() {
               }}
               className="flex flex-col gap-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5"
             >
-              <h2 className="font-semibold text-danger">Release to the owner</h2>
+              <h2 className="font-medium text-danger">Release to the owner</h2>
               <Field
                 label="Ticket id"
                 value={ticketId}

@@ -27,7 +27,7 @@ export function StoryRow({
         <div className="min-w-0 flex-1">
           <Link
             href={`/u/${story.author.username ?? ''}`}
-            className="block truncate text-[length:var(--text-label)] font-semibold hover:underline"
+            className="block truncate text-[length:var(--text-label)] font-medium hover:underline"
           >
             {story.author.display_name}
           </Link>
@@ -61,7 +61,7 @@ export function StoryRow({
 
       <Link href={href} className="mt-3 block">
         {story.title ? (
-          <h2 className="text-[length:var(--text-heading)] leading-snug font-semibold text-balance transition-colors group-hover:text-accent">
+          <h2 className="text-[length:var(--text-heading)] leading-snug font-medium text-balance transition-colors group-hover:text-accent">
             {story.title}
           </h2>
         ) : null}

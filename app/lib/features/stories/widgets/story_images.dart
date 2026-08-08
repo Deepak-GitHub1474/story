@@ -84,7 +84,7 @@ class _StoryImagesState extends State<StoryImages> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: AppTypeScale.caption,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

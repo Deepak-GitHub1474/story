@@ -28,7 +28,7 @@ const TAG_PATTERN = /(@[a-z0-9_]{3,20})/g;
 function renderBody(body: string) {
   return body.split(TAG_PATTERN).map((part, index) =>
     part.startsWith('@') ? (
-      <span key={index} className="font-semibold text-accent">
+      <span key={index} className="font-medium text-accent">
         {part}
       </span>
     ) : (
@@ -83,7 +83,7 @@ export function CommentThread({
 
   return (
     <section className="mt-10">
-      <h2 className="text-[length:var(--text-heading)] font-semibold">Comments</h2>
+      <h2 className="text-[length:var(--text-heading)] font-medium">Comments</h2>
 
       {comments.length === 0 ? (
         <p className="mt-4 leading-relaxed text-text-muted">
@@ -227,7 +227,7 @@ function CommentItem({
                 maxLength={2000}
                 className="resize-y rounded-[length:var(--radius-md)] border border-border bg-surface px-3 py-2 outline-none focus:border-accent"
               />
-              <div className="flex gap-3 text-[length:var(--text-caption)] font-semibold">
+              <div className="flex gap-3 text-[length:var(--text-caption)] font-medium">
                 <button type="submit" className="text-accent">
                   Save
                 </button>
@@ -245,7 +245,7 @@ function CommentItem({
             </form>
           ) : (
             <p className="leading-relaxed text-text-secondary">
-              <span className="font-semibold text-text-primary">
+              <span className="font-medium text-text-primary">
                 {comment.author.display_name}
               </span>{' '}
               {renderBody(comment.body)}
@@ -268,7 +268,7 @@ function CommentItem({
                 })
               }
               className={cn(
-                'inline-flex items-center gap-1 font-semibold transition-colors',
+                'inline-flex items-center gap-1 font-medium transition-colors',
                 like.isLiked ? 'text-danger' : 'hover:text-text-secondary',
               )}
             >
@@ -287,7 +287,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => onReply(comment)}
-              className="font-semibold hover:text-text-secondary"
+              className="font-medium hover:text-text-secondary"
             >
               Reply
             </button>
@@ -295,7 +295,7 @@ function CommentItem({
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="font-semibold hover:text-text-secondary"
+                className="font-medium hover:text-text-secondary"
               >
                 Edit
               </button>
@@ -363,7 +363,7 @@ function CommentItem({
               setExtraReplies(await loadReplies(comment.comment_id));
             })
           }
-          className="mt-3 ml-8 text-[length:var(--text-caption)] font-semibold text-text-muted hover:text-text-secondary"
+          className="mt-3 ml-8 text-[length:var(--text-caption)] font-medium text-text-muted hover:text-text-secondary"
         >
           View {hidden} more {hidden === 1 ? 'reply' : 'replies'}
         </button>

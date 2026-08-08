@@ -87,7 +87,7 @@ class _RecoveryScreenState extends ConsumerState<RecoveryScreen> {
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.body,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -180,7 +180,7 @@ class _TicketRow extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

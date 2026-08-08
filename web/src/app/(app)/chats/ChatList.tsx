@@ -36,7 +36,7 @@ export function ChatList({ userId }: { userId: string }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Messages</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Messages</h1>
 
       {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
 
@@ -57,7 +57,7 @@ export function ChatList({ userId }: { userId: string }) {
             type="button"
             onClick={() => setShowRequests(pending as boolean)}
             className={cn(
-              'rounded-[length:var(--radius-pill)] border px-4 py-2 text-[length:var(--text-label)] font-semibold transition-colors',
+              'rounded-[length:var(--radius-pill)] border px-4 py-2 text-[length:var(--text-label)] font-medium transition-colors',
               showRequests === pending
                 ? 'border-accent bg-accent text-accent-text'
                 : 'border-border text-text-secondary hover:text-text-primary',
@@ -91,8 +91,8 @@ export function ChatList({ userId }: { userId: string }) {
                     className={cn(
                       'block truncate',
                       conversation.unread_count > 0
-                        ? 'font-semibold'
-                        : 'font-semibold',
+                        ? 'font-medium'
+                        : 'font-medium',
                     )}
                   >
                     {conversation.other.display_name}
@@ -117,7 +117,7 @@ export function ChatList({ userId }: { userId: string }) {
                   </span>
                 ) : null}
                 {conversation.unread_count > 0 ? (
-                  <span className="rounded-[length:var(--radius-pill)] bg-accent px-2 py-0.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
+                  <span className="rounded-[length:var(--radius-pill)] bg-accent px-2 py-0.5 text-[length:var(--text-caption)] font-medium text-accent-text">
                     {conversation.unread_count}
                   </span>
                 ) : null}

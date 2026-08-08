@@ -17,7 +17,7 @@ export function EditProfileForm({
 
   return (
     <form action={action} className="mx-auto flex max-w-lg flex-col gap-6">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Edit profile</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Edit profile</h1>
 
       <Field
         label="Display name"

@@ -18,7 +18,7 @@ export default async function ActivityPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-[length:var(--text-title)] font-semibold">Activity</h1>
+        <h1 className="text-[length:var(--text-title)] font-medium">Activity</h1>
         {unread > 0 ? <MarkAllRead /> : null}
       </div>
 
@@ -44,7 +44,7 @@ export default async function ActivityPage() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block leading-relaxed text-text-secondary">
-                    <span className="font-semibold text-text-primary">
+                    <span className="font-medium text-text-primary">
                       {item.actor.display_name}
                     </span>{' '}
                     {item.body}

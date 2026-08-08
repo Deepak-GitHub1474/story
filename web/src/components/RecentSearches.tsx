@@ -22,13 +22,13 @@ export function RecentSearches({ query }: { query: string }) {
   return (
     <section className="mt-10">
       <div className="flex items-center justify-between">
-        <h2 className="text-[length:var(--text-caption)] font-semibold tracking-[0.12em] text-text-muted uppercase">
+        <h2 className="text-[length:var(--text-caption)] font-medium tracking-[0.12em] text-text-muted uppercase">
           Recent
         </h2>
         <button
           type="button"
           onClick={() => setItems(clearSearches())}
-          className="text-[length:var(--text-caption)] font-semibold text-accent hover:underline"
+          className="text-[length:var(--text-caption)] font-medium text-accent hover:underline"
         >
           Clear all
         </button>

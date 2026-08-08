@@ -19,7 +19,7 @@ export default async function SecurityPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Security</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Security</h1>
 
       <p className="mt-3 leading-relaxed text-text-secondary">
         Releasing an escrowed passcode needs a code from an authenticator app on

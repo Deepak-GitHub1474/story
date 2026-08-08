@@ -92,7 +92,7 @@ export function ShareControl({ story }: { story: TStory }) {
             }}
             className="block w-full rounded-[length:var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
           >
-            <span className="block text-[length:var(--text-label)] font-semibold">
+            <span className="block text-[length:var(--text-label)] font-medium">
               Add to your story
             </span>
             <span className="mt-0.5 block text-[length:var(--text-caption)] text-text-muted">
@@ -104,7 +104,7 @@ export function ShareControl({ story }: { story: TStory }) {
             onClick={copyLink}
             className="block w-full rounded-[length:var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
           >
-            <span className="block text-[length:var(--text-label)] font-semibold">
+            <span className="block text-[length:var(--text-label)] font-medium">
               Copy link
             </span>
             <span className="mt-0.5 block text-[length:var(--text-caption)] text-text-muted">

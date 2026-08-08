@@ -176,7 +176,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.heading,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -253,7 +253,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: AppTypeScale.body,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -312,7 +312,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     dividerColor: Colors.transparent,
                     labelStyle: const TextStyle(
                       fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                     unselectedLabelStyle: const TextStyle(
                       fontSize: AppTypeScale.label,
@@ -353,7 +353,7 @@ class _Stat extends StatelessWidget {
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: AppTypeScale.heading,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),

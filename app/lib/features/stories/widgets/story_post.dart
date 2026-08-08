@@ -81,7 +81,7 @@ class _StoryPostState extends State<StoryPost> {
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: AppTypeScale.label,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -221,7 +221,7 @@ class _Caption extends StatelessWidget {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const TextSpan(text: '  '),
@@ -231,7 +231,7 @@ class _Caption extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.label,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.5,
               ),
             ),
@@ -331,7 +331,7 @@ class VisibilityBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: AppTypeScale.caption,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -364,7 +364,7 @@ class _Count extends StatelessWidget {
         style: TextStyle(
           color: colors.textPrimary,
           fontSize: AppTypeScale.label,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

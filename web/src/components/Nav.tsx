@@ -44,7 +44,7 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
       <nav className="mx-auto flex h-16 max-w-5xl items-center gap-1 px-4 sm:px-6">
         <Link
           href="/feed"
-          className="mr-4 shrink-0 text-xs font-semibold tracking-[0.35em] text-text-primary"
+          className="mr-4 shrink-0 text-xs font-medium tracking-[0.35em] text-text-primary"
         >
           STORY
         </Link>
@@ -61,23 +61,23 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
                     'relative inline-flex items-center rounded-[length:var(--radius-sm)] px-3 py-2',
                     'text-[length:var(--text-label)] whitespace-nowrap transition-colors',
                     isActive
-                      ? 'font-semibold text-text-primary'
+                      ? 'font-medium text-text-primary'
                       : 'text-text-muted hover:text-text-secondary',
                   )}
                 >
                   {link.label}
                   {link.href === '/chats' && chatUnread > 0 ? (
-                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-medium text-accent-text">
                       {chatUnread}
                     </span>
                   ) : null}
                   {link.href === '/chats' && chatUnread > 0 ? (
-                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-semibold text-accent-text">
+                    <span className="ml-1.5 rounded-[length:var(--radius-pill)] bg-accent px-1.5 text-[length:var(--text-caption)] font-medium text-accent-text">
                       {chatUnread > 99 ? '99+' : chatUnread}
                     </span>
                   ) : null}
                   {link.href === '/activity' && unread > 0 ? (
-                    <span className="ml-1.5 inline-flex min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] bg-danger px-1 text-[10px] font-semibold text-bg">
+                    <span className="ml-1.5 inline-flex min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] bg-danger px-1 text-[10px] font-medium text-bg">
                       {unread > 99 ? '99+' : unread}
                     </span>
                   ) : null}
@@ -90,7 +90,7 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/compose"
-            className="rounded-[length:var(--radius-md)] border border-accent bg-accent px-4 py-2 text-[length:var(--text-label)] font-semibold text-accent-text transition-opacity hover:opacity-90"
+            className="rounded-[length:var(--radius-md)] border border-accent bg-accent px-4 py-2 text-[length:var(--text-label)] font-medium text-accent-text transition-opacity hover:opacity-90"
           >
             Write
           </Link>
@@ -99,7 +99,7 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
             className={cn(
               'rounded-[length:var(--radius-sm)] px-3 py-2 text-[length:var(--text-label)] transition-colors',
               pathname.startsWith('/profile') || pathname.startsWith('/settings')
-                ? 'font-semibold text-text-primary'
+                ? 'font-medium text-text-primary'
                 : 'text-text-muted hover:text-text-secondary',
             )}
           >

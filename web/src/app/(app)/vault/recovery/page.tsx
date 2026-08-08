@@ -51,9 +51,9 @@ export default async function VaultRecoveryPage() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-8">
       <div>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Recovery</h1>
+        <h1 className="text-[length:var(--text-title)] font-medium">Recovery</h1>
         <Card className="mt-6">
-          <h2 className="font-semibold">What we can and cannot do</h2>
+          <h2 className="font-medium">What we can and cannot do</h2>
           <p className="mt-2 leading-relaxed text-text-secondary">
             Forgot your account password? Nobody can recover it, and nothing in your
             vault survives without it.

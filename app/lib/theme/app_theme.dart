@@ -50,7 +50,7 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
       titleTextStyle: TextStyle(
         color: colors.textPrimary,
         fontSize: AppTypeScale.heading,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
       ),
       iconTheme: IconThemeData(color: colors.textPrimary),
     ),

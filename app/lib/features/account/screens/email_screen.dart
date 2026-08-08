@@ -167,7 +167,7 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.body,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

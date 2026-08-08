@@ -19,7 +19,7 @@ class SplashScreen extends StatelessWidget {
               style: TextStyle(
                 color: context.colors.textPrimary,
                 fontSize: AppTypeScale.title,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 6,
               ),
             ),

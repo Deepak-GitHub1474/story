@@ -94,7 +94,7 @@ class _Heading extends StatelessWidget {
         style: TextStyle(
           color: colors.textMuted,
           fontSize: AppTypeScale.caption,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.6,
         ),
       ),
@@ -132,7 +132,7 @@ class _RoomCard extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.body,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -199,7 +199,7 @@ class _PersonCard extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.label,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 2),

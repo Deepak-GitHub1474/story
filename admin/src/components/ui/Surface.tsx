@@ -27,7 +27,7 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="px-1 text-[length:var(--text-caption)] font-semibold tracking-[0.12em] text-text-muted uppercase">
+      <h2 className="px-1 text-[length:var(--text-caption)] font-medium tracking-[0.12em] text-text-muted uppercase">
         {title}
       </h2>
       <div className="divide-y divide-border overflow-hidden rounded-[length:var(--radius-md)] border border-border bg-surface">
@@ -100,7 +100,7 @@ export function Badge({
     <span
       className={cn(
         'inline-flex items-center rounded-[length:var(--radius-pill)] border px-2 py-0.5',
-        'text-[length:var(--text-caption)] font-semibold',
+        'text-[length:var(--text-caption)] font-medium',
         tones[tone],
       )}
     >

@@ -81,7 +81,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.title,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const Spacer(),
@@ -191,7 +191,7 @@ class _Segment extends StatelessWidget {
           style: TextStyle(
             color: isActive ? colors.accentText : colors.textSecondary,
             fontSize: AppTypeScale.label,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -233,7 +233,7 @@ class _ConversationRow extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.body,
-                      fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w600,
+                      fontWeight: unread > 0 ? FontWeight.w500 : FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -272,7 +272,7 @@ class _ConversationRow extends StatelessWidget {
                   style: TextStyle(
                     color: colors.accentText,
                     fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -307,7 +307,7 @@ class _Empty extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.heading,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -356,7 +356,7 @@ class _LockedBanner extends StatelessWidget {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.body,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

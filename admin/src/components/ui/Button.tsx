@@ -39,7 +39,7 @@ export function Button({
       disabled={disabled || isLoading}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-[length:var(--radius-md)]',
-        'font-semibold transition-[opacity,border-color,background-color] duration-150',
+        'font-medium transition-[opacity,border-color,background-color] duration-150',
         'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
         'focus-visible:ring-offset-bg focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-55',

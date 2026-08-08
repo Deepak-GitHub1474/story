@@ -58,7 +58,7 @@ class _ExpandableTextState extends State<ExpandableText> {
                     style: TextStyle(
                       color: colors.textMuted,
                       fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

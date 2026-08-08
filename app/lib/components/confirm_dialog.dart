@@ -26,7 +26,7 @@ Future<bool> confirmAction(
         style: TextStyle(
           color: isDestructive ? colors.danger : colors.textPrimary,
           fontSize: AppTypeScale.heading,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
       content: Column(
@@ -85,7 +85,7 @@ Future<bool> confirmAction(
             confirmLabel,
             style: TextStyle(
               color: isDestructive ? colors.danger : colors.accent,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

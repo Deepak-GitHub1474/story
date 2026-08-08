@@ -231,7 +231,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   style: TextStyle(
                     color: colors.textMuted,
                     fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -423,7 +423,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontSize: AppTypeScale.heading,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
@@ -503,7 +503,7 @@ class _HideSheetState extends State<_HideSheet> {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.heading,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -608,7 +608,7 @@ class _KindTabs extends StatelessWidget {
                             ? colors.accentText
                             : colors.textSecondary,
                         fontSize: AppTypeScale.caption,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -667,7 +667,7 @@ class _VaultChip extends StatelessWidget {
               style: TextStyle(
                 color: isChosen ? colors.accentText : colors.textSecondary,
                 fontSize: AppTypeScale.label,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

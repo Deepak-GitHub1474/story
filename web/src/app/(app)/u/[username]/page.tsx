@@ -48,13 +48,13 @@ export default async function PublicProfilePage({ params }: Props) {
         <Avatar seed={profile.avatar_seed} size={80} />
         <dl className="flex flex-1 justify-around gap-6 text-center">
           <div>
-            <dd className="text-[length:var(--text-heading)] font-semibold">
+            <dd className="text-[length:var(--text-heading)] font-medium">
               {profile.counts.stories ?? 0}
             </dd>
             <dt className="text-[length:var(--text-caption)] text-text-muted">Stories</dt>
           </div>
           <div>
-            <dd className="text-[length:var(--text-heading)] font-semibold">
+            <dd className="text-[length:var(--text-heading)] font-medium">
               {profile.counts.followers ?? 0}
             </dd>
             <dt className="text-[length:var(--text-caption)] text-text-muted">Readers</dt>
@@ -64,7 +64,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
       <div className="mt-6 flex items-start gap-3">
         <div className="min-w-0 flex-1">
-        <h1 className="font-semibold">{profile.display_name}</h1>
+        <h1 className="font-medium">{profile.display_name}</h1>
         <p className="text-[length:var(--text-caption)] text-text-muted">
           @{profile.username}
         </p>

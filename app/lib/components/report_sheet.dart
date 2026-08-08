@@ -56,7 +56,7 @@ Future<void> showReportSheet(
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.heading,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -78,7 +78,7 @@ Future<void> showReportSheet(
                 option.label,
                 style: TextStyle(
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Text(

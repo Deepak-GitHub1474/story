@@ -58,7 +58,7 @@ class FeedScreen extends ConsumerWidget {
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.heading,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 5,
                   ),
                 ),

@@ -182,7 +182,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
               style: TextStyle(
                 color: context.colors.textPrimary,
                 fontSize: AppTypeScale.heading,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -363,7 +363,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 style: TextStyle(
                                   color: colors.textPrimary,
                                   fontSize: AppTypeScale.body,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               Text(
@@ -389,7 +389,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: AppTypeScale.title,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           height: 1.3,
                         ),
                       ),

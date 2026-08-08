@@ -15,7 +15,7 @@ export default async function AuditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Audit log</h1>
+        <h1 className="text-[length:var(--text-title)] font-medium">Audit log</h1>
         <p className="mt-1 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           Append-only and hash-chained. Nothing here can be edited or deleted, by any
           role, through any endpoint.
@@ -31,11 +31,11 @@ export default async function AuditPage() {
           <table className="w-full min-w-[640px] text-left">
             <thead className="bg-surface text-[length:var(--text-caption)] tracking-wide text-text-muted uppercase">
               <tr>
-                <th className="px-4 py-3 font-semibold">When</th>
-                <th className="px-4 py-3 font-semibold">Who</th>
-                <th className="px-4 py-3 font-semibold">Action</th>
-                <th className="px-4 py-3 font-semibold">Target</th>
-                <th className="px-4 py-3 font-semibold">Outcome</th>
+                <th className="px-4 py-3 font-medium">When</th>
+                <th className="px-4 py-3 font-medium">Who</th>
+                <th className="px-4 py-3 font-medium">Action</th>
+                <th className="px-4 py-3 font-medium">Target</th>
+                <th className="px-4 py-3 font-medium">Outcome</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

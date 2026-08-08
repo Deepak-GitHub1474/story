@@ -26,7 +26,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Search</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Search</h1>
       <div className="mt-6">
         <SearchBox initialQuery={query} />
       </div>
@@ -54,7 +54,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     >
                       <Avatar seed={person.avatar_seed} size={40} />
                       <span>
-                        <span className="block font-semibold">{person.display_name}</span>
+                        <span className="block font-medium">{person.display_name}</span>
                         <span className="block text-[length:var(--text-caption)] text-text-muted">
                           @{person.username}
                         </span>
@@ -76,7 +76,7 @@ export default async function SearchPage({ searchParams }: Props) {
                       href={`/communities/${community.slug}`}
                       className="block py-3 transition-colors hover:bg-surface"
                     >
-                      <span className="block font-semibold">{community.name}</span>
+                      <span className="block font-medium">{community.name}</span>
                       <span className="block text-[length:var(--text-caption)] text-text-muted">
                         {community.counts.members} members
                       </span>
@@ -105,7 +105,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 text-[length:var(--text-caption)] font-semibold tracking-[0.12em] text-text-muted uppercase">
+    <h2 className="mb-3 text-[length:var(--text-caption)] font-medium tracking-[0.12em] text-text-muted uppercase">
       {children}
     </h2>
   );

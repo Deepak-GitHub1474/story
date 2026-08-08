@@ -130,7 +130,7 @@ class AppSection extends StatelessWidget {
             style: TextStyle(
               color: colors.textMuted,
               fontSize: AppTypeScale.caption,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.2,
             ),
           ),

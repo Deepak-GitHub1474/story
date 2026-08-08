@@ -40,7 +40,7 @@ export default async function StoryPage({ params }: Props) {
         <div className="min-w-0 flex-1">
           <Link
             href={`/u/${story.author.username ?? ''}`}
-            className="block truncate font-semibold hover:underline"
+            className="block truncate font-medium hover:underline"
           >
             {story.author.display_name}
           </Link>
@@ -61,7 +61,7 @@ export default async function StoryPage({ params }: Props) {
 
       <article className="mt-10">
         {story.title ? (
-          <h1 className="text-[length:var(--text-title)] leading-tight font-semibold text-balance sm:text-4xl">
+          <h1 className="text-[length:var(--text-title)] leading-tight font-medium text-balance sm:text-4xl">
             {story.title}
           </h1>
         ) : null}

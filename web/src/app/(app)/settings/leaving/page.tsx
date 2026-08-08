@@ -14,9 +14,9 @@ export default async function LeavingPage() {
   if (isLeaving) {
     return (
       <div className="mx-auto max-w-lg">
-        <h1 className="text-[length:var(--text-title)] font-semibold">Leaving</h1>
+        <h1 className="text-[length:var(--text-title)] font-medium">Leaving</h1>
         <div className="mt-6 rounded-[length:var(--radius-md)] border border-danger bg-surface p-6">
-          <h2 className="text-[length:var(--text-heading)] font-semibold text-danger">
+          <h2 className="text-[length:var(--text-heading)] font-medium text-danger">
             Your account is scheduled for deletion
           </h2>
           <p className="mt-3 leading-relaxed text-text-secondary">

@@ -194,7 +194,7 @@ class _ShellTab extends StatelessWidget {
                         style: TextStyle(
                           color: colors.bg,
                           fontSize: AppTypeScale.micro,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),

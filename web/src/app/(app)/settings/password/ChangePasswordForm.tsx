@@ -13,7 +13,7 @@ export function ChangePasswordForm() {
 
   return (
     <form action={action} className="mx-auto flex max-w-lg flex-col gap-6">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Change password</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Change password</h1>
 
       <p className="rounded-[length:var(--radius-md)] border border-border bg-surface px-4 py-3 leading-relaxed text-text-secondary">
         Changing your password keeps you signed in and keeps your account intact. It is

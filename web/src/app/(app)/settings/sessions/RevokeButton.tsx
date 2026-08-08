@@ -11,7 +11,7 @@ export function RevokeButton({ familyId }: { familyId: string }) {
       type="button"
       disabled={isPending}
       onClick={() => startTransition(async () => void (await revokeSession(familyId)))}
-      className="text-[length:var(--text-label)] font-semibold text-danger hover:underline disabled:opacity-50"
+      className="text-[length:var(--text-label)] font-medium text-danger hover:underline disabled:opacity-50"
     >
       Revoke
     </button>

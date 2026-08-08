@@ -69,7 +69,7 @@ class CommunityDetailScreen extends ConsumerWidget {
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: AppTypeScale.title,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -121,7 +121,7 @@ class CommunityDetailScreen extends ConsumerWidget {
                                     ? colors.textSecondary
                                     : colors.accentText,
                                 fontSize: AppTypeScale.body,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -151,7 +151,7 @@ class CommunityDetailScreen extends ConsumerWidget {
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontSize: AppTypeScale.body,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xs),

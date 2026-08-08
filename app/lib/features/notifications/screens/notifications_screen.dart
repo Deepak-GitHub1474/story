@@ -49,7 +49,7 @@ class NotificationsScreen extends ConsumerWidget {
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.heading,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const Spacer(),
@@ -195,7 +195,7 @@ class _Tile extends ConsumerWidget {
                             text: notification.actorName,
                             style: TextStyle(
                               color: colors.textPrimary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const TextSpan(text: ' '),
@@ -248,7 +248,7 @@ class _Empty extends StatelessWidget {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.heading,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -303,7 +303,7 @@ class _SwipeHint extends StatelessWidget {
             style: TextStyle(
               color: tint,
               fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

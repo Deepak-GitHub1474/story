@@ -9,7 +9,7 @@ export default async function UsersPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Accounts</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Accounts</h1>
       <p className="mt-1 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
         Look an account up by username. Metadata only — no story content, no vault, no
         email address. Those are not available to any role.

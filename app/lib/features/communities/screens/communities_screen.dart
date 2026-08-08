@@ -145,7 +145,7 @@ class _CategoryChip extends StatelessWidget {
               style: TextStyle(
                 color: isActive ? colors.accentText : colors.textSecondary,
                 fontSize: AppTypeScale.label,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
               ),
             ),
           ),

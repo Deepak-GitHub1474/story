@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Settings</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Settings</h1>
 
       <Section title="Account">
         <Row label="Edit profile" href="/settings/profile" />

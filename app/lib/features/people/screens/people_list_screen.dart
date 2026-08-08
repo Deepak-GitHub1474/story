@@ -88,7 +88,7 @@ class PeopleListScreen extends ConsumerWidget {
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: AppTypeScale.heading,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
@@ -127,7 +127,7 @@ class PeopleListScreen extends ConsumerWidget {
                           person.displayName,
                           style: TextStyle(
                             color: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         subtitle: Text(

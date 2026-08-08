@@ -68,7 +68,7 @@ export function Composer({
           onChange={(event) => setTitle(event.target.value)}
           maxLength={120}
           placeholder="Title, if you want one"
-          className="w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-semibold outline-none placeholder:text-text-muted focus:border-accent"
+          className="w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-medium outline-none placeholder:text-text-muted focus:border-accent"
         />
         <textarea
           name="body"
@@ -114,7 +114,7 @@ export function Composer({
 
       {showOptions ? (
         <div className="mt-4 space-y-3 rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
-          <h2 className="font-semibold">Who can read this?</h2>
+          <h2 className="font-medium">Who can read this?</h2>
 
           {communities.length > 0 ? (
             <label className="block">
@@ -176,7 +176,7 @@ export function Composer({
         onChange={(event) => setTitle(event.target.value)}
         maxLength={120}
         placeholder="Title, if you want one"
-        className="mt-8 w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-semibold outline-none placeholder:text-text-muted focus:border-accent"
+        className="mt-8 w-full border-b border-border bg-transparent pb-4 text-[length:var(--text-title)] font-medium outline-none placeholder:text-text-muted focus:border-accent"
       />
 
       <textarea

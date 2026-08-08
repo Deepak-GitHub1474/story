@@ -44,7 +44,7 @@ export function InterestPicker({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">{title}</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">{title}</h1>
       <p className="mt-2 max-w-prose leading-relaxed text-text-secondary">
         Pick up to {MAX}. This shapes what you are shown, and nobody else can see your
         choices.
@@ -53,7 +53,7 @@ export function InterestPicker({
       <div className="mt-8 space-y-8">
         {Object.entries(grouped).map(([category, items]) => (
           <section key={category}>
-            <h2 className="mb-3 text-[length:var(--text-caption)] font-semibold tracking-[0.12em] text-text-muted uppercase">
+            <h2 className="mb-3 text-[length:var(--text-caption)] font-medium tracking-[0.12em] text-text-muted uppercase">
               {category.replace(/-/g, ' ')}
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -69,7 +69,7 @@ export function InterestPicker({
                         'rounded-[length:var(--radius-pill)] border px-4 py-2',
                         'text-[length:var(--text-label)] transition-all duration-150',
                         isOn
-                          ? 'scale-[1.03] border-accent bg-accent font-semibold text-accent-text'
+                          ? 'scale-[1.03] border-accent bg-accent font-medium text-accent-text'
                           : 'border-border text-text-secondary hover:border-text-muted',
                       )}
                     >

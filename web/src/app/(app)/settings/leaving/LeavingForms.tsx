@@ -18,13 +18,13 @@ export function LeavingForms() {
 
   return (
     <div className="mx-auto max-w-lg space-y-10">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Leaving</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Leaving</h1>
 
       <form
         action={deactivateAction}
         className="rounded-[length:var(--radius-md)] border border-border bg-surface p-6"
       >
-        <h2 className="text-[length:var(--text-heading)] font-semibold">Deactivate</h2>
+        <h2 className="text-[length:var(--text-heading)] font-medium">Deactivate</h2>
         <ul className="mt-3 space-y-1.5 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           <li>Your stories stop appearing to anyone.</li>
           <li>Your profile becomes unreachable.</li>
@@ -48,7 +48,7 @@ export function LeavingForms() {
         action={deleteAction}
         className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-6"
       >
-        <h2 className="text-[length:var(--text-heading)] font-semibold text-danger">Delete</h2>
+        <h2 className="text-[length:var(--text-heading)] font-medium text-danger">Delete</h2>
         <ul className="mt-3 space-y-1.5 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           <li>Every story, draft and comment is removed.</li>
           <li>Your username is released for anyone to take.</li>

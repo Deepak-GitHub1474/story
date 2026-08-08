@@ -323,7 +323,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -378,7 +378,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           style: TextStyle(
             color: _savedLabel.isEmpty ? colors.textPrimary : colors.textMuted,
             fontSize: _savedLabel.isEmpty ? AppTypeScale.heading : AppTypeScale.label,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         actions: [
@@ -405,7 +405,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
               style: TextStyle(
                 color: canPublish ? colors.accent : colors.textMuted,
                 fontSize: AppTypeScale.body,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -434,7 +434,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontSize: AppTypeScale.body,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                                 height: 1.4,
                               ),
                               decoration: InputDecoration(
@@ -442,7 +442,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                 hintStyle: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: AppTypeScale.body,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                   height: 1.4,
                                 ),
                                 border: InputBorder.none,
@@ -603,7 +603,7 @@ class _VisibilityOption extends StatelessWidget {
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: AppTypeScale.body,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -770,7 +770,7 @@ class _ExposureSheet extends StatelessWidget {
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: AppTypeScale.body,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -848,7 +848,7 @@ class _BlockedSheet extends StatelessWidget {
                 style: TextStyle(
                   color: colors.textSecondary,
                   fontSize: AppTypeScale.caption,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -985,7 +985,7 @@ class _Line extends StatelessWidget {
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

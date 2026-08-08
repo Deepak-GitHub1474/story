@@ -77,7 +77,7 @@ class CommentTile extends StatelessWidget {
                             text: comment.author.handle,
                             style: TextStyle(
                               color: colors.textPrimary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const TextSpan(text: '  '),
@@ -104,7 +104,7 @@ class CommentTile extends StatelessWidget {
                             style: TextStyle(
                               color: colors.textMuted,
                               fontSize: AppTypeScale.caption,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -116,7 +116,7 @@ class CommentTile extends StatelessWidget {
                             style: TextStyle(
                               color: colors.textMuted,
                               fontSize: AppTypeScale.caption,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -129,7 +129,7 @@ class CommentTile extends StatelessWidget {
                               style: TextStyle(
                                 color: colors.textMuted,
                                 fontSize: AppTypeScale.caption,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -185,7 +185,7 @@ class CommentTile extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textMuted,
                       fontSize: AppTypeScale.caption,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -209,7 +209,7 @@ class CommentTile extends StatelessWidget {
       spans.add(
         TextSpan(
           text: match.group(0),
-          style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600),
+          style: TextStyle(color: colors.accent, fontWeight: FontWeight.w500),
         ),
       );
       index = match.end;

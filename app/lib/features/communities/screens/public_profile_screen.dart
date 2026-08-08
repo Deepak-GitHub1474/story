@@ -212,7 +212,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: AppTypeScale.body,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       if (profile.bio != null && profile.bio!.isNotEmpty) ...[
@@ -258,7 +258,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                                         ? colors.textPrimary
                                         : colors.accentText,
                                     fontSize: AppTypeScale.body,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -287,7 +287,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                                       style: TextStyle(
                                         color: colors.textPrimary,
                                         fontSize: AppTypeScale.body,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),
@@ -355,7 +355,7 @@ class _Stat extends StatelessWidget {
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: AppTypeScale.heading,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),

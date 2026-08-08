@@ -41,7 +41,7 @@ export function ReportCard({ report }: { report: TReport }) {
       </div>
 
       {report.target.title ? (
-        <h2 className="mt-3 font-semibold">{report.target.title}</h2>
+        <h2 className="mt-3 font-medium">{report.target.title}</h2>
       ) : null}
 
       <p className="mt-2 leading-relaxed text-text-secondary">{report.target.excerpt}</p>

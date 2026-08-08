@@ -118,7 +118,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.body,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -145,7 +145,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontSize: AppTypeScale.body,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xs),

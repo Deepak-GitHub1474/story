@@ -200,7 +200,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: AppTypeScale.body,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         _PresenceLine(
@@ -431,7 +431,7 @@ class _EmptyThread extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.heading,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -707,7 +707,7 @@ class _PresenceLine extends StatelessWidget {
             style: TextStyle(
               color: isTyping ? colors.accent : colors.textMuted,
               fontSize: AppTypeScale.caption,
-              fontWeight: isTyping ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: isTyping ? FontWeight.w500 : FontWeight.w400,
             ),
           ),
         ],

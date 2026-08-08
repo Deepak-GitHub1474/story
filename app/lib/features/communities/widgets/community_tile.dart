@@ -42,7 +42,7 @@ class CommunityTile extends StatelessWidget {
                 style: TextStyle(
                   color: colors.accent,
                   fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -56,7 +56,7 @@ class CommunityTile extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.body,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -120,7 +120,7 @@ class _JoinButton extends StatelessWidget {
             style: TextStyle(
               color: isMember ? colors.textSecondary : colors.accentText,
               fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

@@ -21,7 +21,7 @@ export default async function QueuePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-[length:var(--text-title)] font-semibold">Report queue</h1>
+        <h1 className="text-[length:var(--text-title)] font-medium">Report queue</h1>
         <p className="mt-1 text-[length:var(--text-label)] text-text-secondary">
           Oldest first. Actioning removes the content; dismissing leaves it.
         </p>
@@ -69,8 +69,8 @@ function Stat({
       <dd
         className={
           isAlert
-            ? 'text-[length:var(--text-title)] font-semibold text-danger'
-            : 'text-[length:var(--text-title)] font-semibold'
+            ? 'text-[length:var(--text-title)] font-medium text-danger'
+            : 'text-[length:var(--text-title)] font-medium'
         }
       >
         {value}

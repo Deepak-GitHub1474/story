@@ -48,7 +48,7 @@ export default async function PeoplePage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-semibold">{config.title}</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">{config.title}</h1>
 
       {people.length === 0 ? (
         <EmptyState title="Nobody here yet" body={config.empty} />
@@ -62,7 +62,7 @@ export default async function PeoplePage({ params }: Props) {
               >
                 <Avatar seed={person.avatar_seed} size={40} />
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold">
+                  <span className="block truncate font-medium">
                     {person.display_name}
                   </span>
                   <span className="block text-[length:var(--text-caption)] text-text-muted">

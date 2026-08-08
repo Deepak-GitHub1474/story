@@ -109,7 +109,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         user.displayName,
                         style: TextStyle(
                           color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       subtitle: Text(
@@ -135,7 +135,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         community.name,
                         style: TextStyle(
                           color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       subtitle: Text(
@@ -189,7 +189,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           color: colors.textMuted,
           fontSize: AppTypeScale.caption,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 1.2,
         ),
       ),
@@ -215,7 +215,7 @@ class _Hint extends StatelessWidget {
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.heading,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -271,7 +271,7 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
                   style: TextStyle(
                     color: colors.textMuted,
                     fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -286,7 +286,7 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
                   style: TextStyle(
                     color: colors.accent,
                     fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

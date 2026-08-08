@@ -185,7 +185,7 @@ export function ChatThread({
           <>
             <Avatar seed={other.avatar_seed} size={40} />
             <div className="min-w-0 flex-1">
-              <Link href={`/u/${other.username}`} className="block font-semibold">
+              <Link href={`/u/${other.username}`} className="block font-medium">
                 {other.display_name}
               </Link>
               <p
@@ -294,7 +294,7 @@ export function ChatThread({
                       setReplyTo(message);
                       setMenuFor(null);
                     }}
-                    className="text-[length:var(--text-caption)] font-semibold text-accent"
+                    className="text-[length:var(--text-caption)] font-medium text-accent"
                   >
                     Reply
                   </button>

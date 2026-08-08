@@ -19,7 +19,7 @@ export function AvatarPicker({ current }: { current: string }) {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-[length:var(--text-title)] font-semibold">Your avatar</h1>
+      <h1 className="text-[length:var(--text-title)] font-medium">Your avatar</h1>
 
       <div className="mt-6 flex items-start gap-5">
         <Avatar seed={chosen} size={76} />

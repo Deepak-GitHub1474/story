@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <aside className="relative hidden lg:col-span-5 lg:flex lg:flex-col lg:justify-between lg:border-r lg:border-border lg:bg-surface lg:px-12 lg:py-12">
         <Link
           href="/"
-          className="rise text-[length:var(--text-caption)] font-semibold tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary"
+          className="rise text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary"
         >
           STORY
         </Link>
@@ -37,7 +37,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   <span className="text-[length:var(--text-caption)] text-text-muted tabular-nums">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-[length:var(--text-label)] font-semibold">
+                  <span className="text-[length:var(--text-label)] font-medium">
                     {title}
                   </span>
                 </dt>
@@ -57,7 +57,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:col-span-7 lg:py-12">
         <Link
           href="/"
-          className="text-[length:var(--text-caption)] font-semibold tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary lg:hidden"
+          className="text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary lg:hidden"
         >
           STORY
         </Link>
