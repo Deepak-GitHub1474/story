@@ -6,12 +6,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_button.dart';
+import '../../../components/app_close_button.dart';
 import '../../../components/app_sheet.dart';
 import '../../../components/skeleton.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
+import '../../communities/models/community_models.dart';
+import '../../communities/providers/community_providers.dart';
 import '../models/chat_models.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/unlock_chat_sheet.dart';
@@ -160,11 +163,21 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               ),
               data: (items) => items.isEmpty
                   ? (_showRequests
-                        ? _Empty(
+                        ? const _Empty(
                             title: 'No requests',
                             body: 'People who do not follow you back land here first.',
                           )
-                        : const _PeopleToMessage())
+                        : ListView(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+                            children: const [
+                              _Empty(
+                                title: 'No messages yet',
+                                body: 'Say something to someone you follow. If you '
+                                    'both follow each other it opens straight away.',
+                              ),
+                              _FollowSuggestions(),
+                            ],
+                          ))
                   : RefreshIndicator(
                       onRefresh: () async {
                         ref.invalidate(
@@ -173,15 +186,28 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                         ref.invalidate(chatUnreadProvider);
                       },
                       child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) => _ConversationRow(
-                          conversation: items[index],
-                          onTap: () => context.push(
-                            '${Routes.chat}/${items[index].conversationId}',
-                          ),
-                          onLongPress: () => _openChatMenu(items[index]),
-                        ),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+                        itemCount: items.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == items.length) {
+                            return _showRequests
+                                ? const SizedBox.shrink()
+                                : const _FollowSuggestions();
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                            ),
+                            child: _ConversationRow(
+                              conversation: items[index],
+                              onTap: () => context.push(
+                                '${Routes.chat}/${items[index].conversationId}',
+                              ),
+                              onLongPress: () => _openChatMenu(items[index]),
+                            ),
+                          );
+                        },
                       ),
                     ),
             ),
@@ -418,83 +444,176 @@ class _LockedBanner extends StatelessWidget {
   }
 }
 
-class _PeopleToMessage extends ConsumerWidget {
-  const _PeopleToMessage();
+
+class _FollowSuggestions extends ConsumerStatefulWidget {
+  const _FollowSuggestions();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FollowSuggestions> createState() => _FollowSuggestionsState();
+}
+
+class _FollowSuggestionsState extends ConsumerState<_FollowSuggestions> {
+  final _dismissed = <String>{};
+  final _followed = <String>{};
+  bool _showAll = false;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
-    final people = ref.watch(chatPeopleProvider);
+    final suggestions = ref.watch(suggestionsProvider).valueOrNull;
+    final people = (suggestions?.people ?? const [])
+        .where((person) => !_dismissed.contains(person.userId))
+        .toList();
 
-    return people.when(
-      loading: () => const SkeletonList(count: 6),
-      error: (error, _) => const _Empty(
-        title: 'No messages yet',
-        body: 'Find someone from search and say something.',
-      ),
-      data: (items) {
-        if (items.isEmpty) {
-          return const _Empty(
-            title: 'No messages yet',
-            body: 'Follow someone first. If you both follow each other, '
-                'the chat opens straight away.',
-          );
-        }
+    if (people.isEmpty) return const SizedBox.shrink();
 
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
-          itemCount: items.length + 1,
-          separatorBuilder: (context, index) => const SizedBox(height: 2),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
+    final shown = _showAll ? people : people.take(4).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
                 child: Text(
-                  'People you follow',
+                  'People to follow',
                   style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: AppTypeScale.caption,
+                    color: colors.textPrimary,
+                    fontSize: AppTypeScale.body,
                     fontWeight: FontWeight.w500,
-                    letterSpacing: 0.6,
                   ),
                 ),
-              );
-            }
-
-            final person = items[index - 1];
-
-            return ListTile(
-              onTap: () => context.push('${Routes.user}/${person.username ?? ''}'),
-              leading: AppAvatar(
-                seed: person.avatarSeed,
-                size: 44,
-                displayName: person.displayName,
-                username: person.username,
               ),
-              title: Text(
-                person.displayName,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: AppTypeScale.body,
+              if (people.length > 4)
+                GestureDetector(
+                  onTap: () => setState(() => _showAll = !_showAll),
+                  child: Text(
+                    _showAll ? 'Show less' : 'See all',
+                    style: TextStyle(
+                      color: colors.accent,
+                      fontSize: AppTypeScale.label,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        for (final person in shown)
+          _SuggestionRow(
+            person: person,
+            isFollowed: _followed.contains(person.userId),
+            onOpen: () => context.push('${Routes.user}/${person.username ?? ''}'),
+            onFollow: () async {
+              setState(() => _followed.add(person.userId));
+              await ref
+                  .read(communityRepositoryProvider)
+                  .setFollow(person.username ?? '', follow: true);
+              ref.invalidate(chatPeopleProvider);
+            },
+            onDismiss: () => setState(() => _dismissed.add(person.userId)),
+          ),
+      ],
+    );
+  }
+}
+
+class _SuggestionRow extends StatelessWidget {
+  const _SuggestionRow({
+    required this.person,
+    required this.isFollowed,
+    required this.onOpen,
+    required this.onFollow,
+    required this.onDismiss,
+  });
+
+  final SuggestedPerson person;
+  final bool isFollowed;
+  final VoidCallback onOpen;
+  final VoidCallback onFollow;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: onOpen,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            AppAvatar(
+              seed: person.avatarSeed,
+              size: 44,
+              displayName: person.displayName,
+              username: person.username,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    person.displayName,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: AppTypeScale.body,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    person.username == null ? person.reason : '@${person.username}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.label,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            TextButton(
+              onPressed: isFollowed ? null : onFollow,
+              style: TextButton.styleFrom(
+                backgroundColor: isFollowed ? colors.surfaceRaised : colors.accent,
+                foregroundColor: isFollowed ? colors.textMuted : colors.accentText,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+              ),
+              child: Text(
+                isFollowed ? 'Following' : 'Follow',
+                style: const TextStyle(
+                  fontSize: AppTypeScale.label,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: Text(
-                person.username == null ? '' : '@${person.username}',
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: AppTypeScale.label,
-                ),
-              ),
-            );
-          },
-        );
-      },
+            ),
+            AppCloseButton(
+              size: AppCloseSize.small,
+              tooltip: 'Not now',
+              onPressed: onDismiss,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

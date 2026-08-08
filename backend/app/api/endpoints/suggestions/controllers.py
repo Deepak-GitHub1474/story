@@ -97,6 +97,22 @@ async def _people_for(user_id: str, mongo: AsyncIOMotorDatabase) -> list[dict[st
             if author_id not in skip:
                 scored[author_id] = "In a room you joined"
 
+    if len(scored) < PEOPLE_LIMIT:
+        user = await mongo[USERS].find_one({"_id": user_id}, {"interests": 1})
+        mine = (user or {}).get("interests") or []
+        if mine:
+            alike = await mongo[USERS].distinct(
+                "_id",
+                {
+                    "interests": {"$in": mine},
+                    "_id": {"$nin": list(skip)},
+                    "status": "active",
+                },
+            )
+            for candidate in alike:
+                if candidate not in scored:
+                    scored[candidate] = "Likes the same things"
+
     if following and len(scored) < PEOPLE_LIMIT:
         onwards = await mongo["connections"].distinct(
             "followee_id", {"follower_id": {"$in": following}, "kind": "follow"}

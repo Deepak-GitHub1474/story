@@ -128,3 +128,56 @@ async def test_someone_you_blocked_is_not_suggested(client, signup_payload):
 
 async def test_suggestions_need_an_account(client):
     assert (await client.get("/v1/suggestions")).status_code == 401
+
+
+async def test_someone_who_likes_the_same_thing_is_suggested(client, signup_payload):
+    mine = await auth_headers(client, signup_payload)
+    picked = await some_interests(client, mine, 1)
+    await set_interests(client, mine, [picked[0]["slug"]])
+
+    theirs = await auth_headers(client, account("same_taste"))
+    await set_interests(client, theirs, [picked[0]["slug"]])
+
+    data = await suggestions(client, mine)
+
+    assert "same_taste" in [row["username"] for row in data["people"]]
+
+
+async def test_one_shared_interest_is_enough(client, signup_payload):
+    mine = await auth_headers(client, signup_payload)
+    rows = (await client.get("/v1/interests", headers=mine)).json()["data"]["items"]
+    await set_interests(client, mine, [rows[0]["slug"], rows[1]["slug"]])
+
+    theirs = await auth_headers(client, account("one_match"))
+    await set_interests(client, theirs, [rows[1]["slug"], rows[2]["slug"]])
+
+    data = await suggestions(client, mine)
+
+    assert "one_match" in [row["username"] for row in data["people"]]
+
+
+async def test_sharing_nothing_is_not_a_suggestion(client, signup_payload):
+    mine = await auth_headers(client, signup_payload)
+    rows = (await client.get("/v1/interests", headers=mine)).json()["data"]["items"]
+    await set_interests(client, mine, [rows[0]["slug"]])
+
+    theirs = await auth_headers(client, account("no_match"))
+    await set_interests(client, theirs, [rows[5]["slug"]])
+
+    data = await suggestions(client, mine)
+
+    assert "no_match" not in [row["username"] for row in data["people"]]
+
+
+async def test_the_reason_says_what_you_have_in_common(client, signup_payload):
+    mine = await auth_headers(client, signup_payload)
+    picked = await some_interests(client, mine, 1)
+    await set_interests(client, mine, [picked[0]["slug"]])
+
+    theirs = await auth_headers(client, account("shared_reason"))
+    await set_interests(client, theirs, [picked[0]["slug"]])
+
+    data = await suggestions(client, mine)
+    row = next(r for r in data["people"] if r["username"] == "shared_reason")
+
+    assert "interest" in row["reason"].lower() or "same" in row["reason"].lower()
