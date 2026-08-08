@@ -3,16 +3,23 @@ import 'package:flutter/material.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
-
-const storyImageRatio = 4 / 5;
+import '../data/image_shape.dart';
 
 String storyImageUrl(String path) =>
     path.startsWith('http') ? path : '${Endpoints.baseUrl.replaceAll('/v1', '')}$path';
 
 class StoryImages extends StatefulWidget {
-  const StoryImages({super.key, required this.images, this.onRemove});
+  const StoryImages({
+    super.key,
+    required this.images,
+    this.ratio,
+    this.fit = 'cover',
+    this.onRemove,
+  });
 
   final List<String> images;
+  final double? ratio;
+  final String fit;
   final void Function(String path)? onRemove;
 
   @override
@@ -38,7 +45,7 @@ class _StoryImagesState extends State<StoryImages> {
     return Column(
       children: [
         AspectRatio(
-          aspectRatio: storyImageRatio,
+          aspectRatio: widget.ratio ?? portraitBound,
           child: Stack(
             children: [
               PageView.builder(
@@ -50,6 +57,7 @@ class _StoryImagesState extends State<StoryImages> {
                 itemCount: widget.images.length,
                 itemBuilder: (context, index) => _Frame(
                   path: widget.images[index],
+                  fit: widget.fit == 'contain' ? BoxFit.contain : BoxFit.cover,
                   onRemove: widget.onRemove,
                 ),
               ),
@@ -104,9 +112,10 @@ class _StoryImagesState extends State<StoryImages> {
 }
 
 class _Frame extends StatelessWidget {
-  const _Frame({required this.path, this.onRemove});
+  const _Frame({required this.path, required this.fit, this.onRemove});
 
   final String path;
+  final BoxFit fit;
   final void Function(String path)? onRemove;
 
   @override
@@ -118,7 +127,7 @@ class _Frame extends StatelessWidget {
       children: [
         Image.network(
           storyImageUrl(path),
-          fit: BoxFit.cover,
+          fit: fit,
           errorBuilder: (context, error, stack) => Container(
             color: colors.surfaceRaised,
             child: Icon(Icons.broken_image_outlined, color: colors.textMuted),

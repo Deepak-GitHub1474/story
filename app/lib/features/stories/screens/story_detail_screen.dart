@@ -406,7 +406,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
                     if (story.images.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.lg),
-                      StoryImages(images: story.images),
+                      StoryImages(
+                        images: story.images,
+                        ratio: story.imageRatio,
+                        fit: story.imageFit,
+                      ),
                     ],
                     if (story.shared != null) ...[
                       const SizedBox(height: AppSpacing.lg),

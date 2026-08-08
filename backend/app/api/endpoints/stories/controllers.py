@@ -109,6 +109,8 @@ async def create_story(
         "media": [],
         "shared_story_id": shared_id,
         "images": body.images,
+        "image_ratio": body.image_ratio,
+        "image_fit": body.image_fit,
         "counts": {"likes": 0, "comments": 0, "shares": 0, "views": 0},
         "moderation": {"state": "unreviewed", "verdict": None, "rule": None},
         "published_at": None,
@@ -192,6 +194,10 @@ async def update_story(
         update["reading_minutes"] = reading_minutes(body.body)
     if body.images is not None:
         update["images"] = body.images
+    if body.image_ratio is not None:
+        update["image_ratio"] = body.image_ratio
+    if body.image_fit is not None:
+        update["image_fit"] = body.image_fit
     if story["visibility"] != "draft":
         update["edited_at"] = utc_now()
 

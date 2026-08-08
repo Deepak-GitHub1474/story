@@ -8,6 +8,9 @@ from app.api.endpoints.stories.constants import BODY_MAX, COMMENT_MAX, TITLE_MAX
 
 MEDIA_URL = re.compile(r"^/v1/media/med_[0-9A-HJKMNP-TV-Z]{26}$")
 
+RATIO_MIN = 0.5
+RATIO_MAX = 2.0
+
 
 class CreateStoryRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -16,6 +19,8 @@ class CreateStoryRequest(BaseModel):
     body: Annotated[str, Field(max_length=BODY_MAX)] = ""
     shared_story_id: Annotated[str, Field(max_length=64)] | None = None
     images: Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=8)] = []
+    image_ratio: Annotated[float, Field(ge=RATIO_MIN, le=RATIO_MAX)] | None = None
+    image_fit: Literal["cover", "contain"] = "cover"
 
     @field_validator("images")
     @classmethod
@@ -40,6 +45,8 @@ class UpdateStoryRequest(BaseModel):
     images: (
         Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=8)] | None
     ) = None
+    image_ratio: Annotated[float, Field(ge=RATIO_MIN, le=RATIO_MAX)] | None = None
+    image_fit: Literal["cover", "contain"] | None = None
 
     @field_validator("images")
     @classmethod

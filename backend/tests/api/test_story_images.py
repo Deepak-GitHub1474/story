@@ -262,3 +262,82 @@ async def test_an_edit_cannot_smuggle_in_an_outside_picture(client, signup_paylo
     )
 
     assert response.status_code == 422
+
+
+async def test_a_story_remembers_the_shape_its_pictures_should_take(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+
+    story = (
+        await client.post(
+            "/v1/stories",
+            json={
+                "body": "A wide one.",
+                "images": [url],
+                "image_ratio": 1.91,
+                "image_fit": "contain",
+            },
+            headers=headers,
+        )
+    ).json()["data"]["story"]
+
+    assert story["image_ratio"] == 1.91
+    assert story["image_fit"] == "contain"
+
+
+async def test_a_story_without_a_shape_says_so_plainly(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    story = (
+        await client.post("/v1/stories", json={"body": "No picture."}, headers=headers)
+    ).json()["data"]["story"]
+
+    assert story["image_ratio"] is None
+    assert story["image_fit"] == "cover"
+
+
+async def test_an_absurd_shape_is_refused(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    response = await client.post(
+        "/v1/stories",
+        json={"body": "Tall.", "image_ratio": 0.05},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+async def test_the_shape_can_be_changed_while_it_is_a_draft(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = (
+        await client.post("/v1/stories", json={"body": "Words."}, headers=headers)
+    ).json()["data"]["story"]["story_id"]
+
+    response = await client.patch(
+        f"/v1/stories/{story}",
+        json={"image_ratio": 0.8, "image_fit": "contain"},
+        headers=headers,
+    )
+
+    assert response.json()["data"]["story"]["image_ratio"] == 0.8
+    assert response.json()["data"]["story"]["image_fit"] == "contain"
+
+
+async def test_the_shape_survives_into_the_feed(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    url = (await upload(client, headers)).json()["data"]["url"]
+    story = (
+        await client.post(
+            "/v1/stories",
+            json={"body": "Wide.", "images": [url], "image_ratio": 1.5},
+            headers=headers,
+        )
+    ).json()["data"]["story"]["story_id"]
+    await client.post(
+        f"/v1/stories/{story}/publish", json={"visibility": "public"}, headers=headers
+    )
+
+    mine = (await client.get("/v1/stories/mine", headers=headers)).json()["data"]["items"]
+
+    assert mine[0]["image_ratio"] == 1.5

@@ -110,7 +110,11 @@ class _StoryPostState extends State<StoryPost> {
           ),
         ),
 
-        if (hasImages) StoryImages(images: story.images),
+        if (hasImages) StoryImages(
+                        images: story.images,
+                        ratio: story.imageRatio,
+                        fit: story.imageFit,
+                      ),
 
         Padding(
           padding: EdgeInsets.fromLTRB(

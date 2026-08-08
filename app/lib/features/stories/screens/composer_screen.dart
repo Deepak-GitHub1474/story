@@ -12,6 +12,7 @@ import '../../../core/files/file_picker.dart';
 import '../../../core/result.dart';
 import '../../../routing/routes.dart';
 import '../../vault/data/file_kind.dart';
+import '../data/image_shape.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -44,6 +45,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   String _savedLabel = '';
   final _images = <String>[];
   bool _isUploading = false;
+  double? _imageRatio;
+  String _imageFit = 'cover';
+  bool _canFit = false;
 
   static const _bodyMax = 20000;
 
@@ -78,6 +82,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       _images
         ..clear()
         ..addAll(story.images);
+      _imageRatio = story.imageRatio;
+      _imageFit = story.imageFit;
+      _canFit = story.images.isNotEmpty;
     }
     setState(() => _isLoading = false);
   }
@@ -100,12 +107,16 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             title: _titleOrNull,
             body: _body.text,
             images: _images,
+            imageRatio: _imageRatio,
+            imageFit: _imageFit,
           )
         : await repository.update(
             _storyId!,
             title: _title.text,
             body: _body.text,
             images: _images,
+            imageRatio: _imageRatio,
+            imageFit: _imageFit,
           );
 
     if (!mounted) return null;
@@ -167,11 +178,19 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     if (!mounted) return;
     setState(() => _isUploading = false);
 
+    final measured = await decodeImageFromList(file.bytes);
+    if (!mounted) return;
+
     result.fold(
       onSuccess: (success) {
         setState(() {
           _images.add(success.value);
           _isDirty = true;
+          if (_images.length == 1) {
+            _imageRatio = postRatioFor(measured.width, measured.height);
+            _canFit = isCropped(measured.width, measured.height);
+            if (!_canFit) _imageFit = 'cover';
+          }
         });
         unawaited(_save());
       },
@@ -435,11 +454,36 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                             if (_images.isNotEmpty) ...[
                               StoryImages(
                                 images: _images,
+                                ratio: _imageRatio,
+                                fit: _imageFit,
                                 onRemove: (path) {
-                                  setState(() => _images.remove(path));
+                                  setState(() {
+                                    _images.remove(path);
+                                    if (_images.isEmpty) {
+                                      _imageRatio = null;
+                                      _imageFit = 'cover';
+                                      _canFit = false;
+                                    }
+                                  });
                                   unawaited(_save());
                                 },
                               ),
+                              if (_canFit) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _FitToggle(
+                                    isFitting: _imageFit == 'contain',
+                                    onTap: () {
+                                      setState(
+                                        () => _imageFit =
+                                            _imageFit == 'contain' ? 'cover' : 'contain',
+                                      );
+                                      unawaited(_save());
+                                    },
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: AppSpacing.md),
                             ],
                             TextField(
@@ -925,6 +969,52 @@ class _Line extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FitToggle extends StatelessWidget {
+  const _FitToggle({required this.isFitting, required this.onTap});
+
+  final bool isFitting;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: isFitting ? colors.accent : colors.border),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isFitting ? Icons.fullscreen_exit : Icons.fullscreen,
+              size: AppSizes.iconSm,
+              color: isFitting ? colors.accent : colors.textSecondary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              isFitting ? 'Whole picture' : 'Fill the frame',
+              style: TextStyle(
+                color: isFitting ? colors.accent : colors.textSecondary,
+                fontSize: AppTypeScale.caption,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -3,11 +3,19 @@ import '../../../core/api/endpoints.dart';
 import '../../../core/result.dart';
 import '../models/story_models.dart';
 
-Map<String, dynamic> _patch({String? title, String? body, List<String>? images}) {
+Map<String, dynamic> _patch({
+  String? title,
+  String? body,
+  List<String>? images,
+  double? imageRatio,
+  String? imageFit,
+}) {
   final patch = <String, dynamic>{};
   if (title != null) patch['title'] = title;
   if (body != null) patch['body'] = body;
   if (images != null) patch['images'] = images;
+  if (imageRatio != null) patch['image_ratio'] = imageRatio;
+  if (imageFit != null) patch['image_fit'] = imageFit;
   return patch;
 }
 
@@ -67,13 +75,19 @@ class StoryRepository {
     required String body,
     String? sharedStoryId,
     List<String> images = const [],
+    double? imageRatio,
+    String imageFit = 'cover',
   }) => _client.post(
     Endpoints.stories,
     body: {
       'title': title,
       'body': body,
       'shared_story_id': ?sharedStoryId,
-      if (images.isNotEmpty) 'images': images,
+      if (images.isNotEmpty) ...{
+        'images': images,
+        'image_ratio': ?imageRatio,
+        'image_fit': imageFit,
+      },
     },
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
@@ -83,9 +97,17 @@ class StoryRepository {
     String? title,
     String? body,
     List<String>? images,
+    double? imageRatio,
+    String? imageFit,
   }) => _client.patch(
     Endpoints.story(storyId),
-    body: _patch(title: title, body: body, images: images),
+    body: _patch(
+      title: title,
+      body: body,
+      images: images,
+      imageRatio: imageRatio,
+      imageFit: imageFit,
+    ),
     parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 

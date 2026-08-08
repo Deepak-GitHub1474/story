@@ -26,6 +26,8 @@ FEED_PROJECTION = {
     "slug": 1,
     "shared_story_id": 1,
     "images": 1,
+    "image_ratio": 1,
+    "image_fit": 1,
     "counts": 1,
     "reading_minutes": 1,
     "published_at": 1,
