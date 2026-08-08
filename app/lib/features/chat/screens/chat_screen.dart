@@ -402,7 +402,7 @@ class _ReactionButtonState extends State<_ReactionButton> {
                 ? context.colors.accent.withValues(alpha: 0.18)
                 : Colors.transparent,
           ),
-          child: Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+          child: Text(widget.emoji, style: const TextStyle(fontSize: 24)),
         ),
       ),
     );

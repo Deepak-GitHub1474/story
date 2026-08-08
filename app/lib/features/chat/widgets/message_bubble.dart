@@ -189,7 +189,7 @@ class _MessageBubbleState extends State<MessageBubble>
                     ),
                     child: Text(
                       message.reactions.map((r) => r.emoji).join(),
-                      style: const TextStyle(fontSize: 13),
+                      style: const TextStyle(fontSize: AppTypeScale.label),
                     ),
                   ),
                 ),

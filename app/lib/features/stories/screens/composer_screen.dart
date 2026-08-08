@@ -433,17 +433,17 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               maxLength: 120,
                               style: TextStyle(
                                 color: colors.textPrimary,
-                                fontSize: AppTypeScale.title,
-                                fontWeight: FontWeight.w700,
-                                height: 1.3,
+                                fontSize: AppTypeScale.body,
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Title, if you want one',
                                 hintStyle: TextStyle(
                                   color: colors.textMuted,
-                                  fontSize: AppTypeScale.title,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.3,
+                                  fontSize: AppTypeScale.body,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
                                 ),
                                 border: InputBorder.none,
                                 counterText: '',
@@ -509,14 +509,14 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               textCapitalization: TextCapitalization.sentences,
                               style: TextStyle(
                                 color: colors.textPrimary,
-                                fontSize: AppTypeScale.reading,
+                                fontSize: AppTypeScale.label,
                                 height: 1.7,
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Say it here. Nobody knows who you are.',
                                 hintStyle: TextStyle(
                                   color: colors.textMuted,
-                                  fontSize: AppTypeScale.reading,
+                                  fontSize: AppTypeScale.label,
                                   fontWeight: FontWeight.w400,
                                   height: 1.7,
                                 ),

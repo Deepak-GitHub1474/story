@@ -193,7 +193,7 @@ class _ShellTab extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: colors.bg,
-                          fontSize: 10,
+                          fontSize: AppTypeScale.micro,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

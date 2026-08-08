@@ -82,11 +82,12 @@ class AppTypeScale {
 
   static const double display = 32;
   static const double title = 24;
-  static const double heading = 19;
+  static const double heading = 20;
   static const double body = 16;
-  static const double reading = 17;
+  static const double reading = 16;
   static const double label = 14;
   static const double caption = 12;
+  static const double micro = 10;
 }
 
 class AppSizes {

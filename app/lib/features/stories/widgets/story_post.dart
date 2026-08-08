@@ -128,6 +128,10 @@ class _StoryPostState extends State<StoryPost> {
               Row(
                 children: [
                   LikeIcon(isLiked: story.isLiked, onTap: widget.onLike),
+                  if (story.likes > 0) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    _Count(value: story.likes, onTap: widget.onLike),
+                  ],
                   const SizedBox(width: AppSpacing.lg),
                   InkResponse(
                     onTap: widget.onComment ?? widget.onTap,
@@ -138,6 +142,13 @@ class _StoryPostState extends State<StoryPost> {
                       color: colors.textPrimary,
                     ),
                   ),
+                  if (story.comments > 0) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    _Count(
+                      value: story.comments,
+                      onTap: widget.onComment ?? widget.onTap,
+                    ),
+                  ],
                   if (widget.onShare != null) ...[
                     const SizedBox(width: AppSpacing.lg),
                     InkResponse(
@@ -152,17 +163,6 @@ class _StoryPostState extends State<StoryPost> {
                   ],
                 ],
               ),
-              if (story.likes > 0) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${story.likes} ${story.likes == 1 ? 'like' : 'likes'}',
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: AppTypeScale.label,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
               const SizedBox(height: AppSpacing.sm),
               _Caption(
                 story: story,
@@ -172,21 +172,6 @@ class _StoryPostState extends State<StoryPost> {
               if (story.shared != null) ...[
                 const SizedBox(height: AppSpacing.md),
                 SharedStoryCard(shared: story.shared!, onTap: widget.onSharedTap),
-              ],
-              if (story.comments > 0) ...[
-                const SizedBox(height: AppSpacing.sm),
-                GestureDetector(
-                  onTap: widget.onComment ?? widget.onTap,
-                  child: Text(
-                    story.comments == 1
-                        ? 'View 1 comment'
-                        : 'View all ${story.comments} comments',
-                    style: TextStyle(
-                      color: colors.textMuted,
-                      fontSize: AppTypeScale.label,
-                    ),
-                  ),
-                ),
               ],
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -346,6 +331,39 @@ class VisibilityBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: AppTypeScale.caption,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _Count extends StatelessWidget {
+  const _Count({required this.value, this.onTap});
+
+  final int value;
+  final VoidCallback? onTap;
+
+  String get _short {
+    if (value < 1000) return '$value';
+    if (value < 100000) {
+      final thousands = value / 1000;
+      return '${thousands.toStringAsFixed(thousands < 10 ? 1 : 0)}k';
+    }
+    return '${(value / 100000).toStringAsFixed(1)}L';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        _short,
+        style: TextStyle(
+          color: colors.textPrimary,
+          fontSize: AppTypeScale.label,
           fontWeight: FontWeight.w600,
         ),
       ),
