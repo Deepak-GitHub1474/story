@@ -439,7 +439,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Title, if you want one',
-                                hintStyle: TextStyle(color: colors.textMuted),
+                                hintStyle: TextStyle(
+                                  color: colors.textMuted,
+                                  fontSize: AppTypeScale.title,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.3,
+                                ),
                                 border: InputBorder.none,
                                 counterText: '',
                               ),
@@ -448,13 +453,14 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                             const SizedBox(height: AppSpacing.md),
                             Row(
                               children: [
-                                Expanded(
+                                Flexible(
                                   child: _CommunityPicker(
                                     slug: _communitySlug,
                                     onPick: (slug) =>
                                         setState(() => _communitySlug = slug),
                                   ),
                                 ),
+                                const Spacer(),
                                 if (_images.isNotEmpty)
                                   AppCloseButton(
                                     tooltip: 'Remove the picture',
@@ -508,7 +514,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Say it here. Nobody knows who you are.',
-                                hintStyle: TextStyle(color: colors.textMuted, height: 1.7),
+                                hintStyle: TextStyle(
+                                  color: colors.textMuted,
+                                  fontSize: AppTypeScale.reading,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.7,
+                                ),
                                 border: InputBorder.none,
                                 counterText: '',
                               ),
@@ -684,11 +695,14 @@ class _CommunityPicker extends ConsumerWidget {
                   color: picked == null ? colors.textMuted : colors.accent,
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Text(
-                  picked?.name ?? 'No community',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.caption,
+                Flexible(
+                  child: Text(
+                    picked?.name ?? 'No community',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: AppTypeScale.caption,
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
