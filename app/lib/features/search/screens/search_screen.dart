@@ -6,6 +6,7 @@ import '../../../components/app_avatar.dart';
 import '../../../components/skeleton.dart';
 import '../../../routing/routes.dart';
 import '../../settings/providers/theme_provider.dart';
+import '../../../components/app_close_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../stories/widgets/story_post.dart';
@@ -69,8 +70,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         actions: [
           if (_controller.text.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.close, color: colors.textMuted),
+            AppCloseButton(
+              tooltip: 'Clear',
               onPressed: () {
                 _controller.clear();
                 ref.read(searchProvider.notifier).query('');
@@ -299,8 +300,9 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
               '@$username',
               style: TextStyle(color: colors.textPrimary),
             ),
-            trailing: IconButton(
-              icon: Icon(Icons.close, size: 18, color: colors.textMuted),
+            trailing: AppCloseButton(
+              size: AppCloseSize.small,
+              tooltip: 'Forget this search',
               onPressed: () async {
                 await ref.read(prefsStoreProvider).forgetSearch(username);
                 if (mounted) setState(() {});

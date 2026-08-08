@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_button.dart';
+import '../../../components/app_close_button.dart';
 import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
 import '../../../core/files/file_picker.dart';
@@ -365,8 +366,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
+        leading: AppCloseButton(
+          tooltip: 'Close the composer',
           onPressed: () async {
             if (_isDirty) await _save();
             if (context.mounted) context.pop();
@@ -455,12 +456,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                   ),
                                 ),
                                 if (_images.isNotEmpty)
-                                  IconButton(
+                                  AppCloseButton(
                                     tooltip: 'Remove the picture',
-                                    icon: Icon(
-                                      Icons.cancel_outlined,
-                                      color: colors.textMuted,
-                                    ),
                                     onPressed: () {
                                       setState(() {
                                         _images.clear();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/app_close_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 
@@ -64,13 +65,10 @@ class CommentComposer extends StatelessWidget {
                               ),
                             ),
                           ),
-                          InkWell(
-                            onTap: onCancelReply,
-                            child: Icon(
-                              Icons.close,
-                              size: AppSizes.iconSm,
-                              color: colors.textMuted,
-                            ),
+                          AppCloseButton(
+                            size: AppCloseSize.small,
+                            tooltip: 'Stop replying',
+                            onPressed: onCancelReply,
                           ),
                         ],
                       ),

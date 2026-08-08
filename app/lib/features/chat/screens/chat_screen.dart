@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_button.dart';
+import '../../../components/app_close_button.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/confirm_dialog.dart';
 import '../../../routing/routes.dart';
@@ -561,13 +562,10 @@ class _Composer extends StatelessWidget {
                             ),
                           ),
                         ),
-                        InkWell(
-                          onTap: onCancelReply,
-                          child: Icon(
-                            Icons.close,
-                            size: 18,
-                            color: colors.textMuted,
-                          ),
+                        AppCloseButton(
+                          size: AppCloseSize.small,
+                          tooltip: 'Stop replying',
+                          onPressed: onCancelReply,
                         ),
                       ],
                     ),
