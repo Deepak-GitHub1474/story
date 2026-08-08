@@ -27,6 +27,37 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
   bool _showRequests = false;
   Timer? _refresh;
 
+  Future<void> _openChatMenu(Conversation conversation) async {
+    final colors = context.colors;
+
+    final choice = await showAppSheet<String>(
+      context: context,
+      title: conversation.other.handle,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: colors.danger),
+              title: Text('Delete', style: TextStyle(color: colors.danger)),
+              onTap: () => Navigator.of(sheetContext).pop('delete'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+
+    if (choice != 'delete' || !mounted) return;
+
+    await ref
+        .read(chatRepositoryProvider)
+        .removeConversation(conversation.conversationId);
+    ref.invalidate(conversationsProvider(null));
+    ref.invalidate(conversationsProvider('pending'));
+    ref.invalidate(chatPeopleProvider);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +180,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                           onTap: () => context.push(
                             '${Routes.chat}/${items[index].conversationId}',
                           ),
+                          onLongPress: () => _openChatMenu(items[index]),
                         ),
                       ),
                     ),
@@ -199,10 +231,15 @@ class _Segment extends StatelessWidget {
 }
 
 class _ConversationRow extends StatelessWidget {
-  const _ConversationRow({required this.conversation, required this.onTap});
+  const _ConversationRow({
+    required this.conversation,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final Conversation conversation;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +248,7 @@ class _ConversationRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -439,7 +477,7 @@ class _PeopleToMessage extends ConsumerWidget {
                 username: person.username,
               ),
               title: Text(
-                person.handle,
+                person.displayName,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: AppTypeScale.body,
@@ -447,12 +485,10 @@ class _PeopleToMessage extends ConsumerWidget {
                 ),
               ),
               subtitle: Text(
-                person.opensStraightAway
-                    ? 'Opens straight away'
-                    : 'They will get a request',
+                person.username == null ? '' : '@${person.username}',
                 style: TextStyle(
-                  color: person.opensStraightAway ? colors.success : colors.textMuted,
-                  fontSize: AppTypeScale.caption,
+                  color: colors.textMuted,
+                  fontSize: AppTypeScale.label,
                 ),
               ),
             );

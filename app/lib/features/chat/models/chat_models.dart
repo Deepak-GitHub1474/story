@@ -38,6 +38,8 @@ class ChatPeer {
     avatarSeed: json['avatar_seed'] as String? ?? '',
   );
 
+  String get handle => username.isNotEmpty ? username : displayName;
+
   final String userId;
   final String username;
   final String displayName;
