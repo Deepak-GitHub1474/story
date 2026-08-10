@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/auth/providers/auth_provider.dart';
 import '../../features/chat/providers/chat_providers.dart';
 import '../../features/communities/providers/community_providers.dart';
 import '../../features/notifications/providers/notification_providers.dart';
@@ -47,3 +50,13 @@ final userScopedProviders = <ProviderOrFamily>[
   vaultUploadProvider,
   vaultTransferProvider,
 ];
+
+final sessionGuardProvider = Provider<void>((ref) {
+  ref.listen(authProvider.select((state) => state.user?.userId), (
+    previous,
+    next,
+  ) {
+    if (previous == next) return;
+    unawaited(forgetSession(ref));
+  });
+});

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/result.dart';
-import '../../../core/session/forget_session.dart';
 import '../../../core/storage/secure_store.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../data/auth_repository.dart';
@@ -108,7 +107,6 @@ class AuthNotifier extends Notifier<AuthState> {
       accessToken: session.tokens.accessToken,
       refreshToken: session.tokens.refreshToken,
     );
-    await forgetSession(ref);
     state = AuthState(status: AuthStatus.signedIn, user: session.user);
 
     if (password != null) {
@@ -131,7 +129,6 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isBusy: true);
     await _repository.signout();
     await _store.clear();
-    await forgetSession(ref);
     state = const AuthState(status: AuthStatus.signedOut);
   }
 
@@ -139,12 +136,10 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isBusy: true);
     await _repository.signoutEverywhere();
     await _store.clear();
-    await forgetSession(ref);
     state = const AuthState(status: AuthStatus.signedOut);
   }
 
   void markSignedOut() {
-    unawaited(forgetSession(ref));
     state = const AuthState(status: AuthStatus.signedOut);
   }
 }
