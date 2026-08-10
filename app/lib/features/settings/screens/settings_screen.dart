@@ -52,8 +52,8 @@ class SettingsScreen extends ConsumerWidget {
                     AppListRow(
                       label: 'Theme',
                       value: switch (theme) {
-                        'midnight' => 'Midnight',
-                        'paper' => 'Paper',
+                        'midnight' => 'Dark',
+                        'paper' => 'Light',
                         _ => 'System',
                       },
                       icon: Icons.contrast_outlined,
@@ -231,8 +231,8 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             for (final option in const [
               ('system', 'System'),
-              ('midnight', 'Midnight'),
-              ('paper', 'Paper'),
+              ('midnight', 'Dark'),
+              ('paper', 'Light'),
             ])
               AppListRow(
                 label: option.$2,

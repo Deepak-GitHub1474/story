@@ -12,8 +12,6 @@ import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 
-const _batchSize = 24;
-
 class AvatarScreen extends ConsumerStatefulWidget {
   const AvatarScreen({super.key});
 
@@ -31,13 +29,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
     super.initState();
     final current = ref.read(authProvider).user?.avatarSeed ?? '';
     _chosen = current;
-    _seeds = newAvatarSeeds(_batchSize, keep: current);
-  }
-
-  void _shuffle() {
-    setState(() {
-      _seeds = newAvatarSeeds(_batchSize, keep: _chosen);
-    });
+    _seeds = faceSeeds(keep: current);
   }
 
   Future<void> _save() async {
@@ -70,12 +62,6 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
 
     return AppScaffold(
       title: 'Your avatar',
-      actions: [
-        IconButton(
-          icon: Icon(Icons.refresh, color: colors.textPrimary),
-          onPressed: _shuffle,
-        ),
-      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -83,30 +69,47 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
             children: [
               AppAvatar(
                 seed: _chosen,
-                size: 76,
+                size: 72,
                 displayName: user?.displayName,
                 username: user?.username,
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
-                child: Text(
-                  'Every avatar is drawn on this device from a short code. '
-                  'Nothing is uploaded, and no picture of you exists to leak.',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.label,
-                    height: 1.55,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      user?.displayName ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: AppTypeScale.body,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${user?.username ?? ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: AppTypeScale.label,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xxl),
           Expanded(
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: AppSpacing.lg,
+                crossAxisCount: 3,
+                mainAxisSpacing: AppSpacing.xl,
                 crossAxisSpacing: AppSpacing.lg,
               ),
               itemCount: _seeds.length,
@@ -129,7 +132,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                     ),
                     child: AppAvatar(
                       seed: seed,
-                      size: 56,
+                      size: 72,
                       displayName: user?.displayName,
                       username: user?.username,
                     ),

@@ -11,6 +11,7 @@ Future<T?> showAppSheet<T>({
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: isScrollControlled,
+  useRootNavigator: true,
   backgroundColor: Colors.transparent,
   builder: (sheetContext) =>
       AppSheet(title: title, child: builder(sheetContext)),

@@ -223,39 +223,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       ),
                       const SizedBox(width: AppSpacing.xl),
                       Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _Stat(
-                              value: '${user.counts['stories'] ?? 0}',
-                              label: 'Stories',
+                            Text(
+                              user.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: AppTypeScale.body,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                            _Stat(
-                              value: '${user.counts['followers'] ?? 0}',
-                              label: 'Readers',
-                              onTap: () => context.push(Routes.followers),
-                            ),
-                            _Stat(
-                              value: '${user.counts['connections'] ?? 0}',
-                              label: 'Following',
-                              onTap: () => context.push(Routes.following),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _Stat(
+                                  value: '${user.counts['stories'] ?? 0}',
+                                  label: 'Stories',
+                                ),
+                                _Stat(
+                                  value: '${user.counts['followers'] ?? 0}',
+                                  label: 'Followers',
+                                  onTap: () => context.push(Routes.followers),
+                                ),
+                                _Stat(
+                                  value: '${user.counts['connections'] ?? 0}',
+                                  label: 'Following',
+                                  onTap: () => context.push(Routes.following),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      user.displayName,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: AppTypeScale.body,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
                   ),
                   if (user.bio != null && user.bio!.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xs),

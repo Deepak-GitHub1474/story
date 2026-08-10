@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../components/app_scaffold.dart';
-import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -9,25 +7,26 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      child: Center(
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0D12),
+      body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'STORY',
-              style: TextStyle(
-                color: context.colors.textPrimary,
-                fontSize: AppTypeScale.title,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 6,
-              ),
+            Image.asset(
+              'assets/splash.png',
+              width: 220,
+              height: 220,
+              filterQuality: FilterQuality.medium,
             ),
-            const SizedBox(height: AppSpacing.xl),
-            const SizedBox(
+            const SizedBox(height: AppSpacing.xxl),
+            SizedBox(
               width: AppSizes.iconMd,
               height: AppSizes.iconMd,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.midnight.accent,
+              ),
             ),
           ],
         ),

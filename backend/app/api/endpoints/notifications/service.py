@@ -1,10 +1,12 @@
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from redis.asyncio import Redis
 
 from app.api.endpoints.notifications.constants import NOTIFICATIONS, PREVIEW_LENGTH
 from app.core.ids import new_id
 from app.core.time import to_wire, utc_now
+from app.realtime import bus
 
 
 def preview(text: str) -> str:
@@ -29,6 +31,7 @@ async def notify(
     target_id: str,
     body: str,
     collapse: bool = False,
+    redis: Redis | None = None,
 ) -> None:
     if user_id == actor_id:
         return
@@ -56,6 +59,7 @@ async def notify(
             {"$set": {**document, "read_at": None}, "$setOnInsert": {"_id": new_id("not")}},
             upsert=True,
         )
+        await announce(redis, user_id, kind)
         return
 
     notification_id = new_id("not")
@@ -66,6 +70,13 @@ async def notify(
             "dedupe_key": f"{document['dedupe_key']}:{notification_id}",
         }
     )
+    await announce(redis, user_id, kind)
+
+
+async def announce(redis: Redis | None, user_id: str, kind: str) -> None:
+    if redis is None:
+        return
+    await bus.publish(redis, [user_id], {"type": "notification", "kind": kind})
 
 
 async def withdraw(

@@ -81,37 +81,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return AppScaffold(
       title: 'Edit profile',
       leading: BackButton(onPressed: () => context.pop()),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppTextField(
-              controller: _displayName,
-              label: 'Display name',
-              hint: 'Quiet Fox',
-              errorText: _displayNameError,
-              helperText: 'Shown on your stories. Change it whenever you like.',
-              onChanged: (_) => setState(() {}),
+      alignment: Alignment.topCenter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppTextField(
+                    controller: _displayName,
+                    label: 'Display name',
+                    hint: 'Quiet Fox',
+                    errorText: _displayNameError,
+                    helperText: 'Shown on your stories. Change it whenever you like.',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppTextField(
+                    controller: _bio,
+                    label: 'Bio',
+                    hint: 'Say as little as you want.',
+                    errorText: _bioError,
+                    helperText: 'Up to 200 characters, new lines allowed. No links.',
+                    maxLines: 5,
+                    textInputAction: TextInputAction.newline,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            AppTextField(
-              controller: _bio,
-              label: 'Bio',
-              hint: 'Say as little as you want.',
-              errorText: _bioError,
-              helperText: 'Up to 200 characters, new lines allowed. No links.',
-              maxLines: 5,
-              textInputAction: TextInputAction.newline,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            AppButton(
-              label: 'Save',
-              isLoading: _isSaving,
-              onPressed: _displayName.text.trim().isEmpty ? null : _save,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: 'Save',
+            isLoading: _isSaving,
+            onPressed: _displayName.text.trim().isEmpty ? null : _save,
+          ),
+        ],
       ),
     );
   }

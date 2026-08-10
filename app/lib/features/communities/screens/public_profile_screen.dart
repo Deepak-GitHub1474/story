@@ -195,25 +195,32 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           ),
                           const SizedBox(width: AppSpacing.xl),
                           Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _Stat(value: '${profile.stories}', label: 'Stories'),
-                                _Stat(value: '${profile.followers}', label: 'Readers'),
-                                _Stat(value: '${profile.following}', label: 'Following'),
+                                Text(
+                                  profile.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: AppTypeScale.body,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _Stat(value: '${profile.stories}', label: 'Stories'),
+                                    _Stat(value: '${profile.followers}', label: 'Followers'),
+                                    _Stat(value: '${profile.following}', label: 'Following'),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        profile.displayName,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: AppTypeScale.body,
-                          fontWeight: FontWeight.w500,
-                        ),
                       ),
                       if (profile.bio != null && profile.bio!.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.xs),

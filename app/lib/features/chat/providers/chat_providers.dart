@@ -354,6 +354,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     if (newest == null) return;
     await _repository.markRead(arg, newest.messageId);
     ref.invalidate(chatUnreadProvider);
+    ref.invalidate(conversationsProvider(null));
   }
 
   Future<bool> send(String text, {String? replyTo}) async {

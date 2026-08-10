@@ -11,26 +11,42 @@ import '../../../theme/tokens.dart';
 import '../models/notification_models.dart';
 import '../providers/notification_providers.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+IconData _icon(String kind) => switch (kind) {
+  'story_like' || 'comment_like' => Icons.favorite,
+  'story_comment' => Icons.mode_comment,
+  'comment_reply' => Icons.reply,
+  _ => Icons.notifications,
+};
+
+Color _iconColor(BuildContext context, String kind) => switch (kind) {
+  'story_like' || 'comment_like' => context.colors.danger,
+  _ => context.colors.accent,
+};
+
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
-  IconData _icon(String kind) => switch (kind) {
-    'story_like' || 'comment_like' => Icons.favorite,
-    'story_comment' => Icons.mode_comment,
-    'comment_reply' => Icons.reply,
-    _ => Icons.notifications,
-  };
+  @override
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
 
-  Color _iconColor(BuildContext context, String kind) => switch (kind) {
-    'story_like' || 'comment_like' => context.colors.danger,
-    _ => context.colors.accent,
-  };
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _acknowledge());
+  }
+
+  void _acknowledge() {
+    if (!mounted) return;
+    if (ref.read(unreadCountProvider) == 0) return;
+    ref.read(notificationsProvider.notifier).markAllRead();
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.colors;
     final notifications = ref.watch(notificationsProvider);
-    final unread = ref.watch(unreadCountProvider);
 
     return SafeArea(
       child: Column(
@@ -52,16 +68,6 @@ class NotificationsScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const Spacer(),
-                if (unread > 0)
-                  TextButton(
-                    onPressed: () =>
-                        ref.read(notificationsProvider.notifier).markAllRead(),
-                    child: Text(
-                      'Mark all read',
-                      style: TextStyle(color: colors.accent),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -133,7 +139,6 @@ class _Tile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final screen = const NotificationsScreen();
 
     return Material(
       color: notification.isRead ? Colors.transparent : colors.accent.withValues(alpha: 0.06),
@@ -170,9 +175,9 @@ class _Tile extends ConsumerWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        screen._icon(notification.kind),
+                        _icon(notification.kind),
                         size: 12,
-                        color: screen._iconColor(context, notification.kind),
+                        color: _iconColor(context, notification.kind),
                       ),
                     ),
                   ),

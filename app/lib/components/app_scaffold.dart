@@ -11,6 +11,7 @@ class AppScaffold extends StatelessWidget {
     this.leading,
     this.actions,
     this.padding = const EdgeInsets.all(AppSpacing.xl),
+    this.alignment = Alignment.center,
   });
 
   final Widget child;
@@ -18,6 +19,7 @@ class AppScaffold extends StatelessWidget {
   final Widget? leading;
   final List<Widget>? actions;
   final EdgeInsets padding;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,8 @@ class AppScaffold extends StatelessWidget {
           ? null
           : AppBar(title: title == null ? null : Text(title!), leading: leading, actions: actions),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: alignment,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
             child: Padding(padding: padding, child: child),

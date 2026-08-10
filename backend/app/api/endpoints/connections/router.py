@@ -3,6 +3,7 @@ from fastapi import APIRouter, status
 from app.api.endpoints.connections import controllers
 from app.core.deps import CurrentClaims
 from app.db.mongo import MongoDatabase
+from app.db.redis import RedisClient
 from app.responses import ok_response
 
 router = APIRouter(prefix="/connections", tags=["connections"])
@@ -27,8 +28,10 @@ async def list_blocked(claims: CurrentClaims, mongo: MongoDatabase):
 
 
 @router.post("/{username}", status_code=status.HTTP_200_OK)
-async def follow(username: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.follow(username, claims=claims, mongo=mongo)
+async def follow(
+    username: str, claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient
+):
+    data = await controllers.follow(username, claims=claims, mongo=mongo, redis=redis)
     return ok_response("Following.", data=data)
 
 

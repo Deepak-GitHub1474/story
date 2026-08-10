@@ -181,23 +181,15 @@ class _ShellTab extends StatelessWidget {
                   ),
                 if (badgeCount > 0)
                   Positioned(
-                    right: -6,
-                    top: -4,
+                    right: -2,
+                    top: -1,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
                         color: colors.danger,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16),
-                      child: Text(
-                        badgeCount > 99 ? '99+' : '$badgeCount',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.bg,
-                          fontSize: AppTypeScale.micro,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colors.surface, width: 1.5),
                       ),
                     ),
                   ),

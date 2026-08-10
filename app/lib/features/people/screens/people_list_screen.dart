@@ -38,7 +38,7 @@ class PeopleListScreen extends ConsumerWidget {
 
   String get _title => switch (kind) {
     PeopleKind.following => 'Following',
-    PeopleKind.followers => 'Readers',
+    PeopleKind.followers => 'Followers',
     PeopleKind.blocked => 'Blocked accounts',
   };
 

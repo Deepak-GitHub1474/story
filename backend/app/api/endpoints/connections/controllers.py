@@ -62,7 +62,9 @@ async def is_following(follower_id: str, followee_id: str, mongo) -> bool:
     ) is not None
 
 
-async def follow(username: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def follow(
+    username: str, *, claims, mongo: AsyncIOMotorDatabase, redis=None
+) -> dict[str, Any]:
     target = await _resolve(username, mongo)
     if target["_id"] == claims.user_id:
         raise api_error(ErrorCode.SELF_FOLLOW)
@@ -107,7 +109,8 @@ async def follow(username: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[
             target_id=claims.user_id,
             body="started reading you.",
             collapse=True,
-        )
+            redis=redis,
+)
 
     return {"is_following": True, "username": target["username"]}
 

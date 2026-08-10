@@ -213,6 +213,7 @@ async def publish_story(
     claims,
     mongo: AsyncIOMotorDatabase,
     ai: AIPort | None = None,
+    redis=None,
 ) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
     now = utc_now()
@@ -270,6 +271,7 @@ async def publish_story(
                 claims=claims,
                 mongo=mongo,
                 community_name=update["community"]["name"],
+                redis=redis,
             )
 
     story.update(update)
@@ -341,7 +343,13 @@ async def _real_room(
 
 
 async def _notify_community(
-    slug: str, *, story_id: str, claims, mongo: AsyncIOMotorDatabase, community_name: str
+    slug: str,
+    *,
+    story_id: str,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    community_name: str,
+    redis=None,
 ) -> None:
     snapshot = await _author_snapshot(claims.user_id, mongo)
     members = (
@@ -360,7 +368,8 @@ async def _notify_community(
             target_kind="story",
             target_id=story_id,
             body=f"posted in {community_name}.",
-        )
+            redis=redis,
+)
 
 
 async def unpublish_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -684,7 +693,7 @@ async def _paginate(
 
 
 async def set_like(
-    story_id: str, *, liked: bool, claims, mongo: AsyncIOMotorDatabase
+    story_id: str, *, liked: bool, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     reaction_id = f"{claims.user_id}:story:{story_id}"
@@ -722,7 +731,8 @@ async def set_like(
                 target_id=story_id,
                 body="liked your story.",
                 collapse=True,
-            )
+                redis=redis,
+)
         else:
             await withdraw(
                 mongo=mongo,
@@ -737,7 +747,12 @@ async def set_like(
 
 
 async def create_comment(
-    story_id: str, body: CreateCommentRequest, *, claims, mongo: AsyncIOMotorDatabase
+    story_id: str,
+    body: CreateCommentRequest,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    redis=None,
 ) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     parent = None
@@ -782,7 +797,8 @@ async def create_comment(
             target_kind="story",
             target_id=story_id,
             body=f"replied: {preview(body.body)}",
-        )
+            redis=redis,
+)
 
     if parent is None or parent["author_id"] != story["author_id"]:
         await notify(
@@ -794,7 +810,8 @@ async def create_comment(
             target_kind="story",
             target_id=story_id,
             body=f"commented: {preview(body.body)}",
-        )
+            redis=redis,
+)
 
     return {"comment": serialize_comment(comment)}
 
@@ -960,7 +977,7 @@ async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase
 
 
 async def set_comment_like(
-    comment_id: str, *, liked: bool, claims, mongo: AsyncIOMotorDatabase
+    comment_id: str, *, liked: bool, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
     comment = await mongo[c.COMMENTS].find_one({"_id": comment_id, "deleted_at": None})
     if comment is None:
@@ -1000,7 +1017,8 @@ async def set_comment_like(
                 target_id=comment["story_id"],
                 body="liked your comment.",
                 collapse=True,
-            )
+                redis=redis,
+)
         else:
             await withdraw(
                 mongo=mongo,

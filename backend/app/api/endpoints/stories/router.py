@@ -91,9 +91,10 @@ async def publish_story(
     claims: CurrentClaims,
     mongo: MongoDatabase,
     ai: AI,
+    redis: RedisClient,
 ):
     data = await controllers.publish_story(
-        story_id, body, claims=claims, mongo=mongo, ai=ai
+        story_id, body, claims=claims, mongo=mongo, ai=ai, redis=redis
     )
     message = "Your story is live." if body.visibility == "public" else "Saved as private."
     return ok_response(message, data=data)
@@ -116,14 +117,22 @@ async def share_story(
 
 
 @router.post("/stories/{story_id}/like", status_code=status.HTTP_200_OK)
-async def like_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.set_like(story_id, liked=True, claims=claims, mongo=mongo)
+async def like_story(
+    story_id: str, claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient
+):
+    data = await controllers.set_like(
+        story_id, liked=True, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Liked.", data=data)
 
 
 @router.delete("/stories/{story_id}/like", status_code=status.HTTP_200_OK)
-async def unlike_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.set_like(story_id, liked=False, claims=claims, mongo=mongo)
+async def unlike_story(
+    story_id: str, claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient
+):
+    data = await controllers.set_like(
+        story_id, liked=False, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Unliked.", data=data)
 
 
@@ -158,7 +167,9 @@ async def create_comment(
     if cached is not None:
         return ok_response("Comment added.", data=cached)
 
-    data = await controllers.create_comment(story_id, body, claims=claims, mongo=mongo)
+    data = await controllers.create_comment(
+        story_id, body, claims=claims, mongo=mongo, redis=redis
+    )
     await remember(request, user_id=claims.user_id, redis=redis, payload=data)
     return ok_response("Comment added.", data=data)
 
@@ -195,14 +206,22 @@ async def delete_comment(comment_id: str, claims: CurrentClaims, mongo: MongoDat
 
 
 @router.post("/comments/{comment_id}/like", status_code=status.HTTP_200_OK)
-async def like_comment(comment_id: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.set_comment_like(comment_id, liked=True, claims=claims, mongo=mongo)
+async def like_comment(
+    comment_id: str, claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient
+):
+    data = await controllers.set_comment_like(
+        comment_id, liked=True, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Liked.", data=data)
 
 
 @router.delete("/comments/{comment_id}/like", status_code=status.HTTP_200_OK)
-async def unlike_comment(comment_id: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.set_comment_like(comment_id, liked=False, claims=claims, mongo=mongo)
+async def unlike_comment(
+    comment_id: str, claims: CurrentClaims, mongo: MongoDatabase, redis: RedisClient
+):
+    data = await controllers.set_comment_like(
+        comment_id, liked=False, claims=claims, mongo=mongo, redis=redis
+    )
     return ok_response("Unliked.", data=data)
 
 
