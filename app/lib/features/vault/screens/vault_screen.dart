@@ -85,6 +85,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
   Future<void> _newVault() async {
     final created = await showAppSheet<bool>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'New vault',
       builder: (sheetContext) => const _NewVaultSheet(),
@@ -111,6 +112,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
 
     final label = await showAppSheet<String?>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => _HideSheet(filename: file.name),
     );

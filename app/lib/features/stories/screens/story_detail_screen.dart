@@ -165,6 +165,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final controller = TextEditingController(text: comment.body);
 
     final next = await showAppSheet<String?>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
@@ -243,6 +244,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final colors = context.colors;
 
     await showAppSheet<void>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(

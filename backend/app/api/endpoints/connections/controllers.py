@@ -107,7 +107,7 @@ async def follow(
             kind="new_follower",
             target_kind="user",
             target_id=claims.user_id,
-            body="started reading you.",
+            body="started following you.",
             collapse=True,
             redis=redis,
 )

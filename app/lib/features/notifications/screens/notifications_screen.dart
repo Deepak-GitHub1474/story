@@ -6,6 +6,7 @@ import '../../../components/app_avatar.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../routing/routes.dart';
 import '../../../components/skeleton.dart';
+import '../../../components/swipe_to_reveal.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/notification_models.dart';
@@ -61,7 +62,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             child: Row(
               children: [
                 Text(
-                  'Activity',
+                  'Notifications',
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.heading,
@@ -76,7 +77,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               loading: () => const SkeletonList(count: 6),
               error: (error, _) => Center(
                 child: Text(
-                  'Could not load your activity.',
+                  'Could not load your notifications.',
                   style: TextStyle(color: colors.textSecondary),
                 ),
               ),
@@ -94,30 +95,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             Divider(height: 1, color: colors.border),
                         itemBuilder: (context, index) {
                           final notification = items[index];
-                          return Dismissible(
+                          return SwipeToReveal(
                             key: ValueKey(notification.notificationId),
-                            background: _SwipeHint(
-                              icon: Icons.mark_email_read_outlined,
-                              label: 'Read',
-                              alignment: Alignment.centerLeft,
-                            ),
-                            secondaryBackground: const _SwipeHint(
-                              icon: Icons.delete_outline,
-                              label: 'Clear',
-                              alignment: Alignment.centerRight,
-                              isDanger: true,
-                            ),
-                            confirmDismiss: (direction) async {
-                              final notifier = ref.read(
-                                notificationsProvider.notifier,
-                              );
-                              if (direction == DismissDirection.endToStart) {
-                                await notifier.remove(notification.notificationId);
-                                return true;
-                              }
-                              await notifier.markRead(notification.notificationId);
-                              return false;
-                            },
+                            onDelete: () => ref
+                                .read(notificationsProvider.notifier)
+                                .remove(notification.notificationId),
                             child: _Tile(notification: notification),
                           );
                         },
@@ -272,47 +254,6 @@ class _Empty extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SwipeHint extends StatelessWidget {
-  const _SwipeHint({
-    required this.icon,
-    required this.label,
-    required this.alignment,
-    this.isDanger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final Alignment alignment;
-  final bool isDanger;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final tint = isDanger ? colors.danger : colors.accent;
-
-    return Container(
-      color: tint.withValues(alpha: 0.12),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: AppSizes.iconMd, color: tint),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            label,
-            style: TextStyle(
-              color: tint,
-              fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

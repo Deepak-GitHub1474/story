@@ -34,6 +34,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
     final colors = context.colors;
 
     final choice = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       title: conversation.other.handle,
       builder: (sheetContext) => SafeArea(
@@ -94,6 +95,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
             _LockedBanner(
               onUnlock: () async {
                 final done = await showAppSheet<bool>(
+                  contentPadding: EdgeInsets.zero,
                   context: context,
                   title: 'Unlock your messages',
                   builder: (sheetContext) => const UnlockChatSheet(),

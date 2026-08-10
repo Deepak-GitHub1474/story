@@ -16,6 +16,12 @@ class StoryReview:
         return bool(self.exposes)
 
 
+@dataclass(frozen=True)
+class StoryDraft:
+    title: str
+    body: str
+
+
 ALLOWED = StoryReview()
 
 
@@ -33,3 +39,5 @@ class AIPort(Protocol):
     ) -> StoryReview: ...
 
     async def polish(self, *, text: str, instruction: str) -> str: ...
+
+    async def draft_story(self, *, subject: str, brief: str) -> StoryDraft: ...

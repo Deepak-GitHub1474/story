@@ -102,6 +102,7 @@ class Endpoints {
   static const String realtimeTicket = '/realtime/ticket';
   static const String suggestions = '/suggestions';
   static const String aiPolish = '/ai/polish';
+  static const String aiDraft = '/ai/draft';
   static const String mediaImages = '/media/images';
   static const String vaultItems = '/vault/items';
   static const String vaultSearch = '/vault/search';

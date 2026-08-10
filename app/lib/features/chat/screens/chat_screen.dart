@@ -38,6 +38,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _focus = FocusNode();
 
   ChatMessage? _replyTo;
+  String? _highlighted;
+  Timer? _highlightTimer;
   final _keys = <String, GlobalKey>{};
 
   GlobalKey _keyFor(String messageId) =>
@@ -53,6 +55,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       curve: AppMotion.easeOut,
       alignment: 0.4,
     );
+
+    setState(() => _highlighted = messageId);
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _highlighted = null);
+    });
   }
 
   @override
@@ -69,6 +77,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    _highlightTimer?.cancel();
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
     _composer.dispose();
@@ -104,6 +113,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final me = ref.read(authProvider).user?.userId ?? '';
 
     await showAppSheet<void>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(
@@ -288,7 +298,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             Expanded(
               child: state.isLoading
-                  ? const SkeletonList(count: 5)
+                  ? const ChatSkeleton()
                   : state.messages.isEmpty
                   ? SingleChildScrollView(
                       child: _EmptyThread(name: other?.displayName ?? 'them'),
@@ -331,11 +341,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     .where((m) => m.messageId == message.replyTo)
                                     .firstOrNull,
                           onLongPress: () => _openMessageMenu(message, isMine),
+                          isHighlighted: _highlighted == message.messageId,
                           onDoubleTap: () => ref
                               .read(
                                 conversationProvider(widget.conversationId).notifier,
                               )
-                              .react(message.messageId, '❤️'),
+                              .react(
+                                message.messageId,
+                                mine?.emoji == '❤️' ? null : '❤️',
+                              ),
                         );
                       },
                     ),
@@ -531,7 +545,7 @@ class _Composer extends StatelessWidget {
     return Container(
       padding: EdgeInsets.only(
         left: AppSpacing.lg,
-        right: AppSpacing.lg,
+        right: AppSpacing.md,
         top: AppSpacing.sm,
         bottom: MediaQuery.of(context).viewInsets.bottom > 0
             ? AppSpacing.sm
@@ -587,7 +601,7 @@ class _Composer extends StatelessWidget {
                   controller: controller,
                   focusNode: focusNode,
                   minLines: 1,
-                  maxLines: 5,
+                  maxLines: 4,
                   maxLength: 2000,
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
@@ -605,15 +619,15 @@ class _Composer extends StatelessWidget {
                       vertical: AppSpacing.md,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      borderRadius: BorderRadius.circular(AppRadius.lg + 6),
                       borderSide: BorderSide(color: colors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      borderRadius: BorderRadius.circular(AppRadius.lg + 6),
                       borderSide: BorderSide(color: colors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      borderRadius: BorderRadius.circular(AppRadius.lg + 6),
                       borderSide: BorderSide(color: colors.accent, width: 1.6),
                     ),
                   ),
@@ -645,7 +659,11 @@ class _SendButton extends StatelessWidget {
       valueListenable: controller,
       builder: (context, value, child) {
         final isReady = value.text.trim().isNotEmpty;
-        return AnimatedScale(
+        return SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: AnimatedScale(
           scale: isReady ? 1 : 0.85,
           duration: AppMotion.fast,
           curve: AppMotion.easeOut,
@@ -662,6 +680,8 @@ class _SendButton extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Icon(Icons.arrow_upward, color: colors.accentText, size: 20),
                 ),
+              ),
+            ),
               ),
             ),
           ),

@@ -8,20 +8,36 @@ Future<T?> showAppSheet<T>({
   required WidgetBuilder builder,
   String? title,
   bool isScrollControlled = true,
+  EdgeInsets contentPadding = const EdgeInsets.symmetric(
+    horizontal: AppSpacing.xl,
+  ),
+  Widget? footer,
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: isScrollControlled,
   useRootNavigator: true,
   backgroundColor: Colors.transparent,
-  builder: (sheetContext) =>
-      AppSheet(title: title, child: builder(sheetContext)),
+  builder: (sheetContext) => AppSheet(
+    title: title,
+    contentPadding: contentPadding,
+    footer: footer,
+    child: builder(sheetContext),
+  ),
 );
 
 class AppSheet extends StatelessWidget {
-  const AppSheet({super.key, required this.child, this.title});
+  const AppSheet({
+    super.key,
+    required this.child,
+    this.title,
+    this.contentPadding = EdgeInsets.zero,
+    this.footer,
+  });
 
   final Widget child;
   final String? title;
+  final EdgeInsets contentPadding;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +89,27 @@ class AppSheet extends StatelessWidget {
             ),
           Flexible(
             child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                bottom: media.viewInsets.bottom + media.padding.bottom + AppSpacing.lg,
+              padding: contentPadding.copyWith(
+                bottom: footer != null
+                    ? AppSpacing.lg
+                    : media.viewInsets.bottom +
+                          media.padding.bottom +
+                          AppSpacing.lg,
               ),
               child: child,
             ),
           ),
+          if (footer != null)
+            Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.xl,
+                right: AppSpacing.xl,
+                top: AppSpacing.sm,
+                bottom:
+                    media.viewInsets.bottom + media.padding.bottom + AppSpacing.lg,
+              ),
+              child: footer,
+            ),
         ],
       ),
     );

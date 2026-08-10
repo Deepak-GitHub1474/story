@@ -21,6 +21,7 @@ import '../../communities/providers/community_providers.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 import '../widgets/polish_sheet.dart';
+import '../widgets/write_for_me_sheet.dart';
 import '../widgets/story_images.dart';
 
 class ComposerScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   bool _isDirty = false;
   String _savedLabel = '';
   final _images = <String>[];
+  String _visibility = 'draft';
   bool _isUploading = false;
   double? _imageRatio;
   String _imageFit = 'cover';
@@ -96,7 +98,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       _savedLabel = '';
     });
     _autosave?.cancel();
-    _autosave = Timer(const Duration(milliseconds: 1200), _save);
+    _autosave = Timer(const Duration(seconds: 5), _save);
   }
 
   Future<Story?> _save() async {
@@ -200,8 +202,27 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     );
   }
 
+  Future<void> _writeForMe() async {
+    final written = await showWriteForMeSheet(context: context, ref: ref);
+    if (written == null || !mounted) return;
+
+    setState(() {
+      _title.text = written.title;
+      _body.text = written.body;
+      _isDirty = true;
+    });
+    _onChanged();
+
+    if (written.visibility == 'draft') {
+      AppToast.show(context, 'Written. Read it before you publish.');
+      return;
+    }
+    await _publish(written.visibility);
+  }
+
   Future<void> _polish() async {
     final polished = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'Another go at it',
       builder: (sheetContext) => PolishSheet(text: _body.text),
@@ -258,6 +279,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
       if (outcome.needsCare || outcome.suggestedCommunity != null) {
         await showAppSheet<void>(
+          contentPadding: EdgeInsets.zero,
           context: context,
           title: outcome.needsCare ? 'Before you go' : 'One more room',
           builder: (sheetContext) => _AfterPublishSheet(
@@ -280,6 +302,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   ) async {
     if (failure.code == 'EXPOSURE_ACK_REQUIRED') {
       final goAhead = await showAppSheet<bool>(
+        contentPadding: EdgeInsets.zero,
         context: context,
         title: 'This could point back to you',
         builder: (sheetContext) =>
@@ -293,6 +316,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     if (failure.code == 'MODERATION_BLOCKED') {
       await showAppSheet<void>(
+        contentPadding: EdgeInsets.zero,
         context: context,
         title: 'This cannot go up',
         builder: (sheetContext) => _BlockedSheet(
@@ -310,6 +334,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   Future<void> _openPublishSheet() async {
     final colors = context.colors;
     final choice = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -373,13 +398,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             if (context.mounted) context.pop();
           },
         ),
-        title: Text(
-          _savedLabel.isEmpty ? 'Write' : _savedLabel,
-          style: TextStyle(
-            color: _savedLabel.isEmpty ? colors.textPrimary : colors.textMuted,
-            fontSize: _savedLabel.isEmpty ? AppTypeScale.heading : AppTypeScale.label,
-            fontWeight: FontWeight.w500,
-          ),
+        titleSpacing: 0,
+        title: _VisibilityChip(
+          value: _visibility,
+          saved: _savedLabel,
+          onChanged: (next) => setState(() => _visibility = next),
         ),
         actions: [
           IconButton(
@@ -394,12 +417,21 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             onPressed: _isUploading ? null : _addImage,
           ),
           IconButton(
+            tooltip: 'Write it with AI',
+            icon: Icon(Icons.auto_fix_high_outlined, color: colors.textPrimary),
+            onPressed: _isPublishing ? null : _writeForMe,
+          ),
+          IconButton(
             tooltip: 'Ask for a tidier version',
             icon: Icon(Icons.auto_awesome_outlined, color: colors.textPrimary),
             onPressed: _body.text.trim().isEmpty ? null : _polish,
           ),
           TextButton(
-            onPressed: canPublish && !_isPublishing ? _openPublishSheet : null,
+            onPressed: canPublish && !_isPublishing
+                ? () => _visibility == 'scheduled'
+                      ? _openPublishSheet()
+                      : _publish(_visibility)
+                : null,
             child: Text(
               'Publish',
               style: TextStyle(
@@ -648,6 +680,7 @@ class _CommunityPicker extends ConsumerWidget {
         return InkWell(
           onTap: () async {
             final choice = await showAppSheet<String?>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
                 child: ListView(
@@ -1017,6 +1050,122 @@ class _FitToggle extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _VisibilityChip extends StatelessWidget {
+  const _VisibilityChip({
+    required this.value,
+    required this.saved,
+    required this.onChanged,
+  });
+
+  final String value;
+  final String saved;
+  final ValueChanged<String> onChanged;
+
+  static const _labels = {
+    'draft': 'Draft',
+    'private': 'Private',
+    'public': 'Public',
+    'scheduled': 'Schedule',
+  };
+
+  static const _hints = {
+    'draft': 'Only you, until you publish it',
+    'private': 'Only you. Nobody else can open it, not even by link',
+    'public': 'Anyone on STORY can read it',
+    'scheduled': 'Pick a time. It publishes itself',
+  };
+
+  Future<void> _choose(BuildContext context) async {
+    final colors = context.colors;
+
+    final picked = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
+      context: context,
+      title: 'Who can read this?',
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final entry in _labels.entries)
+              ListTile(
+                title: Text(
+                  entry.value,
+                  style: TextStyle(
+                    color: entry.key == value ? colors.accent : colors.textPrimary,
+                    fontSize: AppTypeScale.body,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  _hints[entry.key]!,
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                  ),
+                ),
+                trailing: entry.key == value
+                    ? Icon(Icons.check, color: colors.accent, size: AppSizes.iconSm)
+                    : null,
+                onTap: () => Navigator.of(sheetContext).pop(entry.key),
+              ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => _choose(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: colors.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _labels[value] ?? 'Draft',
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: AppTypeScale.label,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Icon(Icons.expand_more, size: 16, color: colors.textMuted),
+              ],
+            ),
+          ),
+        ),
+        if (saved.isNotEmpty) ...[
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            saved,
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: AppTypeScale.caption,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from app.logging import get_logger
-from app.ports.ai import StoryReview
+from app.ports.ai import StoryDraft, StoryReview
 
 logger = get_logger("story.ai.gemini")
 
@@ -65,6 +65,32 @@ Rules you never break:
 - Return the whole piece, not a fragment and not a commentary on it.
 
 Reply as JSON: {"text": "the improved writing"}"""
+
+DRAFT_INSTRUCTION = """You write a first draft for someone using STORY, a place
+where people write anonymously about their own lives.
+
+They give you a subject and a brief describing what happened and what they want
+said. Turn it into one finished story in the first person, in their voice, plain
+and unadorned. Keep every fact they gave you and invent no new ones: no names,
+places, dates, ages or events they did not mention. If the brief is thin, keep
+the story short rather than padding it.
+
+Write like a person telling a friend, not like an essay. Short paragraphs.
+No headings, no lists, no moral at the end, no advice to the reader.
+
+Give a title of at most eight words that could sit above it without giving
+everything away.
+
+Reply as JSON: {"title": "the title", "body": "the story"}"""
+
+DRAFT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "body": {"type": "string"},
+    },
+    "required": ["title", "body"],
+}
 
 POLISH_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -174,6 +200,42 @@ class GeminiAdapter:
             last_error = None
 
         raise ModerationUnavailable from last_error
+
+    async def draft_story(self, *, subject: str, brief: str) -> StoryDraft:
+        response = await self._ask(
+            {
+                "system_instruction": {"parts": [{"text": DRAFT_INSTRUCTION}]},
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": json.dumps(
+                                    {"subject": subject, "brief": brief},
+                                    ensure_ascii=False,
+                                )
+                            }
+                        ],
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "responseMimeType": "application/json",
+                    "responseSchema": DRAFT_SCHEMA,
+                },
+            }
+        )
+
+        try:
+            raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            written = json.loads(raw)
+            return StoryDraft(
+                title=str(written["title"]).strip(),
+                body=str(written["body"]).strip(),
+            )
+        except (KeyError, IndexError, ValueError, TypeError) as error:
+            logger.error("ai_unreadable", error=type(error).__name__)
+            raise ModerationUnavailable from error
 
     async def polish(self, *, text: str, instruction: str) -> str:
         response = await self._ask(

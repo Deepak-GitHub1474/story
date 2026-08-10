@@ -224,6 +224,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _pickTheme(BuildContext context, WidgetRef ref, String current) async {
     final colors = context.colors;
     final choice = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(

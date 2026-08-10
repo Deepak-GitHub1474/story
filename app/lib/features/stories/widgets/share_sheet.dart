@@ -19,6 +19,7 @@ Future<bool> showShareSheet({
   required Story story,
 }) async {
   final choice = await showAppSheet<String>(
+    contentPadding: EdgeInsets.zero,
     context: context,
     title: 'Share',
     builder: (sheetContext) => Padding(
@@ -72,6 +73,7 @@ Future<bool> showShareSheet({
   }
 
   final posted = await showAppSheet<bool>(
+    contentPadding: EdgeInsets.zero,
     context: context,
     title: 'Add to your story',
     builder: (sheetContext) => _ReshareComposer(story: story),

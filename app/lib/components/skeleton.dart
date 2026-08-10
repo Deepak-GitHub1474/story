@@ -172,3 +172,45 @@ class EndOfFeed extends StatelessWidget {
     );
   }
 }
+
+class ChatSkeleton extends StatelessWidget {
+  const ChatSkeleton({super.key, this.count = 6});
+
+  final int count;
+
+  static const _widths = [0.55, 0.38, 0.68, 0.30, 0.60, 0.45, 0.72, 0.34];
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    return Shimmer(
+      child: ListView.builder(
+        reverse: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        itemCount: count,
+        itemBuilder: (context, index) {
+          final isMine = index.isOdd;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Row(
+              mainAxisAlignment:
+                  isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+              children: [
+                SkeletonBox(
+                  width: width * _widths[index % _widths.length],
+                  height: 40,
+                  radius: AppRadius.lg,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

@@ -126,17 +126,20 @@ class ConversationState {
 }
 
 final conversationProvider =
-    NotifierProvider.family<ConversationNotifier, ConversationState, String>(
-      ConversationNotifier.new,
-    );
+    NotifierProvider.autoDispose
+        .family<ConversationNotifier, ConversationState, String>(
+          ConversationNotifier.new,
+        );
 
-class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
+class ConversationNotifier
+    extends AutoDisposeFamilyNotifier<ConversationState, String> {
   Timer? _poll;
   bool _isPolling = false;
   StreamSubscription<Map<String, dynamic>>? _live;
   Uint8List? _cek;
   DateTime? _lastTyping;
   int _pendingSeq = 0;
+  Future<void> _outbox = Future<void>.value();
 
   @override
   ConversationState build(String conversationId) {
@@ -363,10 +366,11 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     ref.invalidate(conversationsProvider(null));
   }
 
-  Future<bool> send(String text, {String? replyTo}) async {
+  Future<bool> send(String text, {String? replyTo}) {
     final cek = _cek;
     final me = ref.read(authProvider).user;
-    if (cek == null || me == null || text.trim().isEmpty) return false;
+    final body = text.trim();
+    if (cek == null || me == null || body.isEmpty) return Future.value(false);
 
     final placeholder = ChatMessage(
       messageId: 'pending_${++_pendingSeq}',
@@ -376,14 +380,27 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
       createdAt: DateTime.now().toUtc().toIso8601String(),
       reactions: const [],
       replyTo: replyTo,
-      text: text.trim(),
+      text: body,
       isSending: true,
     );
     state = state.copyWith(messages: [placeholder, ...state.messages]);
 
+    final task = _outbox.then(
+      (_) => _deliver(placeholder, body, cek, replyTo),
+    );
+    _outbox = task.then((_) {}, onError: (_) {});
+    return task;
+  }
+
+  Future<bool> _deliver(
+    ChatMessage placeholder,
+    String body,
+    Uint8List cek,
+    String? replyTo,
+  ) async {
     final ciphertext = await _crypto.encryptMessage(
       cek: cek,
-      text: text.trim(),
+      text: body,
       conversationId: arg,
     );
     final result = await _repository.send(
@@ -399,7 +416,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
           if (message.messageId != placeholder.messageId)
             message
           else if (sent != null)
-            sent.withText(text.trim())
+            sent.withText(body)
           else
             placeholder.asPending(failed: true),
       ],
@@ -408,6 +425,7 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     ref.invalidate(conversationsProvider(null));
     return sent != null;
   }
+
 
   Future<void> unsend(String messageId) async {
     state = state.copyWith(

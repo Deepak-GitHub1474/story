@@ -17,6 +17,7 @@ class MessageBubble extends StatefulWidget {
     this.repliedTo,
     this.onTapReplied,
     this.myReaction,
+    this.isHighlighted = false,
   });
 
   final ChatMessage message;
@@ -28,6 +29,7 @@ class MessageBubble extends StatefulWidget {
   final VoidCallback onReplySwipe;
   final VoidCallback? onTapReplied;
   final String? myReaction;
+  final bool isHighlighted;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -83,7 +85,13 @@ class _MessageBubbleState extends State<MessageBubble>
           begin: Offset(isMine ? 0.08 : -0.08, 0.12),
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: _controller, curve: AppMotion.easeOut)),
-        child: Padding(
+        child: AnimatedContainer(
+          duration: AppMotion.base,
+          curve: AppMotion.easeOut,
+          color: widget.isHighlighted
+              ? colors.accent.withValues(alpha: 0.14)
+              : Colors.transparent,
+          child: Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Column(
             crossAxisAlignment: isMine
@@ -209,9 +217,19 @@ class _MessageBubbleState extends State<MessageBubble>
                         fontSize: AppTypeScale.caption,
                       ),
                     ),
-                    if (isMine && widget.isSeen && !message.isSending) ...[
+                    if (isMine && !message.hasFailed) ...[
                       const SizedBox(width: 4),
-                      Icon(Icons.done_all, size: 13, color: colors.accent),
+                      Icon(
+                        message.isSending
+                            ? Icons.schedule
+                            : widget.isSeen
+                            ? Icons.done_all
+                            : Icons.done,
+                        size: 13,
+                        color: widget.isSeen && !message.isSending
+                            ? colors.accent
+                            : colors.textMuted,
+                      ),
                     ],
                   ],
                 ),
@@ -219,6 +237,7 @@ class _MessageBubbleState extends State<MessageBubble>
             ],
           ),
         ),
+      ),
       ),
     );
   }

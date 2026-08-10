@@ -70,6 +70,18 @@ class StoryRepository {
     parse: (data) => data['text'] as String,
   );
 
+  Future<Result<({String title, String body})>> draft({
+    required String subject,
+    required String brief,
+  }) => _client.post(
+    Endpoints.aiDraft,
+    body: {'subject': subject, 'brief': brief},
+    parse: (data) => (
+      title: data['title'] as String,
+      body: data['body'] as String,
+    ),
+  );
+
   Future<Result<Story>> create({
     String? title,
     required String body,

@@ -74,6 +74,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final colors = context.colors;
 
     final action = await showAppSheet<SwipeAction>(
+      contentPadding: EdgeInsets.zero,
       context: context,
       title: story.title?.isNotEmpty == true ? story.title! : 'This story',
       builder: (sheetContext) => SafeArea(
