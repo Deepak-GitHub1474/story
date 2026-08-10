@@ -4,24 +4,28 @@ import 'package:flutter/material.dart';
 
 const faceCount = 10;
 
+enum HairStyle { bobFringe, longPart, bunTop, longFringe, bunLow, quiff, crop, sidePart, curls, afro }
+
 class FaceStyle {
   const FaceStyle({
     required this.skin,
     required this.shadow,
     required this.hair,
     required this.backdrop,
-    required this.isLongHair,
-    this.hasFringe = false,
-    this.hasBun = false,
+    required this.style,
   });
 
   final Color skin;
   final Color shadow;
   final Color hair;
   final Color backdrop;
-  final bool isLongHair;
-  final bool hasFringe;
-  final bool hasBun;
+  final HairStyle style;
+
+  bool get isLongHair => style.index < HairStyle.quiff.index;
+
+  bool get hasBun => style == HairStyle.bunTop || style == HairStyle.bunLow;
+
+  bool get hasFringe => style == HairStyle.bobFringe || style == HairStyle.longFringe;
 }
 
 const _porcelain = Color(0xFFF6D9C6);
@@ -42,74 +46,70 @@ const faceStyles = <FaceStyle>[
     shadow: _porcelainShade,
     hair: Color(0xFF3A2A22),
     backdrop: Color(0xFFFFE1EC),
-    isLongHair: true,
-    hasFringe: true,
+    style: HairStyle.bobFringe,
   ),
   FaceStyle(
     skin: _light,
     shadow: _lightShade,
     hair: Color(0xFFC9762F),
     backdrop: Color(0xFFFFE9D2),
-    isLongHair: true,
+    style: HairStyle.longPart,
   ),
   FaceStyle(
     skin: _olive,
     shadow: _oliveShade,
     hair: Color(0xFF1E1712),
     backdrop: Color(0xFFDDEBFF),
-    isLongHair: true,
-    hasBun: true,
+    style: HairStyle.bunTop,
   ),
   FaceStyle(
     skin: _brown,
     shadow: _brownShade,
     hair: Color(0xFF241813),
     backdrop: Color(0xFFE4E0FF),
-    isLongHair: true,
-    hasFringe: true,
+    style: HairStyle.longFringe,
   ),
   FaceStyle(
     skin: _deep,
     shadow: _deepShade,
     hair: Color(0xFF15100D),
     backdrop: Color(0xFFD8F2E4),
-    isLongHair: true,
-    hasBun: true,
+    style: HairStyle.bunLow,
   ),
   FaceStyle(
     skin: _porcelain,
     shadow: _porcelainShade,
     hair: Color(0xFFB98A4C),
     backdrop: Color(0xFFD9F0FF),
-    isLongHair: false,
+    style: HairStyle.quiff,
   ),
   FaceStyle(
     skin: _light,
     shadow: _lightShade,
     hair: Color(0xFF2C2119),
     backdrop: Color(0xFFE7E4DC),
-    isLongHair: false,
+    style: HairStyle.crop,
   ),
   FaceStyle(
     skin: _olive,
     shadow: _oliveShade,
     hair: Color(0xFF19120E),
     backdrop: Color(0xFFFFE3D5),
-    isLongHair: false,
+    style: HairStyle.sidePart,
   ),
   FaceStyle(
     skin: _brown,
     shadow: _brownShade,
     hair: Color(0xFF120D0A),
     backdrop: Color(0xFFDCE8FF),
-    isLongHair: false,
+    style: HairStyle.curls,
   ),
   FaceStyle(
     skin: _deep,
     shadow: _deepShade,
     hair: Color(0xFF0F0B09),
     backdrop: Color(0xFFFFE7BF),
-    isLongHair: false,
+    style: HairStyle.afro,
   ),
 ];
 
@@ -155,10 +155,16 @@ class AvatarFacePainter extends CustomPainter {
       );
     }
 
+    if (style.style == HairStyle.afro) {
+      brush.color = style.hair;
+      canvas.drawCircle(Offset(s / 2, s * 0.375), s * 0.295, brush);
+    }
+
     if (style.hasBun) {
       brush.color = style.hair;
-      canvas.drawCircle(Offset(s * 0.335, s * 0.145), s * 0.072, brush);
-      canvas.drawCircle(Offset(s * 0.665, s * 0.145), s * 0.072, brush);
+      final y = style.style == HairStyle.bunTop ? s * 0.145 : s * 0.215;
+      canvas.drawCircle(Offset(s * 0.335, y), s * 0.072, brush);
+      canvas.drawCircle(Offset(s * 0.665, y), s * 0.072, brush);
     }
 
     brush.color = style.skin;
@@ -173,25 +179,61 @@ class AvatarFacePainter extends CustomPainter {
     );
 
     brush.color = style.hair;
-    if (style.isLongHair) {
-      final fringe = Path()
-        ..moveTo(s * 0.25, s * 0.47)
-        ..lineTo(s * 0.25, s * 0.40)
-        ..quadraticBezierTo(s * 0.50, s * 0.155, s * 0.75, s * 0.40)
-        ..lineTo(s * 0.75, s * 0.47)
-        ..quadraticBezierTo(s * 0.70, s * 0.33, s * 0.545, s * 0.335)
-        ..quadraticBezierTo(s * 0.36, s * 0.345, s * 0.25, s * 0.47)
-        ..close();
-      canvas.drawPath(style.hasFringe ? _bob(s) : fringe, brush);
-    } else {
-      final crop = Path()
-        ..moveTo(s * 0.245, s * 0.455)
-        ..quadraticBezierTo(s * 0.245, s * 0.175, s * 0.50, s * 0.175)
-        ..quadraticBezierTo(s * 0.755, s * 0.175, s * 0.755, s * 0.455)
-        ..quadraticBezierTo(s * 0.70, s * 0.335, s * 0.50, s * 0.335)
-        ..quadraticBezierTo(s * 0.30, s * 0.335, s * 0.245, s * 0.455)
-        ..close();
-      canvas.drawPath(crop, brush);
+    switch (style.style) {
+      case HairStyle.bobFringe:
+      case HairStyle.longFringe:
+        canvas.drawPath(_bob(s), brush);
+      case HairStyle.longPart:
+      case HairStyle.bunTop:
+      case HairStyle.bunLow:
+        canvas.drawPath(
+          Path()
+            ..moveTo(s * 0.25, s * 0.47)
+            ..lineTo(s * 0.25, s * 0.40)
+            ..quadraticBezierTo(s * 0.50, s * 0.155, s * 0.75, s * 0.40)
+            ..lineTo(s * 0.75, s * 0.47)
+            ..quadraticBezierTo(s * 0.70, s * 0.33, s * 0.545, s * 0.335)
+            ..quadraticBezierTo(s * 0.36, s * 0.345, s * 0.25, s * 0.47)
+            ..close(),
+          brush,
+        );
+      case HairStyle.crop:
+        canvas.drawPath(_crop(s), brush);
+      case HairStyle.quiff:
+        canvas.drawPath(_crop(s), brush);
+        canvas.drawPath(
+          Path()
+            ..moveTo(s * 0.34, s * 0.255)
+            ..quadraticBezierTo(s * 0.44, s * 0.095, s * 0.70, s * 0.185)
+            ..quadraticBezierTo(s * 0.54, s * 0.195, s * 0.47, s * 0.30)
+            ..close(),
+          brush,
+        );
+      case HairStyle.sidePart:
+        canvas.drawPath(_crop(s), brush);
+        brush.color = style.skin;
+        canvas.drawPath(
+          Path()
+            ..moveTo(s * 0.615, s * 0.205)
+            ..quadraticBezierTo(s * 0.665, s * 0.265, s * 0.675, s * 0.345)
+            ..quadraticBezierTo(s * 0.625, s * 0.275, s * 0.575, s * 0.235)
+            ..close(),
+          brush,
+        );
+      case HairStyle.curls:
+        canvas.drawPath(_crop(s), brush);
+        for (final spot in [
+          [0.305, 0.325],
+          [0.375, 0.245],
+          [0.465, 0.212],
+          [0.560, 0.228],
+          [0.645, 0.290],
+          [0.695, 0.365],
+        ]) {
+          canvas.drawCircle(Offset(s * spot[0], s * spot[1]), s * 0.062, brush);
+        }
+      case HairStyle.afro:
+        canvas.drawPath(_crop(s), brush);
     }
 
     brush.color = const Color(0xFFF08A9B).withValues(alpha: 0.42);
@@ -222,6 +264,14 @@ class AvatarFacePainter extends CustomPainter {
 
     canvas.restore();
   }
+
+  Path _crop(double s) => Path()
+    ..moveTo(s * 0.245, s * 0.455)
+    ..quadraticBezierTo(s * 0.245, s * 0.175, s * 0.50, s * 0.175)
+    ..quadraticBezierTo(s * 0.755, s * 0.175, s * 0.755, s * 0.455)
+    ..quadraticBezierTo(s * 0.70, s * 0.335, s * 0.50, s * 0.335)
+    ..quadraticBezierTo(s * 0.30, s * 0.335, s * 0.245, s * 0.455)
+    ..close();
 
   Path _bob(double s) => Path()
     ..moveTo(s * 0.235, s * 0.52)

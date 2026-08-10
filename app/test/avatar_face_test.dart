@@ -10,6 +10,18 @@ void main() {
     expect(faceStyles.where((style) => !style.isLongHair).length, 5);
   });
 
+  test('no two men share a hairstyle', () {
+    final men = faceStyles.where((style) => !style.isLongHair).map((s) => s.style);
+    expect(men.toSet().length, 5);
+  });
+
+  test('the deepest skin tones get textured hair, not a flat cap', () {
+    final textured = faceStyles.where(
+      (style) => style.style == HairStyle.curls || style.style == HairStyle.afro,
+    );
+    expect(textured.length, 2);
+  });
+
   test('every face has its own skin tone within its half', () {
     final women = faceStyles.where((style) => style.isLongHair).map((s) => s.skin);
     final men = faceStyles.where((style) => !style.isLongHair).map((s) => s.skin);
