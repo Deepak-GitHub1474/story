@@ -17,6 +17,7 @@ class RealtimeClient {
   Timer? _ping;
   int _attempt = 0;
   bool _closed = false;
+  bool _isConnecting = false;
 
   final _events = StreamController<RealtimeEvent>.broadcast();
 
@@ -25,8 +26,17 @@ class RealtimeClient {
   bool get isConnected => _socket?.readyState == WebSocket.open;
 
   Future<void> connect() async {
-    if (_closed || isConnected) return;
+    if (_closed || isConnected || _isConnecting) return;
+    _isConnecting = true;
 
+    try {
+      await _open();
+    } finally {
+      _isConnecting = false;
+    }
+  }
+
+  Future<void> _open() async {
     final ticket = await _ticket();
     if (ticket == null) {
       _scheduleRetry();
@@ -84,6 +94,18 @@ class RealtimeClient {
     final seconds = [1, 2, 4, 8, 15, 30][_attempt - 1];
     _retry?.cancel();
     _retry = Timer(Duration(seconds: seconds), connect);
+  }
+
+  Future<void> sleep() async {
+    _retry?.cancel();
+    _ping?.cancel();
+    final socket = _socket;
+    final listener = _listener;
+    _socket = null;
+    _listener = null;
+    _attempt = 0;
+    await listener?.cancel();
+    await socket?.close();
   }
 
   Future<void> dispose() async {

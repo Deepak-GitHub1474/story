@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../components/app_sheet.dart';
@@ -56,6 +58,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        ref.read(conversationProvider(widget.conversationId).notifier).catchUp(),
+      );
+    });
     _scroll.addListener(_onScroll);
   }
 

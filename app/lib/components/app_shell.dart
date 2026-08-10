@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/realtime/live_connection.dart';
 import '../features/chat/providers/chat_providers.dart';
 import '../features/notifications/providers/notification_providers.dart';
 import '../routing/routes.dart';
@@ -56,6 +57,7 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(chatIdentityProvider);
     ref.watch(liveBadgesProvider);
+    ref.watch(liveConnectionProvider);
 
     final colors = context.colors;
     final unread = ref.watch(unreadCountProvider);

@@ -349,10 +349,16 @@ class ConversationNotifier extends FamilyNotifier<ConversationState, String> {
     );
   }
 
+  Future<void> catchUp() async {
+    await _pollNew();
+    await _markRead();
+  }
+
   Future<void> _markRead() async {
     final newest = state.messages.where((m) => !m.isSending).firstOrNull;
     if (newest == null) return;
-    await _repository.markRead(arg, newest.messageId);
+    final result = await _repository.markRead(arg, newest.messageId);
+    if (result.isFailure) return;
     ref.invalidate(chatUnreadProvider);
     ref.invalidate(conversationsProvider(null));
   }
