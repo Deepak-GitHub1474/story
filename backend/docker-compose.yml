@@ -19,6 +19,9 @@ services:
         condition: service_healthy
     expose:
       - "8000"
+    networks:
+      - dokploy-network
+      - internal
 
   mongo:
     image: mongo:8
@@ -26,6 +29,8 @@ services:
     volumes:
       - mongo-data:/data/db
     command: ["--bind_ip_all"]
+    networks:
+      - internal
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
@@ -43,6 +48,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    networks:
+      - internal
+
+networks:
+  dokploy-network:
+    external: true
+  internal:
 
 volumes:
   mongo-data:
