@@ -6,24 +6,29 @@ The single organizing idea in this repository: **code lives as close as possible
 
 ```
 story/
+├── backend/                  FastAPI API + workers
+│   ├── Dockerfile            The deployed image
+│   ├── docker-compose.yml    Deploy stack: API + MongoDB + Redis
+│   ├── docker-compose.dev.yml    Local MongoDB + Redis only
+│   ├── Makefile
+│   └── .env.example
 ├── app/                      Flutter mobile app
-├── web/                      Next.js web app
-├── backend/                  FastAPI API + arq workers
-├── packages/
-│   ├── design-tokens/        tokens.json — the single source of design truth
-│   ├── icons/                SVG sources + generators
-│   └── api-types/            Generated TS + Dart models from the OpenAPI schema
+│   └── Makefile
+├── web/                      Next.js, users, :3100
+├── admin/                    Next.js, staff, :3200
 ├── docs/                     This documentation set
-├── tools/                    Repo-level scripts (codegen, checks, release)
-├── .github/workflows/        CI
-├── docker-compose.yml        Local MongoDB + Redis + MinIO
-├── Makefile                  The only entry point developers need to memorize
 └── README.md
 ```
 
-**Why a monorepo.** The design tokens, the icon set, and the API types are shared artifacts that must never drift between the three apps. In separate repositories, keeping them in sync requires publishing packages and bumping versions — a process that will be skipped under deadline, and drift will follow. In one repository, a token change and its three consumers land in one commit and one CI run.
+**Every project is self-contained.** A project owns its `Makefile`, its `.gitignore`, its container files, its `.env.example`, its dependency manifest and its own generated assets. The repository root carries no configuration at all — no root `Makefile`, no root compose file, no root `.gitignore`, no shared `packages/` or `tools/` directory. Anything a project needs lives inside that project, even where that means the same file exists twice.
 
-**`Makefile` is the interface.** No developer should need to remember `uv run arq app.workers.settings.WorkerSettings`. Targets: `make setup`, `make dev`, `make tokens`, `make icons`, `make types`, `make lint`, `make test`, `make check`.
+**There is no root `.gitignore`.** Each project ignores its own build output, caches and `.env`. `docs/` has no `.gitignore` because it produces nothing — it is markdown and only markdown. Junk that lands at the repository root itself, or in `docs/`, is excluded per clone through `.git/info/exclude`; a pattern there without a slash matches at any depth, so one `.DS_Store` line covers the whole tree. The tradeoff: that exclusion is local and is not shared with other clones. On a fresh clone, run `printf '.DS_Store\n' >> .git/info/exclude`.
+
+**Why, given the obvious cost.** A root-level shared directory couples every project to the root and to each other: `web` cannot be deployed, copied or handed to someone without dragging `packages/` and `tools/` along, and a change to a shared script silently alters three consumers at once. Duplication is the cheaper failure. Two copies of a 60-line token file that drift are a diff anyone can read; a shared build graph that nobody can trace is not. The tradeoff is accepted deliberately: **web and admin can drift, and keeping them aligned is a review responsibility, not a build guarantee.**
+
+**Each project uses its own ecosystem's task runner.** `backend/` and `app/` carry a `Makefile` — `make help` lists that project's targets. `web/` and `admin/` use `package.json` scripts, because a Makefile in a Next.js project is a foreign object. The verbs line up regardless: `setup`/`install`, `dev`, `check`, `build`.
+
+**Where cross-project work lives.** Two tasks genuinely span projects. `app`'s `make e2e` boots the API from `../backend`, waits for `/v1/health/ready`, runs the Flutter suite against it and tears it down; it lives in `app/` because the suite being run is the app's. Nothing else reaches across a project boundary.
 
 ## 2. `backend/` — FastAPI
 
@@ -181,7 +186,6 @@ app/
 │       └── assets.g.dart            GENERATED
 ├── assets/
 │   ├── images/
-│   ├── icons/                       GENERATED from packages/icons
 │   └── fonts/
 ├── test/
 ├── integration_test/
@@ -293,9 +297,9 @@ flowchart LR
     Q1 -->|No| Q2{"Used by 2+ features<br/>in the same app?"}
     Q2 -->|Yes| AppShared["Promote to app-level<br/>components/ or lib/"]
     Q2 -->|No| Q3{"Used by 2+ apps?"}
-    Q3 -->|Yes| Pkg["Promote to packages/<br/>and generate per platform"]
+    Q3 -->|Yes| Copy["Copy it into each app<br/>that needs it"]
     Local -->|"second consumer appears"| AppShared
-    AppShared -->|"second app needs it"| Pkg
+    AppShared -->|"second app needs it"| Copy
 ```
 
 Promotion preserves internal shape. A promoted feature folder keeps its `widgets` + `models` + `data` structure and only changes address — svakosh's `lib/components/watchlist/` is the model here, having kept its components, `service.ts`, and `types.ts` together after promotion.
@@ -388,7 +392,7 @@ The `T`-prefix rule is stated as the reference *implied* but never wrote down: *
 **Every field on the wire is `snake_case`.** The API is the contract, MongoDB documents are `snake_case`, and Python is `snake_case`, so the boundary conversion happens once, in the client:
 
 - Flutter: `json_serializable` with `@JsonKey(name: 'wrapped_dek')` or a `FieldRename.snake` default, exposing `camelCase` Dart members.
-- Web: generated types in `packages/api-types` keep `snake_case` keys, matching the reference's practice of writing `snake_case` payload keys inline.
+- Web: hand-written types keep `snake_case` keys, matching the reference's practice of writing `snake_case` payload keys inline.
 
 Never negotiate this per endpoint. One rule, no exceptions.
 
@@ -398,22 +402,19 @@ The glossary in [00-product-overview.md](00-product-overview.md) is binding on c
 
 ## 7. Generated code
 
-Four generated artifacts, all with the same rules: **never edited by hand, always committed, always regenerated by CI to verify they match their source.**
+**There is none.** Every file in this repository is written by hand.
 
-| Artifact | Source | Generator | Output |
-|---|---|---|---|
-| Design tokens | `packages/design-tokens/tokens.json` | `make tokens` | `app/lib/theme/tokens.g.dart`, `web/src/styles/tokens.css` |
-| Icons | `packages/icons/svg/*.svg` | `make icons` | `app/lib/gen/icons.g.dart` + `app/assets/icons/`, `web/src/gen/icons/*.tsx` |
-| API types | Backend OpenAPI schema | `make types` | `packages/api-types/*.ts`, `app/lib/gen/api_models.g.dart` |
-| Flutter assets | `app/assets/` | `build_runner` | `app/lib/gen/assets.g.dart` |
+The design tokens were generated once, from a shared `tokens.json` through a Python script, into CSS for web and admin. That pipeline was removed: 127 lines of source produced 89 lines of output that was committed anyway and changed perhaps twice a year, and it put a Python dependency inside two Node projects. The three token files are now peers, each maintained by hand:
 
-Generated files carry a header banner:
+| File | Consumer |
+|---|---|
+| `app/lib/theme/tokens.dart` | Flutter |
+| `web/src/styles/tokens.css` | Next.js, users |
+| `admin/src/styles/tokens.css` | Next.js, staff |
 
-```
-// GENERATED FILE — DO NOT EDIT.
-// Source: packages/design-tokens/tokens.json
-// Regenerate: make tokens
-```
+The cost is real and is accepted: **nothing prevents the three drifting.** Changing one colour means editing three files, and within each CSS file every light-theme value appears twice — once under the explicit `[data-theme='paper']` selector, once under the `prefers-color-scheme` default. Six edits for one hex. Nothing warns you; this paragraph is the only record, and keeping the three aligned is a review responsibility.
+
+The icon and API-type generators described in earlier drafts were never built. Icons come from Material's bundled set; API models are hand-written alongside their repositories.
 
 **They are committed, not gitignored.** Committing means a fresh clone builds without running codegen, reviewers see the effect of a token change in the diff, and a drift between source and output is a visible conflict rather than a silent inconsistency. CI runs each generator and fails if `git diff --exit-code` is non-empty.
 
@@ -484,16 +485,27 @@ All CI jobs green, one approving review, branch up to date with `main`. No excep
 
 ## 10. Local development
 
+There is no root `Makefile`. Work inside the project you are changing; `make help` lists that project's targets.
+
 ```bash
-make setup     # installs uv, pnpm, flutter deps; copies .env.example → .env
-make dev       # docker compose up (mongo, redis, minio) + API with reload + worker
-make tokens    # regenerate design tokens for both platforms
-make icons     # regenerate icon sets
-make types     # regenerate API types from the running backend's OpenAPI schema
-make models    # download the local ONNX classifier and embedding models
-make ai-eval   # run the moderation golden set
-make seed      # seed categories, communities, and interests into local MongoDB
-make check     # everything CI runs, locally
+cd backend
+make services-up   # mongod + redis natively, or: make docker-up for containers
+make setup         # uv sync, copies .env.example → .env
+make dev           # uvicorn with reload on :9000
+make check         # ruff check + pytest (make format-check is separate)
+
+cd app
+make setup         # flutter pub get
+make check         # flutter analyze + flutter test
+make run           # on the connected device
+make e2e           # boots ../backend on story_e2e, runs the full suite, tears down
+
+cd web             # or: cd admin
+pnpm install
+cp .env.example .env
+pnpm dev -p 3100   # 3200 for admin
 ```
 
-`docker-compose.yml` provides MongoDB, Redis, and MinIO. MinIO stands in for R2 — the S3-compatible API means the storage code path is identical, so presigned upload and download are exercised locally exactly as in production.
+Reference data — categories, communities and interests — seeds itself from `backend/app/db/seed.py` on every startup, so there is no seed command.
+
+Each deployable owns its container files. The backend keeps `Dockerfile`, `docker-compose.yml` (the full deploy stack) and `docker-compose.dev.yml` (MongoDB and Redis only) inside `backend/`; the repository root carries no container configuration at all. `make services-up` runs MongoDB and Redis natively on macOS, so Docker is optional for day-to-day work — `docker compose -f backend/docker-compose.dev.yml up -d` is the equivalent for anyone who prefers containers.

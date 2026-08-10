@@ -15,22 +15,45 @@ The container runs as a non-root user, exposes 8000, and answers
 check should point at that path, not at `/v1/health`, because the plain health
 endpoint returns 200 even when Mongo is unreachable.
 
-## 2. Two ways to run it
+## 2. Where the container files live
 
-**Application (recommended).** Point Dokploy at this repository, set the build
-path to `backend`, and let it use the Dockerfile. Attach a Dokploy-managed
-MongoDB and Redis, then put their connection strings in the environment. This
-keeps the databases outside the deploy, so a bad release cannot take them with
-it.
+Every deployable owns its own container configuration. The repository root has
+none.
 
-**Compose.** Use `docker-compose.deploy.yml`, which brings up the API, MongoDB
-and Redis together and waits for both to pass their health checks before the API
-starts. Simpler to reason about, but the database lifecycle is tied to the stack.
+| File | Purpose |
+|---|---|
+| `backend/Dockerfile` | The image. Used by both options below. |
+| `backend/docker-compose.yml` | Full deploy stack: API + MongoDB + Redis. |
+| `backend/docker-compose.dev.yml` | Local MongoDB + Redis only, no API. |
 
-`docker-compose.yml` at the repository root is for local development only. It
-starts MongoDB and Redis and nothing else.
+## 3. Two ways to run it in Dokploy
 
-## 3. Environment
+**Application — use this one.** Create a Dokploy **Application**, point it at
+this repository, set **Build Path** to `backend` and **Build Type** to
+`Dockerfile`. Then create a Dokploy-managed **MongoDB** and **Redis** as
+separate services and put their internal connection strings in the environment.
+
+This is the right choice because the databases sit outside the deploy. A bad
+release, a rollback, or a delete of the application cannot take the data with
+it — which is exactly the failure that compose invites.
+
+**Compose — only if you want one unit.** Create a Dokploy **Compose** service
+with **Compose Path** `backend/docker-compose.yml`. It brings up the API,
+MongoDB and Redis together and waits for both to pass their health checks
+before the API starts. Simpler to reason about, but the database lifecycle is
+tied to the stack, and Dokploy's database backups and metrics do not apply to
+containers it did not create.
+
+`backend/docker-compose.dev.yml` is for local development only. Nothing in
+Dokploy should ever point at it.
+
+There is no `.dokployignore`. Dokploy clones the whole repository and then
+builds from `backend/`, so `app/`, `web/`, `admin/` and `docs/` are fetched and
+ignored. That costs a little clone time and nothing else — the Docker build
+context is `backend/` alone, filtered by `backend/.dockerignore`, so none of it
+reaches the image.
+
+## 4. Environment
 
 Production refuses to start when any of these is missing, short, or still
 carries a placeholder. This is deliberate: a service that boots with a weak
@@ -56,7 +79,7 @@ secret is worse than one that refuses to boot.
 Generate secrets with `make secrets`. Each must differ from the others — the
 config compares them and refuses a repeat.
 
-## 4. After the first deploy
+## 5. After the first deploy
 
 - Seed the reference data: categories, communities and interests come from
   `app/db/seed.py` and run on startup, so nothing manual is needed.
@@ -64,7 +87,7 @@ config compares them and refuses a repeat.
 - Point the app at the deployed URL by building with
   `--dart-define=STORY_API_BASE_URL=https://your-domain/v1`.
 
-## 5. Things that will bite
+## 6. Things that will bite
 
 **Workers and the socket hub.** The container runs two Uvicorn workers. The
 realtime hub is per-process, which is why events go through Redis pub/sub rather
@@ -72,9 +95,12 @@ than memory — a socket on worker one still receives a message published by
 worker two. Raising the worker count is safe. Running several containers is also
 safe, for the same reason.
 
-**Storage on `local`.** Files land inside the container and vanish on redeploy.
-Fine while nothing depends on them, wrong the moment a real person uploads
-anything. Switch `STORAGE_PROVIDER` to `r2` before inviting anyone.
+**Storage on `local`.** Files land inside the container and vanish on redeploy
+unless a volume is mounted. Set `STORAGE_LOCAL_ROOT=/srv/storage-data` and mount
+a volume there — the compose file already does. The image runs as the non-root
+user `story`, so the mount must be writable by it or every upload returns 500.
+This is a stopgap either way: switch `STORAGE_PROVIDER` to `r2` before inviting
+anyone.
 
 **The AI gate fails closed.** If the provider is unreachable, publishing returns
 `503 MODERATION_UNAVAILABLE` and drafts are kept. That is intended — failing open

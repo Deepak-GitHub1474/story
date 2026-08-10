@@ -5,7 +5,7 @@ StoryAuthor author({String? username}) => StoryAuthor.fromJson({
   'user_id': 'usr_1',
   'display_name': 'Deepak ✨',
   'avatar_seed': 'abc',
-  if (username != null) 'username': username,
+  'username': ?username,
 });
 
 void main() {

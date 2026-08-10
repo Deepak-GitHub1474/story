@@ -8,11 +8,13 @@ Full specification lives in [`docs/`](docs/). Read [`docs/00-product-overview.md
 
 | Piece | State |
 |---|---|
-| Backend — foundations + onboarding | Working, 146 tests |
-| Flutter app — onboarding | Working, 19 tests |
-| Web (Next.js) | Not started — begins after the app is finalized |
-| AI sanity layer | Specified in [`docs/12-ai-layer.md`](docs/12-ai-layer.md), not built |
-| Vault | Specified in [`docs/05-security-and-crypto.md`](docs/05-security-and-crypto.md), not built |
+| Backend | Working, 800 tests |
+| Flutter app | Working, 168 tests |
+| Vault — encrypted files | Working, see [`docs/05-security-and-crypto.md`](docs/05-security-and-crypto.md) |
+| Chat — end-to-end encrypted | Working |
+| AI sanity layer | Working, see [`docs/12-ai-layer.md`](docs/12-ai-layer.md) |
+| Web + admin (Next.js) | Behind the app; feature parity incomplete |
+| 2FA | Deferred |
 
 ## Prerequisites
 
@@ -20,21 +22,32 @@ Full specification lives in [`docs/`](docs/). Read [`docs/00-product-overview.md
 - Flutter 3.44+
 - MongoDB 8 and Redis 7 running locally
 
-## Local services
+## Layout
 
-```bash
-make services-up      # start mongod and redis
-make services-status  # confirm both answer a real ping
-make services-down
+Every project is self-contained. Each owns its `Makefile`, its container files,
+its `.env.example` and its own dependencies. The repository root carries no
+build or tooling configuration — run `make help` inside the project you are
+working on.
+
+```
+story/
+├── backend/    FastAPI. Dockerfile, docker-compose.yml, Makefile.
+├── app/        Flutter. Makefile.
+├── web/        Next.js, users, :3100. pnpm scripts.
+├── admin/      Next.js, staff, :3200. pnpm scripts.
+├── docs/       The specification
+└── README.md
 ```
 
 ## Backend
 
 ```bash
-make backend-setup    # uv sync + copy .env.example to .env
-make backend-dev      # uvicorn on http://127.0.0.1:9000
-make backend-test
-make backend-check    # ruff + pytest
+cd backend
+make services-up   # start mongod and redis (or: make docker-up)
+make setup         # uv sync + copy .env.example to .env
+make dev           # uvicorn on http://127.0.0.1:9000
+make test
+make check         # ruff + pytest
 ```
 
 Verify it is alive:
@@ -51,18 +64,23 @@ Interactive API docs at http://127.0.0.1:9000/docs while `API_ENV=local`.
 ## App
 
 ```bash
-make app-setup
-make app-test         # unit tests plus live tests against a running backend
-make app-run
+cd app
+make setup
+make check                                  # analyzer + unit tests
+make run
+make e2e                                    # boots ../backend, runs the full suite
 ```
 
 The API base URL is compiled in and overridable:
 
 ```bash
-flutter run --dart-define=STORY_API_BASE_URL=http://10.0.2.2:9000/v1
+make run API_URL=http://10.0.2.2:9000/v1
+make apk API_URL=http://192.168.1.38:9000/v1
 ```
 
 Use `10.0.2.2` for the Android emulator and `127.0.0.1` for the iOS simulator.
+A physical Android device over USB needs `adb reverse tcp:9000 tcp:9000`, or a
+LAN address compiled in with `make apk`.
 
 ## Web
 
@@ -70,27 +88,22 @@ Two separate Next.js apps, one backend. Admin is never a route inside the user a
 it needs a different origin so it can be IP-restricted at the edge.
 
 ```bash
-make web-setup && make web-dev      # users, http://localhost:3100
-make admin-setup && make admin-dev  # staff, http://localhost:3200
+cd web   && pnpm install && cp .env.example .env && pnpm dev -p 3100   # users
+cd admin && pnpm install && cp .env.example .env && pnpm dev -p 3200   # staff
 ```
 
 Give an account staff access:
 
 ```bash
+cd backend
 make promote USER=quiet_fox ROLE=moderator   # queue only
 make promote USER=quiet_fox ROLE=admin       # queue, accounts, audit
 ```
 
-`packages/design-tokens/tokens.json` is the single source of colour, spacing, type and
-motion for every surface. `make tokens` regenerates `tokens.css` for both web apps; the
-Flutter app reads the same values.
-
-## Everything
-
-```bash
-make check     # lint, backend tests, analyzer, app unit tests
-make e2e       # starts a test-profile API, runs the app suite against it
-```
+Design tokens live in three hand-maintained files — `app/lib/theme/tokens.dart`,
+`web/src/styles/tokens.css` and `admin/src/styles/tokens.css`. There is no
+generator and no shared source. Changing a colour means touching all three; the
+CSS files carry a banner saying so.
 
 ## Secrets
 
@@ -99,7 +112,7 @@ Four values are real secrets: `JWT_SECRET`, `EMAIL_INDEX_KEY`,
 gitignored. `backend/.env.example` carries placeholders only.
 
 ```bash
-make secrets   # generate strong values into backend/.env
+cd backend && make secrets   # generate strong values into backend/.env
 ```
 
 Production refuses to boot if any secret is short, low-entropy, reused across
@@ -109,8 +122,8 @@ is selected, or the database points at localhost. `backend/tests/test_config.py`
 covers each rule.
 
 Rate limiting is **on** by default, including locally, so development behaves
-like production. `make e2e` is the one place it is disabled, because the
-integration suite creates dozens of accounts in seconds.
+like production. `app/`'s `make e2e` is the one place it is disabled, because
+the integration suite creates dozens of accounts in seconds.
 
 ## Reading the logs
 

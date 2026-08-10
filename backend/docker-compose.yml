@@ -1,12 +1,17 @@
 services:
   api:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     environment:
       MONGODB_URI: mongodb://mongo:27017
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - storage-data:/srv/storage-data
     depends_on:
       mongo:
         condition: service_healthy
@@ -42,3 +47,4 @@ services:
 volumes:
   mongo-data:
   redis-data:
+  storage-data:

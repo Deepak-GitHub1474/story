@@ -52,9 +52,9 @@ void main() {
       visibility: 'public',
     )).valueOrNull!;
 
-    expect(published.visibility, 'public');
-    expect(published.slug, isNotNull);
-    expect(published.publishedAt, isNotNull);
+    expect(published.story.visibility, 'public');
+    expect(published.story.slug, isNotNull);
+    expect(published.story.publishedAt, isNotNull);
   });
 
   test('a published story reaches the feed', () async {
@@ -151,7 +151,7 @@ void main() {
       visibility: 'scheduled',
       scheduledFor: DateTime.now().add(const Duration(hours: 2)),
     )).valueOrNull!;
-    expect(scheduled.visibility, 'scheduled');
+    expect(scheduled.story.visibility, 'scheduled');
 
     final (reader, _) = await signedIn();
     final feed = (await reader.feed()).valueOrNull!;

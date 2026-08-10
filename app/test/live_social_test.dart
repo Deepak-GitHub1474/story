@@ -137,7 +137,7 @@ void main() {
         (await me.stories.publish(draft.storyId, visibility: 'public')).valueOrNull!;
 
     final url = (await me.stories.share(draft.storyId)).valueOrNull!;
-    expect(url, endsWith(published.slug!));
+    expect(url, endsWith(published.story.slug!));
   });
 
   test('a private story cannot be shared', () async {
