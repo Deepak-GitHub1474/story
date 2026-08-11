@@ -26,6 +26,10 @@ WORKDIR /srv
 COPY --from=build --chown=story:story /srv/.venv /srv/.venv
 COPY --chown=story:story app ./app
 
+RUN mkdir -p /srv/storage-data && chown -R story:story /srv/storage-data
+
+VOLUME ["/srv/storage-data"]
+
 USER story
 
 EXPOSE 8000
