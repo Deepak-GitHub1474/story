@@ -31,7 +31,6 @@ class VaultScreen extends ConsumerStatefulWidget {
 }
 
 class _VaultScreenState extends ConsumerState<VaultScreen> {
-  final _password = TextEditingController();
   final _passcode = TextEditingController();
   final _label = TextEditingController();
 
@@ -50,7 +49,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   @override
   void dispose() {
     SecureScreen.disable();
-    _password.dispose();
     _passcode.dispose();
     _label.dispose();
     ref.read(vaultSessionProvider.notifier).lock();
@@ -65,11 +63,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     final ok = await ref
         .read(vaultSessionProvider.notifier)
-        .unlock(
-          password: _password.text,
-          passcode: _passcode.text,
-          passcodeId: _chosenVaultId,
-        );
+        .unlock(passcode: _passcode.text, passcodeId: _chosenVaultId);
 
     if (!mounted) return;
     setState(() {
@@ -78,7 +72,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     });
 
     if (ok) {
-      _password.clear();
       _passcode.clear();
       ref.invalidate(vaultItemsProvider);
     }
@@ -234,9 +227,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Text(
-                  'Two secrets open this vault: your account password and your vault '
-                  'passcode. We hold neither. Nothing here can be read by us, by '
-                  'staff, or by anyone with our database.',
+                  'Your vault passcode opens this vault. We never receive it, so nobody '
+                  'here can open your files.',
                   style: TextStyle(
                     color: colors.textSecondary,
                     fontSize: AppTypeScale.label,
@@ -272,13 +264,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               ],
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
-                controller: _password,
-                label: 'Account password',
-                obscureText: true,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppTextField(
                 controller: _passcode,
                 label: 'Vault passcode',
                 obscureText: true,
@@ -290,8 +275,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               AppButton(
                 label: 'Unlock',
                 isLoading: _isBusy,
-                onPressed:
-                    _password.text.isEmpty || _passcode.text.isEmpty ? null : _unlock,
+                onPressed: _passcode.text.isEmpty ? null : _unlock,
               ),
               if (overview.valueOrNull?.hasPasscode == false) ...[
                 const SizedBox(height: AppSpacing.lg),
@@ -713,11 +697,7 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
 
     final ok = await ref
         .read(vaultSessionProvider.notifier)
-        .createPasscode(
-          password: '',
-          passcode: _passcode.text,
-          label: _name.text.trim(),
-        );
+        .createPasscode(passcode: _passcode.text, label: _name.text.trim());
 
     if (!mounted) return;
     setState(() {

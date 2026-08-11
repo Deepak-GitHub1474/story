@@ -99,6 +99,16 @@ final feedProvider = NotifierProvider<FeedNotifier, StoryListState>(FeedNotifier
 
 class FeedNotifier extends StoryListNotifier {
   @override
+  void remove(String storyId) {
+    super.remove(storyId);
+    unawaited(
+      ref
+          .read(feedCacheProvider)
+          .write(state.items.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  @override
   StoryListState build() {
     final cached = ref.read(feedCacheProvider).read();
     Future.microtask(refresh);

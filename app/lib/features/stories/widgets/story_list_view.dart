@@ -7,7 +7,7 @@ import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 import 'story_post.dart';
 
-enum SwipeAction { delete, archive, publish }
+enum SwipeAction { delete, archive, publish, makePrivate }
 
 class StoryListView extends StatefulWidget {
   const StoryListView({

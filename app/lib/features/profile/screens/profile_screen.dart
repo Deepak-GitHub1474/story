@@ -41,6 +41,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   String? _filter;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(myStoriesProvider.notifier);
+      if (notifier.visibility != _filter) notifier.filter(_filter);
+    });
+  }
+
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
     final next = _tabs[_tabController.index].$1;
@@ -70,6 +80,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     _tabController.animateTo(next);
   }
 
+  List<({IconData icon, String label, SwipeAction action})> _moves(Story story) {
+    final current = story.isDraft ? 'draft' : story.visibility;
+
+    return [
+      if (current != 'draft')
+        (
+          icon: Icons.archive_outlined,
+          label: 'Move back to drafts',
+          action: SwipeAction.archive,
+        ),
+      if (current != 'private')
+        (
+          icon: Icons.lock_outline,
+          label: 'Keep it private',
+          action: SwipeAction.makePrivate,
+        ),
+      if (current != 'public')
+        (
+          icon: Icons.public,
+          label: 'Make it public',
+          action: SwipeAction.publish,
+        ),
+    ];
+  }
+
   Future<void> _openStoryActions(Story story) async {
     final colors = context.colors;
 
@@ -81,17 +116,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (story.isDraft)
+            for (final option in _moves(story))
               ListTile(
-                leading: Icon(Icons.publish_rounded, color: colors.textPrimary),
-                title: const Text('Publish it'),
-                onTap: () => Navigator.of(sheetContext).pop(SwipeAction.publish),
-              )
-            else
-              ListTile(
-                leading: Icon(Icons.archive_outlined, color: colors.textPrimary),
-                title: const Text('Move back to drafts'),
-                onTap: () => Navigator.of(sheetContext).pop(SwipeAction.archive),
+                leading: Icon(option.icon, color: colors.textPrimary),
+                title: Text(option.label),
+                onTap: () => Navigator.of(sheetContext).pop(option.action),
               ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: colors.danger),
@@ -123,19 +152,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         if (!confirmed) return false;
         await repository.remove(story.storyId);
         notifier.remove(story.storyId);
+        ref.read(feedProvider.notifier).remove(story.storyId);
         await ref.read(authProvider.notifier).refreshUser();
         if (mounted) AppToast.show(context, 'Story deleted.');
         return false;
 
       case SwipeAction.archive:
         await repository.unpublish(story.storyId);
+        ref.read(feedProvider.notifier).remove(story.storyId);
         await notifier.refresh();
         await ref.read(authProvider.notifier).refreshUser();
         if (mounted) AppToast.show(context, 'Moved back to drafts.');
         return false;
 
+      case SwipeAction.makePrivate:
+        await repository.publish(story.storyId, visibility: 'private');
+        ref.read(feedProvider.notifier).remove(story.storyId);
+        await notifier.refresh();
+        await ref.read(authProvider.notifier).refreshUser();
+        if (mounted) AppToast.show(context, 'Saved as private.');
+        return false;
+
       case SwipeAction.publish:
         await repository.publish(story.storyId, visibility: 'public');
+        await ref.read(feedProvider.notifier).refresh();
         await notifier.refresh();
         await ref.read(authProvider.notifier).refreshUser();
         if (mounted) {

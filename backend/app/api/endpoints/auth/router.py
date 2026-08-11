@@ -125,6 +125,14 @@ async def revoke_session(family_id: str, claims: CurrentClaims, redis: RedisClie
 
 
 @router.post("/password/change", status_code=status.HTTP_200_OK)
-async def change_password(body: ChangePasswordRequest, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await user_controllers.change_password(body, claims=claims, mongo=mongo)
+async def change_password(
+    body: ChangePasswordRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
+    settings: AppSettings,
+):
+    data = await user_controllers.change_password(
+        body, claims=claims, mongo=mongo, redis=redis, settings=settings
+    )
     return ok_response("Password changed.", data=data)

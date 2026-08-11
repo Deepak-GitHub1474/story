@@ -62,7 +62,7 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
 
   VaultRepository get _repository => ref.read(vaultRepositoryProvider);
 
-  Future<bool> setUpKeys(String password) async {
+  Future<bool> setUpKeys(String passcode) async {
     final crypto = _crypto;
     final userId = ref.read(authProvider).user?.userId ?? '';
 
@@ -71,7 +71,7 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     const kdf = KdfParams();
 
     final kek = await crypto.deriveKek(
-      Uint8List.fromList(utf8.encode(password)),
+      Uint8List.fromList(utf8.encode(passcode)),
       salt,
       kdf,
     );
@@ -97,7 +97,6 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
   }
 
   Future<bool> unlock({
-    required String password,
     required String passcode,
     String? passcodeId,
   }) async {
@@ -113,7 +112,7 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
 
     final kdf = KdfParams.fromJson(keys.kdf);
     final kek = await crypto.deriveKek(
-      Uint8List.fromList(utf8.encode(password)),
+      Uint8List.fromList(utf8.encode(passcode)),
       Uint8List.fromList(base64Decode(keys.saltPw)),
       kdf,
     );
@@ -128,7 +127,7 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     } catch (_) {
       state = const VaultSession(
         state: VaultLockState.locked,
-        error: 'That password did not unlock your vault.',
+        error: 'That passcode did not open your vault.',
       );
       return false;
     }
@@ -207,15 +206,14 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
   }
 
   Future<bool> createPasscode({
-    String password = '',
     required String passcode,
     String label = 'Main vault',
   }) async {
     final crypto = _crypto;
     const kdf = KdfParams();
 
-    if (!canCreateVault(hasKeys: state.umk != null, password: password)) return false;
-    if (state.umk == null && !await setUpKeys(password)) return false;
+    if (!isStrongPasscode(passcode)) return false;
+    if (state.umk == null && !await setUpKeys(passcode)) return false;
 
     final saltPc = await crypto.randomBytes(VaultCrypto.saltLength);
     final passcodeKey = await crypto.deriveKek(

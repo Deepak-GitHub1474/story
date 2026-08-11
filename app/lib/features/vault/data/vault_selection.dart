@@ -16,3 +16,12 @@ VaultPasscode? selectVault(List<VaultPasscode> passcodes, String? passcodeId) {
 
 bool canCreateVault({required bool hasKeys, required String password}) =>
     hasKeys || password.trim().isNotEmpty;
+
+const passcodeMinLength = 10;
+
+bool isStrongPasscode(String passcode) {
+  final trimmed = passcode.trim();
+  if (trimmed.length < passcodeMinLength) return false;
+  if (trimmed.split('').toSet().length < 4) return false;
+  return RegExp(r'[^0-9]').hasMatch(trimmed);
+}

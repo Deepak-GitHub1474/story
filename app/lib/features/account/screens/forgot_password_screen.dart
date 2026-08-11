@@ -190,9 +190,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'A reset gives you back your account, not your vault. '
-                      'Anything encrypted with your old password becomes '
-                      'permanently unreadable. Nobody can undo this, including us.',
+                      'A reset gives you back your account. Your vault is opened by '
+                      'its own passcode, so it is unaffected and stays exactly as it '
+                      'was.',
                       style: TextStyle(
                         color: colors.textSecondary,
                         fontSize: AppTypeScale.label,
@@ -225,7 +225,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        'I understand my vault cannot be recovered.',
+                        'I understand this signs me out everywhere.',
                         style: TextStyle(
                           color: colors.textSecondary,
                           fontSize: AppTypeScale.label,

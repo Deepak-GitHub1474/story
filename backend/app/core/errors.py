@@ -43,6 +43,7 @@ class ErrorCode(StrEnum):
     EMAIL_NOT_SET = "EMAIL_NOT_SET"
     EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED"
     OTP_INVALID = "OTP_INVALID"
+    OTP_REQUIRED = "OTP_REQUIRED"
     OTP_LOCKED = "OTP_LOCKED"
     OTP_COOLDOWN = "OTP_COOLDOWN"
     RESET_TOKEN_INVALID = "RESET_TOKEN_INVALID"
@@ -139,6 +140,10 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
     ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),
     ErrorCode.EMAIL_NOT_VERIFIED: (403, "Verify your email address first."),
+    ErrorCode.OTP_REQUIRED: (
+        403,
+        "Confirm with the code sent to your email.",
+    ),
     ErrorCode.OTP_INVALID: (400, "That code is not right."),
     ErrorCode.OTP_LOCKED: (429, "Too many attempts. Try again later."),
     ErrorCode.OTP_COOLDOWN: (429, "Wait a moment before asking for another code."),

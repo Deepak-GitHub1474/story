@@ -92,7 +92,7 @@ class _RecoveryScreenState extends ConsumerState<RecoveryScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Forgot your account password? Nobody can recover it, and nothing '
+                  'Forgot your vault passcode? Nobody here can recover it, and nothing '
                   'in your vault survives without it.\n\n'
                   'Forgot only your vault passcode? A super admin can release the '
                   'copy you sealed when you created it. It goes to you, never to '

@@ -7,9 +7,9 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../core/security/secure_screen.dart';
+import '../data/vault_selection.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
-import '../data/vault_setup.dart';
 import '../providers/vault_providers.dart';
 
 class VaultSetupScreen extends ConsumerStatefulWidget {
@@ -20,7 +20,6 @@ class VaultSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
-  final _password = TextEditingController();
   final _passcode = TextEditingController();
   final _confirm = TextEditingController();
 
@@ -36,19 +35,17 @@ class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
   @override
   void dispose() {
     SecureScreen.disable();
-    _password.dispose();
     _passcode.dispose();
     _confirm.dispose();
     super.dispose();
   }
 
   Future<void> _create() async {
-    final problem = validatePasscode(
-      passcode: _passcode.text,
-      password: _password.text,
-    );
-    if (problem != null) {
-      setState(() => _error = messageFor(problem));
+    if (!isStrongPasscode(_passcode.text)) {
+      setState(
+        () => _error = 'Use at least $passcodeMinLength characters, with '
+            'letters as well as numbers.',
+      );
       return;
     }
     if (_passcode.text.trim() != _confirm.text.trim()) {
@@ -63,7 +60,7 @@ class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
 
     final ok = await ref
         .read(vaultSessionProvider.notifier)
-        .createPasscode(password: _password.text, passcode: _passcode.text.trim());
+        .createPasscode(passcode: _passcode.text.trim());
 
     if (!mounted) return;
     setState(() => _isBusy = false);
@@ -82,9 +79,7 @@ class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final canSubmit =
-        _password.text.isNotEmpty &&
-        _passcode.text.isNotEmpty &&
-        _confirm.text.isNotEmpty;
+        _passcode.text.isNotEmpty && _confirm.text.isNotEmpty;
 
     return AppScaffold(
       title: 'Set up your vault',
@@ -100,9 +95,9 @@ class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
-                'Two different secrets open your vault: your account password and a '
-                'vault passcode you choose now. We hold neither. If you forget your '
-                'password, everything in the vault is gone for good.',
+                'One secret opens your vault: the passcode you choose now. We never '
+                'receive it, so nobody here can open your files. Forget it and they '
+                'are gone for good, so make it something you will not lose.',
                 style: TextStyle(
                   color: colors.textSecondary,
                   fontSize: AppTypeScale.label,
@@ -112,17 +107,11 @@ class _VaultSetupScreenState extends ConsumerState<VaultSetupScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
             AppTextField(
-              controller: _password,
-              label: 'Account password',
-              obscureText: true,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            AppTextField(
               controller: _passcode,
-              label: 'New vault passcode',
+              label: 'Vault passcode',
               obscureText: true,
-              helperText: 'Must be different from your account password.',
+              helperText: 'At least $passcodeMinLength characters. A short phrase '
+                  'works better than a word.',
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: AppSpacing.lg),

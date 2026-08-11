@@ -98,7 +98,12 @@ async def public_profile(username: str, *, claims, mongo: AsyncIOMotorDatabase) 
 
 
 async def change_password(
-    body: ChangePasswordRequest, *, claims, mongo: AsyncIOMotorDatabase
+    body: ChangePasswordRequest,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    redis=None,
+    settings=None,
 ) -> dict[str, Any]:
     user = await mongo[USERS].find_one({"_id": claims.user_id}, {"password_hash": 1, "username": 1})
     if user is None:
@@ -106,6 +111,23 @@ async def change_password(
 
     if not verify_password(body.current_password, user["password_hash"]):
         raise api_error(ErrorCode.INVALID_CREDENTIALS, field="current_password")
+
+    guarded = await mongo["user_keys"].find_one(
+        {"_id": claims.user_id, "email_verified": True}, {"_id": 1}
+    )
+    if guarded is not None:
+        if not body.otp:
+            raise api_error(ErrorCode.OTP_REQUIRED)
+        if redis is not None and settings is not None:
+            from app.api.endpoints.email import otp as otp_service
+            from app.db import keys as redis_keys
+
+            await otp_service.verify(
+                key=redis_keys.reset_otp(claims.user_id),
+                otp=body.otp,
+                redis=redis,
+                settings=settings,
+            )
 
     try:
         validate_password_strength(body.new_password, username=user["username"])
@@ -118,10 +140,28 @@ async def change_password(
         {"_id": claims.user_id},
         {"$set": {"password_hash": hash_password(body.new_password), "updated_at": utc_now()}},
     )
+
+    if redis is not None:
+        await _revoke_other_sessions(claims.user_id, claims.family_id, redis)
+
     return {"password_changed": True}
 
 
 DELETION_GRACE_DAYS = 14
+
+
+async def _revoke_other_sessions(user_id: str, keep_family: str, redis) -> None:
+    from app.db import keys
+
+    families = await redis.smembers(keys.user_sessions(user_id))
+    for family_id in families:
+        if family_id == keep_family:
+            continue
+        hashes = await redis.smembers(keys.refresh_family(family_id))
+        for token_hash in hashes:
+            await redis.delete(keys.refresh_token(token_hash))
+        await redis.delete(keys.refresh_family(family_id))
+        await redis.srem(keys.user_sessions(user_id), family_id)
 
 
 async def _revoke_all_sessions(user_id: str, redis) -> None:
