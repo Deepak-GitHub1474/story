@@ -19,4 +19,7 @@ LIST_PROJECTION = {
     "scan_state": 1,
     "key_state": 1,
     "created_at": 1,
+    "wrapped_dek": 1,
+    "salt_item": 1,
+    "crypto_version": 1,
 }

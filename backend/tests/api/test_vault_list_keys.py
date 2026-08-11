@@ -41,3 +41,12 @@ def test_nothing_readable_about_the_file_is_exposed():
     assert "filename" not in listed
     assert "plaintext" not in listed
     assert listed["encrypted_metadata"] == "bWV0YQ=="
+
+
+def test_the_list_query_asks_mongo_for_the_keys():
+    from app.api.endpoints.vault.constants import LIST_PROJECTION
+
+    assert LIST_PROJECTION.get("wrapped_dek") == 1, (
+        "a projection that omits this returns null keys and the file looks broken"
+    )
+    assert LIST_PROJECTION.get("salt_item") == 1
