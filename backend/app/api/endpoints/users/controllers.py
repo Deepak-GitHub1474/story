@@ -102,8 +102,8 @@ async def change_password(
     *,
     claims,
     mongo: AsyncIOMotorDatabase,
-    redis=None,
-    settings=None,
+    redis,
+    settings,
 ) -> dict[str, Any]:
     user = await mongo[USERS].find_one({"_id": claims.user_id}, {"password_hash": 1, "username": 1})
     if user is None:
@@ -118,16 +118,16 @@ async def change_password(
     if guarded is not None:
         if not body.otp:
             raise api_error(ErrorCode.OTP_REQUIRED)
-        if redis is not None and settings is not None:
-            from app.api.endpoints.email import otp as otp_service
-            from app.db import keys as redis_keys
 
-            await otp_service.verify(
-                key=redis_keys.reset_otp(claims.user_id),
-                otp=body.otp,
-                redis=redis,
-                settings=settings,
-            )
+        from app.api.endpoints.email import otp as otp_service
+        from app.db import keys as redis_keys
+
+        await otp_service.verify(
+            key=redis_keys.reset_otp(claims.user_id),
+            otp=body.otp,
+            redis=redis,
+            settings=settings,
+        )
 
     try:
         validate_password_strength(body.new_password, username=user["username"])
@@ -141,8 +141,7 @@ async def change_password(
         {"$set": {"password_hash": hash_password(body.new_password), "updated_at": utc_now()}},
     )
 
-    if redis is not None:
-        await _revoke_other_sessions(claims.user_id, claims.family_id, redis)
+    await _revoke_other_sessions(claims.user_id, claims.family_id, redis)
 
     return {"password_changed": True}
 
