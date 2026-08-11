@@ -13,24 +13,15 @@ import '../../stories/widgets/story_post.dart';
 import '../providers/search_providers.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.peopleOnly = false});
+
+  final bool peopleOnly;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  String _remembered = '';
-
-  void _rememberSettledQuery(SearchState state) {
-    final query = state.query.trim();
-    if (state.isLoading || query.isEmpty || query == _remembered) return;
-    if (state.results.users.isEmpty) return;
-
-    _remembered = query;
-    ref.read(prefsStoreProvider).rememberSearch(query);
-  }
-
   Future<void> _pick(String username) async {
     _controller.text = username;
     ref.read(searchProvider.notifier).query(username);
@@ -48,7 +39,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final state = ref.watch(searchProvider);
-    _rememberSettledQuery(state);
     final results = state.results;
 
     return Scaffold(
@@ -56,16 +46,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       appBar: AppBar(
         leading: BackButton(onPressed: () => context.pop()),
         titleSpacing: 0,
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
-          onChanged: (value) => ref.read(searchProvider.notifier).query(value),
-          decoration: InputDecoration(
-            hintText: 'People, communities, stories',
-            hintStyle: TextStyle(color: colors.textMuted),
-            border: InputBorder.none,
+        title: Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.xs),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            textInputAction: TextInputAction.search,
+            style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
+            onChanged: (value) => ref.read(searchProvider.notifier).query(value),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: widget.peopleOnly
+                  ? 'Search people'
+                  : 'People, communities, stories',
+              hintStyle: TextStyle(color: colors.textMuted),
+              filled: true,
+              fillColor: colors.surfaceRaised,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderSide: BorderSide.none,
+              ),
+            ),
           ),
         ),
         actions: [
@@ -82,16 +95,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            if (state.query.isEmpty) return _RecentSearches(onPick: _pick);
-            if (state.isLoading) return const SkeletonList(count: 4);
-            if (results.isEmpty) {
-              return Center(
-                child: Text(
-                  'Nothing matched “${state.query}”.',
-                  style: TextStyle(color: colors.textSecondary),
-                ),
-              );
+            if (state.query.isEmpty) {
+              return _RecentSearches(onPick: _pick, peopleOnly: widget.peopleOnly);
             }
+            if (state.isLoading) return const SkeletonList(count: 4);
+            final nothing = widget.peopleOnly
+                ? results.users.isEmpty
+                : results.isEmpty;
+            if (nothing) return _NoMatch(query: state.query);
 
             return ListView(
               children: [
@@ -126,7 +137,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       },
                     ),
                 ],
-                if (results.communities.isNotEmpty) ...[
+                if (!widget.peopleOnly && results.communities.isNotEmpty) ...[
                   _SectionHeader(label: 'Communities'),
                   for (final community in results.communities)
                     ListTile(
@@ -146,7 +157,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           context.push('${Routes.community}/${community.slug}'),
                     ),
                 ],
-                if (results.stories.isNotEmpty) ...[
+                if (!widget.peopleOnly && results.stories.isNotEmpty) ...[
                   _SectionHeader(label: 'Stories'),
                   for (final story in results.stories) ...[
                     StoryPost(
@@ -198,6 +209,10 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _Hint extends StatelessWidget {
+  const _Hint({this.peopleOnly = false});
+
+  final bool peopleOnly;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -211,7 +226,7 @@ class _Hint extends StatelessWidget {
             Icon(Icons.search, size: 44, color: colors.textMuted),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'Find your people',
+              peopleOnly ? 'Find someone' : 'Find your people',
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: AppTypeScale.heading,
@@ -220,8 +235,10 @@ class _Hint extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Search accounts, communities, and public stories. '
-              'Private and draft stories never appear here.',
+              peopleOnly
+                  ? 'Search by username or display name to start a chat.'
+                  : 'Search accounts, communities, and public stories. '
+                        'Private and draft stories never appear here.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,
@@ -238,9 +255,10 @@ class _Hint extends StatelessWidget {
 
 
 class _RecentSearches extends ConsumerStatefulWidget {
-  const _RecentSearches({required this.onPick});
+  const _RecentSearches({required this.onPick, this.peopleOnly = false});
 
   final Future<void> Function(String username) onPick;
+  final bool peopleOnly;
 
   @override
   ConsumerState<_RecentSearches> createState() => _RecentSearchesState();
@@ -252,7 +270,7 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
     final colors = context.colors;
     final recent = ref.read(prefsStoreProvider).recentSearches;
 
-    if (recent.isEmpty) return _Hint();
+    if (recent.isEmpty) return _Hint(peopleOnly: widget.peopleOnly);
 
     return ListView(
       children: [
@@ -311,6 +329,65 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
             onTap: () => widget.onPick(username),
           ),
       ],
+    );
+  }
+}
+
+
+class _NoMatch extends StatelessWidget {
+  const _NoMatch({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_outlined,
+              size: 44,
+              color: colors.textMuted,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Nothing matched',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: AppTypeScale.body,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              query.length > 40 ? '${query.substring(0, 40)}…' : query,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.label,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Check the spelling, or try a shorter name.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.label,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

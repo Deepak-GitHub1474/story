@@ -138,7 +138,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.search,
         pageBuilder: (context, state) =>
-            fadePage(key: state.pageKey, child: const SearchScreen()),
+            fadePage(
+              key: state.pageKey,
+              child: SearchScreen(
+                peopleOnly: state.uri.queryParameters['people'] == '1',
+              ),
+            ),
       ),
       GoRoute(
         path: Routes.following,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/time_ago.dart';
+import '../../../core/utils/chat_time.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/chat_models.dart';
@@ -18,6 +18,8 @@ class MessageBubble extends StatefulWidget {
     this.onTapReplied,
     this.myReaction,
     this.isHighlighted = false,
+    this.showSeenLabel = false,
+    this.repliedToAuthor,
   });
 
   final ChatMessage message;
@@ -30,6 +32,8 @@ class MessageBubble extends StatefulWidget {
   final VoidCallback? onTapReplied;
   final String? myReaction;
   final bool isHighlighted;
+  final bool showSeenLabel;
+  final String? repliedToAuthor;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -73,7 +77,7 @@ class _MessageBubbleState extends State<MessageBubble>
                   : isMine
                   ? colors.accentText
                   : colors.textPrimary,
-              fontSize: _isEmojiOnly ? 44 : AppTypeScale.body,
+              fontSize: _isEmojiOnly ? 34 : AppTypeScale.body,
               height: _isEmojiOnly ? 1.1 : 1.4,
             ),
           );
@@ -92,7 +96,7 @@ class _MessageBubbleState extends State<MessageBubble>
               ? colors.accent.withValues(alpha: 0.14)
               : Colors.transparent,
           child: Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
           child: Column(
             crossAxisAlignment: isMine
                 ? CrossAxisAlignment.end
@@ -126,10 +130,10 @@ class _MessageBubbleState extends State<MessageBubble>
                   ),
                   child: Container(
                     padding: _isEmojiOnly
-                        ? EdgeInsets.zero
+                        ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
                         : const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.md,
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
                           ),
                     decoration: _isEmojiOnly
                         ? null
@@ -156,23 +160,64 @@ class _MessageBubbleState extends State<MessageBubble>
                           GestureDetector(
                             onTap: widget.onTapReplied,
                             child: Container(
-                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            decoration: BoxDecoration(
-                              color: isMine
-                                  ? colors.accentText.withValues(alpha: 0.16)
-                                  : colors.surfaceRaised,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                              child: Text(
-                                widget.repliedTo!.text ?? 'Message',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isMine
-                                      ? colors.accentText
-                                      : colors.textSecondary,
-                                  fontSize: AppTypeScale.caption,
+                              margin: const EdgeInsets.only(bottom: 5),
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: isMine
+                                    ? colors.accentText.withValues(alpha: 0.14)
+                                    : colors.surfaceRaised,
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(
+                                      width: 3,
+                                      color: isMine
+                                          ? colors.accentText
+                                          : colors.accent,
+                                    ),
+                                    Flexible(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(7, 5, 8, 5),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              widget.repliedToAuthor ?? 'Message',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: isMine
+                                                    ? colors.accentText
+                                                    : colors.accent,
+                                                fontSize: AppTypeScale.caption,
+                                                fontWeight: FontWeight.w500,
+                                                height: 1.25,
+                                              ),
+                                            ),
+                                            Text(
+                                              widget.repliedTo!.text ?? 'Message',
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: isMine
+                                                    ? colors.accentText.withValues(
+                                                        alpha: 0.85,
+                                                      )
+                                                    : colors.textSecondary,
+                                                fontSize: AppTypeScale.caption,
+                                                height: 1.3,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -211,9 +256,11 @@ class _MessageBubbleState extends State<MessageBubble>
                           ? 'Sending'
                           : message.hasFailed
                           ? 'Not sent'
+                          : widget.showSeenLabel
+                          ? 'Seen'
                           : message.editedAt != null
-                          ? '${timeAgo(message.createdAt)} · edited'
-                          : timeAgo(message.createdAt),
+                          ? '${messageClock(message.createdAt)} · edited'
+                          : messageClock(message.createdAt),
                       style: TextStyle(
                         color: message.hasFailed ? colors.danger : colors.textMuted,
                         fontSize: AppTypeScale.caption,

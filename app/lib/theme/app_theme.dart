@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'tokens.dart';
 
@@ -43,6 +44,13 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
     ),
     splashFactory: NoSplash.splashFactory,
     appBarTheme: AppBarTheme(
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: brightness == Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: brightness,
+      ),
       backgroundColor: colors.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,

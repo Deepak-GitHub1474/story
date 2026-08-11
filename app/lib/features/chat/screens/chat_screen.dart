@@ -12,6 +12,7 @@ import '../../../components/app_button.dart';
 import '../../../components/app_close_button.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/confirm_dialog.dart';
+import '../../../core/utils/chat_time.dart';
 import '../../../routing/routes.dart';
 import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
@@ -22,6 +23,29 @@ import '../providers/chat_providers.dart';
 import '../widgets/message_bubble.dart';
 
 const quickReactions = ['❤️', '😂', '😮', '😢', '🙏', '🔥'];
+
+const moreReactions = [
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💯', '💢',
+  '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
+  '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙',
+  '😋', '😛', '😜', '🤪', '😝', '🤗', '🤭', '🤫', '🤔', '🤐',
+  '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😌', '😔', '😪',
+  '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🥵', '🥶', '🥴', '😵',
+  '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮',
+  '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢',
+  '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤',
+  '😡', '😠', '🤬', '😈', '💀', '💩', '🤡', '👻', '👽', '🤖',
+  '🙈', '🙉', '🙊', '😺', '😹', '😻', '😽', '🙀', '😿', '😾',
+  '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲',
+  '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '👀', '👁️', '🧠',
+  '✌️', '🤞', '🫰', '🤟', '🤘', '👌', '🤌', '🤏', '👈', '👉',
+  '👆', '👇', '☝️', '👋', '🤙', '🫶', '🫡', '🫠', '🫢', '🫣',
+  '🔥', '✨', '⭐', '🌟', '💫', '⚡', '☄️', '💥', '🌈', '☀️',
+  '🌙', '⛅', '☁️', '❄️', '🌊', '🍀', '🌸', '🌹', '🌻', '🌷',
+  '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🎯', '🎵', '🎶', '📸',
+  '☕', '🍵', '🍺', '🍻', '🥂', '🍰', '🎂', '🍕', '🍔', '🍫',
+];
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversationId});
@@ -159,6 +183,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             .react(message.messageId, already ? null : emoji);
                       },
                     ),
+                  _MoreReactions(
+                    onPick: (emoji) {
+                      Navigator.of(sheetContext).pop();
+                      notifier.react(message.messageId, emoji);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -369,6 +399,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       itemBuilder: (context, index) {
                         final message = state.messages[index];
                         final isMine = message.senderId == me;
+                        final older = index + 1 < state.messages.length
+                            ? state.messages[index + 1].createdAt
+                            : null;
+                        final opensDay = startsNewDay(message.createdAt, older);
+                        final replied = message.replyTo == null
+                            ? null
+                            : state.messages
+                                  .where((m) => m.messageId == message.replyTo)
+                                  .firstOrNull;
                         final seen =
                             isMine &&
                             state.conversation?.theirLastReadMessageId != null &&
@@ -379,7 +418,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         final mine = message.reactions
                             .where((r) => r.userId == me)
                             .firstOrNull;
-                        return MessageBubble(
+                        final bubble = MessageBubble(
                           key: _keyFor(message.messageId),
                           myReaction: mine?.emoji,
                           onReplySwipe: () {
@@ -390,11 +429,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           message: message,
                           isMine: isMine,
                           isSeen: seen,
-                          repliedTo: message.replyTo == null
+                          showSeenLabel: isMine && seen && index == 0,
+                          repliedTo: replied,
+                          repliedToAuthor: replied == null
                               ? null
-                              : state.messages
-                                    .where((m) => m.messageId == message.replyTo)
-                                    .firstOrNull,
+                              : replied.senderId == me
+                              ? 'You'
+                              : (other?.displayName ?? 'Them'),
                           onLongPress: () => _openMessageMenu(message, isMine),
                           isHighlighted: _highlighted == message.messageId,
                           onDoubleTap: () => ref
@@ -405,6 +446,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 message.messageId,
                                 mine?.emoji == '❤️' ? null : '❤️',
                               ),
+                        );
+
+                        if (!opensDay) return bubble;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _DaySeparator(isoUtc: message.createdAt),
+                            bubble,
+                          ],
                         );
                       },
                     ),
@@ -624,65 +675,16 @@ class _Composer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (editing != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 15, color: colors.textMuted),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      'Editing message',
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: AppTypeScale.label,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  AppCloseButton(
-                    size: AppCloseSize.small,
-                    tooltip: 'Stop editing',
-                    onPressed: onCancelEdit,
-                  ),
-                ],
-              ),
-            ),
           AnimatedSize(
             duration: AppMotion.fast,
             curve: AppMotion.easeOut,
-            child: replyTo == null
+            child: (editing ?? replyTo) == null
                 ? const SizedBox(width: double.infinity)
-                : Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceRaised,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(width: 3, height: 28, color: colors.accent),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            replyTo!.text ?? 'Message',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: AppTypeScale.caption,
-                            ),
-                          ),
-                        ),
-                        AppCloseButton(
-                          size: AppCloseSize.small,
-                          tooltip: 'Stop replying',
-                          onPressed: onCancelReply,
-                        ),
-                      ],
-                    ),
+                : _ComposerContext(
+                    label: editing != null ? 'Editing message' : 'Replying to message',
+                    body: (editing ?? replyTo)!.text ?? 'Message',
+                    tooltip: editing != null ? 'Stop editing' : 'Stop replying',
+                    onCancel: editing != null ? onCancelEdit : onCancelReply,
                   ),
           ),
           Row(
@@ -841,6 +843,157 @@ class _PresenceLine extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _DaySeparator extends StatelessWidget {
+  const _DaySeparator({required this.isoUtc});
+
+  final String isoUtc;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surfaceRaised,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Text(
+            separatorFor(isoUtc),
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: AppTypeScale.caption,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComposerContext extends StatelessWidget {
+  const _ComposerContext({
+    required this.label,
+    required this.body,
+    required this.tooltip,
+    required this.onCancel,
+  });
+
+  final String label;
+  final String body;
+  final String tooltip;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: colors.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        children: [
+          Container(width: 3, height: 32, color: colors.accent),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.accent,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  body,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: AppTypeScale.caption,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AppCloseButton(
+            size: AppCloseSize.small,
+            tooltip: tooltip,
+            onPressed: onCancel,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreReactions extends StatelessWidget {
+  const _MoreReactions({required this.onPick});
+
+  final ValueChanged<String> onPick;
+
+  Future<void> _open(BuildContext context) async {
+    final picked = await showAppSheet<String>(
+      context: context,
+      title: 'Pick a reaction',
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.42,
+        child: GridView.count(
+        crossAxisCount: 8,
+        children: [
+          for (final emoji in moreReactions)
+            InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.of(sheetContext).pop(emoji),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 26)),
+              ),
+            ),
+        ],
+        ),
+      ),
+    );
+
+    if (picked != null) onPick(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkResponse(
+      onTap: () => _open(context),
+      radius: 24,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: colors.border),
+        ),
+        child: Icon(Icons.add, size: AppSizes.iconSm, color: colors.textSecondary),
       ),
     );
   }

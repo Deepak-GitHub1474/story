@@ -122,8 +122,8 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.edit_outlined, color: colors.textPrimary),
-                  onPressed: () => context.push(Routes.search),
+                  icon: Icon(Icons.search, color: colors.textPrimary),
+                  onPressed: () => context.push('${Routes.search}?people=1'),
                 ),
               ],
             ),
