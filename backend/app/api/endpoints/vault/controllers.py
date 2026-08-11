@@ -170,10 +170,11 @@ async def create_item(
     if body.visibility == "hidden" and not body.label_hash:
         raise api_error(ErrorCode.LABEL_REQUIRED, field="label_hash")
 
-    if body.size_bytes > settings.VAULT_MAX_ITEM_BYTES:
+    limit = settings.limit_for(body.kind)
+    if body.size_bytes > limit:
         raise api_error(
             ErrorCode.ITEM_TOO_LARGE,
-            extra={"limit_bytes": settings.VAULT_MAX_ITEM_BYTES},
+            extra={"limit_bytes": limit, "kind": body.kind},
         )
 
     passcode = await mongo[c.PASSCODES].find_one(

@@ -15,6 +15,8 @@ final vaultRepositoryProvider = Provider<VaultRepository>(
   (ref) => VaultRepository(ref.watch(apiClientProvider)),
 );
 
+const vaultMaxBytes = 10 * 1024 * 1024;
+
 final vaultCryptoProvider = Provider<VaultCrypto>((ref) => const VaultCrypto());
 
 final vaultTransferProvider = Provider<VaultTransfer>(
@@ -257,12 +259,55 @@ final vaultItemsProvider = FutureProvider<List<VaultItem>>((ref) async {
 });
 
 
+enum UploadStage { idle, packing, encrypting, sending, finishing, failed }
+
 class VaultUploadState {
-  const VaultUploadState({this.progress = 0, this.isBusy = false, this.error});
+  const VaultUploadState({
+    this.progress = 0,
+    this.isBusy = false,
+    this.error,
+    this.stage = UploadStage.idle,
+    this.sentBytes = 0,
+    this.totalBytes = 0,
+    this.filename,
+  });
 
   final double progress;
   final bool isBusy;
   final String? error;
+  final UploadStage stage;
+  final int sentBytes;
+  final int totalBytes;
+  final String? filename;
+
+  bool get canRetry => stage == UploadStage.failed;
+
+  VaultUploadState copyWith({
+    double? progress,
+    bool? isBusy,
+    String? error,
+    UploadStage? stage,
+    int? sentBytes,
+    int? totalBytes,
+    String? filename,
+  }) => VaultUploadState(
+    progress: progress ?? this.progress,
+    isBusy: stage == UploadStage.failed ? false : (isBusy ?? this.isBusy),
+    error: stage == UploadStage.failed ? (error ?? this.error) : error,
+    stage: stage ?? this.stage,
+    sentBytes: sentBytes ?? this.sentBytes,
+    totalBytes: totalBytes ?? this.totalBytes,
+    filename: filename ?? this.filename,
+  );
+
+  String get label => switch (stage) {
+    UploadStage.packing => 'Preparing',
+    UploadStage.encrypting => 'Encrypting on this device',
+    UploadStage.sending => 'Uploading',
+    UploadStage.finishing => 'Finishing',
+    UploadStage.failed => 'Upload failed',
+    UploadStage.idle => '',
+  };
 }
 
 final vaultUploadProvider = NotifierProvider<VaultUploadNotifier, VaultUploadState>(
@@ -270,6 +315,22 @@ final vaultUploadProvider = NotifierProvider<VaultUploadNotifier, VaultUploadSta
 );
 
 class VaultUploadNotifier extends Notifier<VaultUploadState> {
+  ({Uint8List bytes, String filename, String kind, String? label})? _last;
+
+  Future<bool> retry() async {
+    final again = _last;
+    if (again == null) return false;
+
+    return addFile(
+      bytes: again.bytes,
+      filename: again.filename,
+      kind: again.kind,
+      label: again.label,
+    );
+  }
+
+  void dismiss() => state = const VaultUploadState();
+
   @override
   VaultUploadState build() => const VaultUploadState();
 
@@ -282,7 +343,14 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     final session = ref.read(vaultSessionProvider);
     if (!session.isUnlocked) return false;
 
-    state = const VaultUploadState(isBusy: true);
+    _last = (bytes: bytes, filename: filename, kind: kind, label: label);
+
+    state = VaultUploadState(
+      isBusy: true,
+      stage: UploadStage.encrypting,
+      filename: filename,
+      totalBytes: bytes.length,
+    );
 
     final repository = ref.read(vaultRepositoryProvider);
     final transfer = ref.read(vaultTransferProvider);
@@ -317,16 +385,38 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
 
     final result = created.valueOrNull;
     if (result == null) {
-      state = VaultUploadState(error: created.failureOrNull!.message);
+      state = VaultUploadState(
+        error: created.failureOrNull!.message,
+        stage: UploadStage.failed,
+        filename: filename,
+      );
       return false;
     }
 
-    await transfer.upload(
-      url: result.uploadUrl,
-      ciphertext: payload.ciphertext,
-      onProgress: (progress) =>
-          state = VaultUploadState(progress: progress.fraction, isBusy: true),
+    state = state.copyWith(
+      stage: UploadStage.sending,
+      totalBytes: payload.ciphertext.length,
     );
+
+    try {
+      await transfer.upload(
+        url: result.uploadUrl,
+        ciphertext: payload.ciphertext,
+        onProgress: (progress) => state = state.copyWith(
+          progress: progress.fraction,
+          sentBytes: progress.sent,
+          totalBytes: progress.total,
+        ),
+      );
+    } catch (_) {
+      state = state.copyWith(
+        stage: UploadStage.failed,
+        error: 'The upload did not finish. Check your connection and try again.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(stage: UploadStage.finishing);
 
     final completed = await repository.completeItem(
       result.item.itemId,
@@ -335,7 +425,10 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     );
 
     if (!completed.isSuccess) {
-      state = VaultUploadState(error: completed.failureOrNull!.message);
+      state = state.copyWith(
+        stage: UploadStage.failed,
+        error: completed.failureOrNull!.message,
+      );
       return false;
     }
 
@@ -357,6 +450,7 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     if (url == null) return null;
 
     final ciphertext = await transfer.download(url: url);
+    print('STORYDBG downloaded=${ciphertext.length} bytes url=$url');
 
     try {
       final metadata = await transfer.decryptMetadata(
@@ -375,7 +469,9 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         passcodeKey: session.passcodeKey!,
         compression: metadata['compression'] as String? ?? 'none',
       );
-    } catch (_) {
+    } catch (error, stack) {
+      print('STORYDBG openItem failed: $error');
+      print('STORYDBG $stack');
       return null;
     }
   }

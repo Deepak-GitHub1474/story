@@ -101,8 +101,26 @@ class Settings(BaseSettings):
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
     VAULT_QUOTA_BYTES: int = 2 * 1024**3
-    VAULT_MAX_ITEM_BYTES: int = 512 * 1024**2
+    VAULT_MAX_ITEM_BYTES: int = 10 * 1024**2
+    VAULT_MAX_IMAGE_BYTES: int = 10 * 1024**2
+    VAULT_MAX_VIDEO_BYTES: int = 10 * 1024**2
+    VAULT_MAX_PDF_BYTES: int = 10 * 1024**2
     VAULT_MAX_ITEMS: int = 2000
+    COMPRESS_ABOVE_BYTES: int = 1024**2
+
+    def limit_for(self, kind: str) -> int:
+        return {
+            "image": self.VAULT_MAX_IMAGE_BYTES,
+            "video": self.VAULT_MAX_VIDEO_BYTES,
+            "pdf": self.VAULT_MAX_PDF_BYTES,
+        }.get(
+            kind,
+            min(
+                self.VAULT_MAX_IMAGE_BYTES,
+                self.VAULT_MAX_VIDEO_BYTES,
+                self.VAULT_MAX_PDF_BYTES,
+            ),
+        )
 
     @property
     def cors_origins(self) -> list[str]:

@@ -20,6 +20,7 @@ import '../data/file_kind.dart';
 import '../data/vault_selection.dart';
 import '../models/vault_models.dart';
 import '../providers/vault_providers.dart';
+import '../widgets/vault_preview.dart';
 import '../widgets/vault_tile.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
@@ -111,6 +112,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       return;
     }
 
+    if (file.bytes.length > vaultMaxBytes) {
+      AppToast.show(
+        context,
+        'That one is ${(file.bytes.length / 1048576).toStringAsFixed(1)} MB. '
+        'The vault takes up to ${vaultMaxBytes ~/ 1048576} MB.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
     final label = await showAppSheet<String?>(
       contentPadding: EdgeInsets.zero,
       context: context,
@@ -153,11 +164,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       return;
     }
 
-    AppToast.show(
-      context,
-      'Opened on this device. ${bytes.length ~/ 1024} KB decrypted.',
-      kind: AppToastKind.success,
-    );
+    if (item.kind == 'image') {
+      await showVaultPreview(context: context, bytes: bytes);
+      return;
+    }
+
+    AppToast.show(context, 'Opened on this device.');
   }
 
   Future<void> _removeItem(VaultItem item, {bool isConfirmed = false}) async {
@@ -333,23 +345,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (upload.isBusy) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              child: LinearProgressIndicator(
-                value: upload.progress == 0 ? null : upload.progress,
-                backgroundColor: colors.surfaceRaised,
-                color: colors.accent,
-                minHeight: 4,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Encrypting and uploading. Nothing leaves in plain form.',
-              style: TextStyle(
-                color: colors.textMuted,
-                fontSize: AppTypeScale.caption,
-              ),
+          if (upload.isBusy || upload.canRetry) ...[
+            _UploadCard(
+              state: upload,
+              onRetry: () => ref.read(vaultUploadProvider.notifier).retry(),
+              onDismiss: () => ref.read(vaultUploadProvider.notifier).dismiss(),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -770,6 +770,135 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
             isLoading: _isBusy,
             onPressed: isReady ? _create : null,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+
+String _readableSize(int bytes) {
+  if (bytes >= 1048576) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
+  if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  return '$bytes B';
+}
+
+class _UploadCard extends StatelessWidget {
+  const _UploadCard({
+    required this.state,
+    required this.onRetry,
+    required this.onDismiss,
+  });
+
+  final VaultUploadState state;
+  final VoidCallback onRetry;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final failed = state.canRetry;
+    final isSending = state.stage == UploadStage.sending;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: failed ? colors.danger : colors.border),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 46,
+            height: 46,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: failed ? 1 : state.progress),
+              duration: AppMotion.base,
+              curve: Curves.easeOut,
+              builder: (context, value, child) => Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox.expand(
+                    child: CircularProgressIndicator(
+                      value: isSending || failed ? value : null,
+                      strokeWidth: 3,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: colors.surfaceRaised,
+                      color: failed ? colors.danger : colors.accent,
+                    ),
+                  ),
+                  if (failed)
+                    Icon(
+                      Icons.priority_high_rounded,
+                      size: 18,
+                      color: colors.danger,
+                    )
+                  else if (isSending)
+                    Text(
+                      '${(value * 100).round()}',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: AppTypeScale.caption,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    Icon(Icons.lock_outline, size: 16, color: colors.accent),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  state.filename ?? 'File',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: AppTypeScale.label,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  failed
+                      ? (state.error ?? 'That did not go through.')
+                      : isSending && state.totalBytes > 0
+                      ? '${_readableSize(state.sentBytes)} of ${_readableSize(state.totalBytes)}'
+                      : state.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: failed ? colors.danger : colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (failed) ...[
+            TextButton(
+              onPressed: onDismiss,
+              child: Text('Discard', style: TextStyle(color: colors.textMuted)),
+            ),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(
+                'Try again',
+                style: TextStyle(
+                  color: colors.accent,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
