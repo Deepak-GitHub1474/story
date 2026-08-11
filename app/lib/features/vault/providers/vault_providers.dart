@@ -450,7 +450,6 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     if (url == null) return null;
 
     final ciphertext = await transfer.download(url: url);
-    print('STORYDBG downloaded=${ciphertext.length} bytes url=$url');
 
     try {
       final metadata = await transfer.decryptMetadata(
@@ -469,9 +468,7 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         passcodeKey: session.passcodeKey!,
         compression: metadata['compression'] as String? ?? 'none',
       );
-    } catch (error, stack) {
-      print('STORYDBG openItem failed: $error');
-      print('STORYDBG $stack');
+    } catch (_) {
       return null;
     }
   }

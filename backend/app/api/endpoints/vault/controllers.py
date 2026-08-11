@@ -18,7 +18,7 @@ from app.core.time import to_wire, utc_now
 from app.ports.storage import StoragePort
 
 
-def serialize_item(doc: dict[str, Any], *, include_keys: bool = False) -> dict[str, Any]:
+def serialize_item(doc: dict[str, Any]) -> dict[str, Any]:
     payload = {
         "item_id": doc["_id"],
         "kind": doc["kind"],
@@ -32,10 +32,9 @@ def serialize_item(doc: dict[str, Any], *, include_keys: bool = False) -> dict[s
         "key_state": doc.get("key_state", "active"),
         "created_at": to_wire(doc.get("created_at")),
     }
-    if include_keys:
-        payload["wrapped_dek"] = doc["wrapped_dek"]
-        payload["salt_item"] = doc["salt_item"]
-        payload["crypto_version"] = doc.get("crypto_version", "story.dek.v1")
+    payload["wrapped_dek"] = doc.get("wrapped_dek")
+    payload["salt_item"] = doc.get("salt_item")
+    payload["crypto_version"] = doc.get("crypto_version", "story.dek.v1")
     return payload
 
 
@@ -235,7 +234,7 @@ async def create_item(
         expires_in=settings.PRESIGN_UPLOAD_TTL_SECONDS,
     )
 
-    return {"item": serialize_item(item, include_keys=True), "upload_url": upload_url}
+    return {"item": serialize_item(item), "upload_url": upload_url}
 
 
 async def _used_bytes(user_id: str, mongo: AsyncIOMotorDatabase) -> int:
@@ -301,7 +300,7 @@ async def list_items(
 
 async def get_item(item_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     item = await _owned_item(item_id, claims.user_id, mongo)
-    return {"item": serialize_item(item, include_keys=True)}
+    return {"item": serialize_item(item)}
 
 
 async def search(label_hash: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -310,7 +309,7 @@ async def search(label_hash: str, *, claims, mongo: AsyncIOMotorDatabase) -> dic
     )
     if item is None:
         raise api_error(ErrorCode.VAULT_ITEM_NOT_FOUND)
-    return {"item": serialize_item(item, include_keys=True)}
+    return {"item": serialize_item(item)}
 
 
 async def download_url(
@@ -365,7 +364,7 @@ async def update_item(
         raise api_error(ErrorCode.LABEL_TAKEN, field="label_hash") from exc
 
     item.update(update)
-    return {"item": serialize_item(item, include_keys=True)}
+    return {"item": serialize_item(item)}
 
 
 async def delete_item(
