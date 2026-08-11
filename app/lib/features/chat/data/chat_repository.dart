@@ -167,6 +167,23 @@ class ChatRepository {
         parse: (_) => true,
       );
 
+  Future<Result<ChatMessage>> edit({
+    required String conversationId,
+    required String messageId,
+    required String ciphertext,
+  }) => _client.patch(
+    Endpoints.chatMessage(conversationId, messageId),
+    body: {'ciphertext': ciphertext},
+    parse: (data) =>
+        ChatMessage.fromJson(Map<String, dynamic>.from(data['message'] as Map)),
+  );
+
+  Future<Result<bool>> hideForMe(String conversationId, String messageId) =>
+      _client.delete(
+        '${Endpoints.chatMessage(conversationId, messageId)}/mine',
+        parse: (_) => true,
+      );
+
   Future<Result<bool>> markRead(String conversationId, String messageId) => _client.post(
     Endpoints.chatRead(conversationId),
     body: {'message_id': messageId},

@@ -113,6 +113,7 @@ class ChatMessage {
     this.text,
     this.isSending = false,
     this.hasFailed = false,
+    this.editedAt,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
@@ -123,6 +124,7 @@ class ChatMessage {
     replyTo: json['reply_to'] as String?,
     isDeleted: json['is_deleted'] as bool? ?? false,
     createdAt: json['created_at'] as String? ?? '',
+    editedAt: json['edited_at'] as String?,
     reactions: (json['reactions'] as List<dynamic>? ?? [])
         .map((item) => ChatReaction.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList(),
@@ -139,8 +141,10 @@ class ChatMessage {
   final String? text;
   final bool isSending;
   final bool hasFailed;
+  final String? editedAt;
 
   ChatMessage withText(String? value) => ChatMessage(
+    editedAt: editedAt,
     messageId: messageId,
     conversationId: conversationId,
     senderId: senderId,
@@ -155,6 +159,7 @@ class ChatMessage {
   );
 
   ChatMessage asPending({bool failed = false}) => ChatMessage(
+    editedAt: editedAt,
     messageId: messageId,
     conversationId: conversationId,
     senderId: senderId,

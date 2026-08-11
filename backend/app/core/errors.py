@@ -36,6 +36,7 @@ class ErrorCode(StrEnum):
     CONVERSATION_NOT_FOUND = "CONVERSATION_NOT_FOUND"
     CHAT_ALREADY_OPEN = "CHAT_ALREADY_OPEN"
     MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND"
+    EDIT_WINDOW_CLOSED = "EDIT_WINDOW_CLOSED"
 
     EMAIL_ALREADY_SET = "EMAIL_ALREADY_SET"
     EMAIL_IN_USE = "EMAIL_IN_USE"
@@ -133,6 +134,7 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.CONVERSATION_NOT_FOUND: (404, "We could not find that chat."),
     ErrorCode.CHAT_ALREADY_OPEN: (409, "That chat is already open."),
     ErrorCode.MESSAGE_NOT_FOUND: (404, "We could not find that message."),
+    ErrorCode.EDIT_WINDOW_CLOSED: (409, "That message is too old to edit."),
     ErrorCode.EMAIL_ALREADY_SET: (409, "An address is already on this account."),
     ErrorCode.EMAIL_IN_USE: (409, "That address is already in use."),
     ErrorCode.EMAIL_NOT_SET: (400, "Add an email address first."),

@@ -38,6 +38,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _focus = FocusNode();
 
   ChatMessage? _replyTo;
+  ChatMessage? _editing;
   String? _highlighted;
   Timer? _highlightTimer;
   final _keys = <String, GlobalKey>{};
@@ -95,6 +96,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = _composer.text;
     if (text.trim().isEmpty) return;
 
+    final editing = _editing;
+    if (editing != null) {
+      if (text == editing.text) return;
+      _composer.clear();
+      setState(() => _editing = null);
+
+      final saved = await ref
+          .read(conversationProvider(widget.conversationId).notifier)
+          .edit(editing, text);
+      if (!saved && mounted) {
+        AppToast.show(context, 'That edit did not save.', kind: AppToastKind.error);
+      }
+      return;
+    }
+
     _composer.clear();
     final reply = _replyTo;
     setState(() => _replyTo = null);
@@ -111,6 +127,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _openMessageMenu(ChatMessage message, bool isMine) async {
     final colors = context.colors;
     final me = ref.read(authProvider).user?.userId ?? '';
+    final notifier = ref.read(conversationProvider(widget.conversationId).notifier);
 
     await showAppSheet<void>(
       contentPadding: EdgeInsets.zero,
@@ -162,13 +179,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onTap: () async {
                   Navigator.of(sheetContext).pop();
                   await Clipboard.setData(ClipboardData(text: message.text!));
-                  if (mounted) AppToast.show(context, 'Copied.');
                 },
               ),
+            if (isMine && notifier.canEdit(message) && message.text != null)
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() {
+                    _editing = message;
+                    _replyTo = null;
+                    _composer.text = message.text!;
+                    _composer.selection = TextSelection.collapsed(
+                      offset: message.text!.length,
+                    );
+                  });
+                  _focus.requestFocus();
+                },
+              ),
+            ListTile(
+              leading: Icon(Icons.visibility_off_outlined, color: colors.textPrimary),
+              title: const Text('Delete for me'),
+              subtitle: Text(
+                'It stays for them.',
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: AppTypeScale.caption,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                notifier.hideForMe(message.messageId);
+              },
+            ),
             if (isMine)
               ListTile(
                 leading: Icon(Icons.delete_outline, color: colors.danger),
                 title: Text('Unsend', style: TextStyle(color: colors.danger)),
+                subtitle: Text(
+                  'Gone for both of you, permanently.',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   ref
@@ -372,6 +427,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 controller: _composer,
                 focusNode: _focus,
                 replyTo: _replyTo,
+                editing: _editing,
+                original: _editing?.text,
+                onCancelEdit: () {
+                  _composer.clear();
+                  setState(() => _editing = null);
+                },
                 onCancelReply: () => setState(() => _replyTo = null),
                 onSend: _send,
                 onTyping: (_) => ref
@@ -527,6 +588,9 @@ class _Composer extends StatelessWidget {
     required this.focusNode,
     required this.replyTo,
     required this.onCancelReply,
+    required this.onCancelEdit,
+    this.editing,
+    this.original,
     required this.onSend,
     required this.onTyping,
   });
@@ -535,6 +599,9 @@ class _Composer extends StatelessWidget {
   final FocusNode focusNode;
   final ChatMessage? replyTo;
   final VoidCallback onCancelReply;
+  final VoidCallback onCancelEdit;
+  final ChatMessage? editing;
+  final String? original;
   final VoidCallback onSend;
   final ValueChanged<String> onTyping;
 
@@ -557,6 +624,31 @@ class _Composer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (editing != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, size: 15, color: colors.textMuted),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Editing message',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: AppTypeScale.label,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  AppCloseButton(
+                    size: AppCloseSize.small,
+                    tooltip: 'Stop editing',
+                    onPressed: onCancelEdit,
+                  ),
+                ],
+              ),
+            ),
           AnimatedSize(
             duration: AppMotion.fast,
             curve: AppMotion.easeOut,
@@ -636,7 +728,11 @@ class _Composer extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              _SendButton(controller: controller, onSend: onSend),
+              _SendButton(
+                controller: controller,
+                onSend: onSend,
+                original: original,
+              ),
             ],
           ),
         ],
@@ -646,10 +742,15 @@ class _Composer extends StatelessWidget {
 }
 
 class _SendButton extends StatelessWidget {
-  const _SendButton({required this.controller, required this.onSend});
+  const _SendButton({
+    required this.controller,
+    required this.onSend,
+    this.original,
+  });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final String? original;
 
   @override
   Widget build(BuildContext context) {
@@ -658,7 +759,8 @@ class _SendButton extends StatelessWidget {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, child) {
-        final isReady = value.text.trim().isNotEmpty;
+        final isReady = value.text.trim().isNotEmpty &&
+            (original == null || value.text != original);
         return SizedBox(
           width: 44,
           height: 44,

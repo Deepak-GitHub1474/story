@@ -211,6 +211,8 @@ class _MessageBubbleState extends State<MessageBubble>
                           ? 'Sending'
                           : message.hasFailed
                           ? 'Not sent'
+                          : message.editedAt != null
+                          ? '${timeAgo(message.createdAt)} · edited'
                           : timeAgo(message.createdAt),
                       style: TextStyle(
                         color: message.hasFailed ? colors.danger : colors.textMuted,

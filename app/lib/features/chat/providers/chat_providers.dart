@@ -11,6 +11,8 @@ import '../../notifications/providers/notification_providers.dart';
 import '../data/chat_repository.dart';
 import '../models/chat_models.dart';
 
+const editWindow = Duration(minutes: 10);
+
 final chatCryptoProvider = Provider<ChatCrypto>((ref) => const ChatCrypto());
 
 final realtimeProvider = Provider<RealtimeClient>((ref) {
@@ -224,6 +226,11 @@ class ConversationNotifier
       case 'message':
       case 'reaction':
         unawaited(_pollNew());
+      case 'edited':
+        final updated = ChatMessage.fromJson(
+          Map<String, dynamic>.from(event['message'] as Map),
+        );
+        unawaited(_replaceDecoded(updated));
       case 'unsent':
         state = state.copyWith(
           messages: state.messages
@@ -234,6 +241,18 @@ class ConversationNotifier
       case 'read':
         unawaited(_refreshConversation());
     }
+  }
+
+  Future<void> _replaceDecoded(ChatMessage incoming) async {
+    final decorated = await _decorate([incoming]);
+    if (decorated.isEmpty) return;
+
+    state = state.copyWith(
+      messages: [
+        for (final item in state.messages)
+          if (item.messageId == incoming.messageId) decorated.first else item,
+      ],
+    );
   }
 
   Future<void> _refreshConversation() async {
@@ -432,6 +451,55 @@ class ConversationNotifier
       messages: state.messages.where((m) => m.messageId != messageId).toList(),
     );
     await _repository.unsend(arg, messageId);
+  }
+
+  bool canEdit(ChatMessage message) {
+    if (message.senderId != ref.read(authProvider).user?.userId) return false;
+    if (message.isSending || message.hasFailed || message.isDeleted) return false;
+
+    final sent = DateTime.tryParse(message.createdAt);
+    if (sent == null) return false;
+    return DateTime.now().toUtc().difference(sent.toUtc()) < editWindow;
+  }
+
+  Future<bool> edit(ChatMessage message, String text) async {
+    final cek = _cek;
+    final body = text.trim();
+    if (cek == null || body.isEmpty) return false;
+
+    final ciphertext = await _crypto.encryptMessage(
+      cek: cek,
+      text: body,
+      conversationId: arg,
+    );
+    final result = await _repository.edit(
+      conversationId: arg,
+      messageId: message.messageId,
+      ciphertext: ciphertext,
+    );
+
+    final saved = result.valueOrNull;
+    if (saved == null) return false;
+
+    state = state.copyWith(
+      messages: [
+        for (final item in state.messages)
+          if (item.messageId == message.messageId)
+            saved.withText(body)
+          else
+            item,
+      ],
+    );
+    ref.invalidate(conversationsProvider(null));
+    return true;
+  }
+
+  Future<void> hideForMe(String messageId) async {
+    state = state.copyWith(
+      messages: state.messages.where((m) => m.messageId != messageId).toList(),
+    );
+    await _repository.hideForMe(arg, messageId);
+    ref.invalidate(conversationsProvider(null));
   }
 
   Future<void> react(String messageId, String? emoji) async {

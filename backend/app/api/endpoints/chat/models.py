@@ -63,3 +63,9 @@ class StoreBackupRequest(BaseModel):
     wrapped_private_key: Annotated[str, Field(min_length=16, max_length=512)]
     public_key: Annotated[str, Field(min_length=16, max_length=256)]
     kdf: KdfSpec
+
+
+class EditMessageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ciphertext: Annotated[str, Field(min_length=1, max_length=8000)]

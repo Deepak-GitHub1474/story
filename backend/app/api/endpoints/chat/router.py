@@ -3,6 +3,7 @@ from fastapi import APIRouter, Query, Response, status
 from app.api.endpoints.chat import constants as c
 from app.api.endpoints.chat import controllers
 from app.api.endpoints.chat.models import (
+    EditMessageRequest,
     PublishIdentityRequest,
     ReactionRequest,
     ReadRequest,
@@ -272,3 +273,37 @@ async def mark_read(
         conversation_id, body, claims=claims, mongo=mongo, redis=redis
     )
     return ok_response("Marked read.", data=data)
+
+
+@router.patch(
+    "/conversations/{conversation_id}/messages/{message_id}",
+    status_code=status.HTTP_200_OK,
+)
+async def edit_message(
+    conversation_id: str,
+    message_id: str,
+    body: EditMessageRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    redis: RedisClient,
+):
+    data = await controllers.edit_message(
+        conversation_id, message_id, body, claims=claims, mongo=mongo, redis=redis
+    )
+    return ok_response("Message updated.", data=data)
+
+
+@router.delete(
+    "/conversations/{conversation_id}/messages/{message_id}/mine",
+    status_code=status.HTTP_200_OK,
+)
+async def hide_message(
+    conversation_id: str,
+    message_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+):
+    data = await controllers.hide_message(
+        conversation_id, message_id, claims=claims, mongo=mongo
+    )
+    return ok_response("Removed for you.", data=data)

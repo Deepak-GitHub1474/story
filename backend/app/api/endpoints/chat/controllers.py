@@ -422,9 +422,70 @@ async def delete_conversation(
 ) -> dict[str, Any]:
     await _member_conversation(conversation_id, claims.user_id, mongo)
     await mongo[c.CONVERSATIONS].update_one(
-        {"_id": conversation_id}, {"$addToSet": {"deleted_by": claims.user_id}}
+        {"_id": conversation_id},
+        {
+            "$addToSet": {"deleted_by": claims.user_id},
+            "$set": {f"cleared_at.{claims.user_id}": utc_now()},
+        },
     )
     return {"conversation_id": conversation_id, "deleted": True}
+
+
+async def edit_message(
+    conversation_id: str,
+    message_id: str,
+    body,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    redis=None,
+) -> dict[str, Any]:
+    conversation = await _member_conversation(conversation_id, claims.user_id, mongo)
+
+    message = await mongo[c.MESSAGES].find_one(
+        {"_id": message_id, "conversation_id": conversation_id}
+    )
+    if message is None or message.get("deleted_at") is not None:
+        raise api_error(ErrorCode.MESSAGE_NOT_FOUND)
+    if message["sender_id"] != claims.user_id:
+        raise api_error(ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT)
+
+    now = utc_now()
+    age = (now - message["created_at"]).total_seconds()
+    if age > c.EDIT_WINDOW_SECONDS:
+        raise api_error(ErrorCode.EDIT_WINDOW_CLOSED)
+
+    await mongo[c.MESSAGES].update_one(
+        {"_id": message_id},
+        {"$set": {"ciphertext": body.ciphertext, "edited_at": now}},
+    )
+    message["ciphertext"] = body.ciphertext
+    message["edited_at"] = now
+
+    payload = _serialize_message(message)
+    if redis is not None:
+        await bus.publish(
+            redis,
+            [_other_id(conversation, claims.user_id)],
+            {"type": "edited", "conversation_id": conversation_id, "message": payload},
+        )
+
+    return {"message": payload}
+
+
+async def hide_message(
+    conversation_id: str, message_id: str, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _member_conversation(conversation_id, claims.user_id, mongo)
+
+    result = await mongo[c.MESSAGES].update_one(
+        {"_id": message_id, "conversation_id": conversation_id},
+        {"$addToSet": {"hidden_by": claims.user_id}},
+    )
+    if result.matched_count == 0:
+        raise api_error(ErrorCode.MESSAGE_NOT_FOUND)
+
+    return {"message_id": message_id, "hidden": True}
 
 
 async def rekey_conversation(
@@ -475,6 +536,7 @@ def _serialize_message(doc: dict[str, Any]) -> dict[str, Any]:
             for user_id, emoji in (doc.get("reactions") or {}).items()
         ],
         "created_at": to_wire(doc.get("created_at")),
+        "edited_at": to_wire(doc.get("edited_at")) if doc.get("edited_at") else None,
     }
 
 
@@ -527,7 +589,17 @@ async def list_messages(
     await _member_conversation(conversation_id, claims.user_id, mongo)
     limit = max(1, min(limit, c.MESSAGE_MAX_LIMIT))
 
-    query: dict[str, Any] = {"conversation_id": conversation_id}
+    query: dict[str, Any] = {
+        "conversation_id": conversation_id,
+        "hidden_by": {"$ne": claims.user_id},
+    }
+
+    conversation = await mongo[c.CONVERSATIONS].find_one(
+        {"_id": conversation_id}, {"cleared_at": 1}
+    )
+    cleared = (conversation or {}).get("cleared_at", {}).get(claims.user_id)
+    if cleared is not None:
+        query["created_at"] = {"$gt": cleared}
 
     if after:
         query["_id"] = {"$gt": after}
