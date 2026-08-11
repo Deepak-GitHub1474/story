@@ -148,7 +148,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   }
 
   Future<void> _openItem(VaultItem item) async {
-    final bytes = await ref.read(vaultUploadProvider.notifier).openItem(item);
+    final notifier = ref.read(vaultUploadProvider.notifier);
+
+    if (item.kind == 'image') {
+      await showVaultPreview(
+        context: context,
+        ready: notifier.cached(item.itemId),
+        open: () => notifier.openItem(item),
+      );
+      return;
+    }
+
+    final bytes = await notifier.openItem(item);
     if (!mounted) return;
 
     if (bytes == null) {
@@ -161,11 +172,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         cancelLabel: 'Keep it',
       );
       if (drop && mounted) await _removeItem(item, isConfirmed: true);
-      return;
-    }
-
-    if (item.kind == 'image') {
-      await showVaultPreview(context: context, bytes: bytes);
       return;
     }
 

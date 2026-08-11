@@ -332,7 +332,16 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
   void dismiss() => state = const VaultUploadState();
 
   @override
-  VaultUploadState build() => const VaultUploadState();
+  VaultUploadState build() {
+    ref.listen(vaultSessionProvider, (previous, next) {
+      if (!next.isUnlocked) {
+        _opened.clear();
+        _last = null;
+      }
+    });
+
+    return const VaultUploadState();
+  }
 
   Future<bool> addFile({
     required Uint8List bytes,
@@ -438,7 +447,16 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     return true;
   }
 
+  final _opened = <String, Uint8List>{};
+
+  Uint8List? cached(String itemId) => _opened[itemId];
+
+  void forget(String itemId) => _opened.remove(itemId);
+
   Future<Uint8List?> openItem(VaultItem item) async {
+    final ready = _opened[item.itemId];
+    if (ready != null) return ready;
+
     final session = ref.read(vaultSessionProvider);
     if (!session.isUnlocked || item.wrappedDek == null) return null;
 
@@ -460,7 +478,7 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         passcodeKey: session.passcodeKey!,
       );
 
-      return await transfer.decrypt(
+      final plain = await transfer.decrypt(
         ciphertext: ciphertext,
         wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
         saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
@@ -468,6 +486,10 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         passcodeKey: session.passcodeKey!,
         compression: metadata['compression'] as String? ?? 'none',
       );
+
+      if (_opened.length > 4) _opened.remove(_opened.keys.first);
+      _opened[item.itemId] = plain;
+      return plain;
     } catch (_) {
       return null;
     }
