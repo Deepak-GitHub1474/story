@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request, status
 
 from app.api.endpoints.stories import controllers
@@ -13,7 +15,16 @@ from app.core.deps import AI, AppSettings, CurrentClaims, rate_limit_dep
 from app.core.idempotency import remember, replay
 from app.db.mongo import MongoDatabase
 from app.db.redis import RedisClient
+from app.ports.factory import build_storage
+from app.ports.storage import StoragePort
 from app.responses import ok_response
+
+
+def _storage(settings: AppSettings) -> StoragePort:
+    return build_storage(settings)
+
+
+Storage = Annotated[StoragePort, Depends(_storage)]
 
 router = APIRouter(tags=["stories"])
 
@@ -72,15 +83,25 @@ async def get_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabase):
 
 @router.patch("/stories/{story_id}", status_code=status.HTTP_200_OK)
 async def update_story(
-    story_id: str, body: UpdateStoryRequest, claims: CurrentClaims, mongo: MongoDatabase
+    story_id: str,
+    body: UpdateStoryRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    storage: Storage,
 ):
-    data = await controllers.update_story(story_id, body, claims=claims, mongo=mongo)
+    data = await controllers.update_story(
+        story_id, body, claims=claims, mongo=mongo, storage=storage
+    )
     return ok_response("Saved.", data=data)
 
 
 @router.delete("/stories/{story_id}", status_code=status.HTTP_200_OK)
-async def delete_story(story_id: str, claims: CurrentClaims, mongo: MongoDatabase):
-    data = await controllers.delete_story(story_id, claims=claims, mongo=mongo)
+async def delete_story(
+    story_id: str, claims: CurrentClaims, mongo: MongoDatabase, storage: Storage
+):
+    data = await controllers.delete_story(
+        story_id, claims=claims, mongo=mongo, storage=storage
+    )
     return ok_response("Story deleted.", data=data)
 
 

@@ -7,6 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.adapters.ai_gemini import ModerationUnavailable
 from app.api.endpoints.communities import controllers as community_controllers
 from app.api.endpoints.connections import controllers as connection_controllers
+from app.api.endpoints.media.cleanup import drop_unused
 from app.api.endpoints.notifications.service import notify, preview, withdraw
 from app.api.endpoints.stories import constants as c
 from app.api.endpoints.stories.models import (
@@ -28,6 +29,7 @@ from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_storage, utc_now
 from app.ports.ai import ALLOWED, AIPort, StoryReview
+from app.ports.storage import StoragePort
 
 
 def _to_minute(value):
@@ -176,7 +178,12 @@ async def _attach_shared(payloads, docs, mongo) -> list[dict[str, Any]]:
 
 
 async def update_story(
-    story_id: str, body: UpdateStoryRequest, *, claims, mongo: AsyncIOMotorDatabase
+    story_id: str,
+    body: UpdateStoryRequest,
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    storage: StoragePort,
 ) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
 
@@ -201,7 +208,14 @@ async def update_story(
     if story["visibility"] != "draft":
         update["edited_at"] = utc_now()
 
+    dropped = [
+        url for url in story.get("images", []) if url not in (body.images or [])
+    ] if body.images is not None else []
+
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$set": update})
+    if dropped:
+        await drop_unused(dropped, mongo=mongo, storage=storage)
+
     story.update(update)
     return {"story": serialize_story(story, include_body=True)}
 
@@ -384,13 +398,16 @@ async def unpublish_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase)
     return {"story": serialize_story(story, include_body=True)}
 
 
-async def delete_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+async def delete_story(
+    story_id: str, *, claims, mongo: AsyncIOMotorDatabase, storage: StoragePort
+) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
 
     if story["visibility"] != "draft":
         await mongo[c.USERS].update_one({"_id": claims.user_id}, {"$inc": {"counts.stories": -1}})
 
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$set": {"deleted_at": utc_now()}})
+    await drop_unused(story.get("images", []), mongo=mongo, storage=storage)
     return {"deleted": True, "story_id": story_id}
 
 
