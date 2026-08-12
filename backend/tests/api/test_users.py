@@ -247,3 +247,32 @@ async def test_the_new_password_works_and_the_old_one_does_not(client, signup_pa
     )
     assert old.status_code == 401
     assert new.status_code == 200
+
+
+async def test_the_two_extra_themes_are_allowed(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    for name in ("blush", "maroon", "system", "paper", "midnight"):
+        response = await client.patch(
+            "/v1/users/me", json={"prefs": {"theme": name}}, headers=headers
+        )
+        assert response.status_code == 200, name
+        assert response.json()["data"]["user"]["prefs"]["theme"] == name
+
+
+async def test_a_theme_we_do_not_ship_is_refused(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    response = await client.patch(
+        "/v1/users/me", json={"prefs": {"theme": "neon"}}, headers=headers
+    )
+
+    assert response.status_code == 422
+
+
+async def test_a_new_account_starts_on_system(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+
+    user = (await client.get("/v1/auth/me", headers=headers)).json()["data"]["user"]
+
+    assert user["prefs"]["theme"] == "system"

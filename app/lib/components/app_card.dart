@@ -47,6 +47,7 @@ class AppListRow extends StatelessWidget {
     this.onTap,
     this.isDanger = false,
     this.icon,
+    this.leadingWidget,
   });
 
   final String label;
@@ -55,6 +56,7 @@ class AppListRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isDanger;
   final IconData? icon;
+  final Widget? leadingWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +73,10 @@ class AppListRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (icon != null) ...[
+            if (leadingWidget != null) ...[
+              leadingWidget!,
+              const SizedBox(width: AppSpacing.md),
+            ] else if (icon != null) ...[
               Icon(icon, size: AppSizes.iconMd, color: labelColor),
               const SizedBox(width: AppSpacing.md),
             ],

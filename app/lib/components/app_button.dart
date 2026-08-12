@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
-enum AppButtonVariant { primary, secondary, ghost }
+enum AppButtonVariant { primary, secondary, ghost, outline }
 
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -27,15 +27,17 @@ class AppButton extends StatelessWidget {
     final isDisabled = onPressed == null || isLoading;
 
     final background = switch (variant) {
-      AppButtonVariant.primary => colors.accent,
+      AppButtonVariant.primary => colors.accentStrong,
       AppButtonVariant.secondary => colors.surfaceRaised,
       AppButtonVariant.ghost => Colors.transparent,
+      AppButtonVariant.outline => Colors.transparent,
     };
 
     final foreground = switch (variant) {
       AppButtonVariant.primary => colors.accentText,
       AppButtonVariant.secondary => colors.textPrimary,
       AppButtonVariant.ghost => colors.accent,
+      AppButtonVariant.outline => colors.accent,
     };
 
     return Opacity(
@@ -45,7 +47,12 @@ class AppButton extends StatelessWidget {
         height: AppSizes.controlHeight,
         child: Material(
           color: background,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          shape: RoundedRectangleBorder(
+            side: variant == AppButtonVariant.outline
+                ? BorderSide(color: colors.accent)
+                : BorderSide.none,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
           child: InkWell(
             onTap: isDisabled ? null : onPressed,
             borderRadius: BorderRadius.circular(AppRadius.md),

@@ -23,8 +23,8 @@ class ThemeNotifier extends Notifier<String> {
   }
 
   ThemeMode get mode => switch (state) {
-    'midnight' => ThemeMode.dark,
-    'paper' => ThemeMode.light,
+    'midnight' || 'maroon' => ThemeMode.dark,
+    'paper' || 'blush' => ThemeMode.light,
     _ => ThemeMode.system,
   };
 }

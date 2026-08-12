@@ -30,7 +30,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Timer? _debounce;
   bool _tncAccepted = false;
-  bool _obscure = true;
   bool? _usernameAvailable;
   bool _checkingUsername = false;
   String? _usernameError;
@@ -56,7 +55,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       setState(() => _checkingUsername = true);
-      final result = await ref.read(authRepositoryProvider).isUsernameAvailable(value);
+      final result = await ref
+          .read(authRepositoryProvider)
+          .isUsernameAvailable(value);
       if (!mounted) return;
       setState(() {
         _checkingUsername = false;
@@ -119,87 +120,237 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final isBusy = ref.watch(authProvider).isBusy;
 
     return AppScaffold(
-      title: 'Create your account',
-      leading: BackButton(onPressed: () => context.pop()),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pick a name nobody can trace back to you.',
-              style: TextStyle(color: colors.textSecondary, fontSize: AppTypeScale.body),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            AppTextField(
-              controller: _username,
-              label: 'Username',
-              hint: 'quiet_fox',
-              autofocus: true,
-              errorText: _usernameAvailable == false
-                  ? 'That username is already taken.'
-                  : _usernameError,
-              helperText: _usernameAvailable == true ? 'Available.' : null,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9_-]')),
-                LengthLimitingTextInputFormatter(30),
-              ],
-              onChanged: _onUsernameChanged,
-              suffix: _checkingUsername
-                  ? const Padding(
-                      padding: EdgeInsets.all(AppSpacing.lg),
-                      child: SizedBox(
-                        width: AppSizes.iconSm,
-                        height: AppSizes.iconSm,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+      padding: EdgeInsets.zero,
+      alignment: Alignment.topCenter,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 46),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    0,
+                    AppSpacing.xl,
+                    AppSpacing.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Create your account',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 26,
+                          height: 1.15,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    )
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            AppTextField(
-              controller: _password,
-              label: 'Password',
-              obscureText: _obscure,
-              errorText: _passwordError,
-              helperText: 'At least 10 characters. Never recoverable, so keep it safe.',
-              onChanged: (_) => setState(() {}),
-              suffix: IconButton(
-                icon: Icon(
-                  _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: colors.textMuted,
-                  size: AppSizes.iconMd,
+                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        width: 215,
+                        child: Text(
+                          'Pick a name nobody can trace back to you.',
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: AppTypeScale.body,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: () => setState(() => _obscure = !_obscure),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSpacing.sm),
+                      AppTextField(
+                        controller: _username,
+                        label: 'Username',
+                        hint: 'quiet_fox',
+                        prefixIcon: Icons.person_outline,
+                        autofocus: true,
+                        errorText: _usernameAvailable == false
+                            ? 'That username is already taken.'
+                            : _usernameError,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[a-z0-9_-]'),
+                          ),
+                          LengthLimitingTextInputFormatter(30),
+                        ],
+                        onChanged: _onUsernameChanged,
+                        suffix: _usernameMark(colors),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppTextField(
+                        controller: _password,
+                        label: 'Password',
+                        prefixIcon: Icons.lock_outline,
+                        obscureText: true,
+                        errorText: _passwordError,
+                        helperText: 'At least 10 characters.',
+                        helperIcon: Icons.shield_outlined,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      PasswordStrengthBar(password: _password.text),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppTextField(
+                        controller: _referral,
+                        label: 'Referral code (optional)',
+                        hint: 'ABC123',
+                        prefixIcon: Icons.card_giftcard_outlined,
+                        errorText: _referralError,
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[A-Za-z0-9]'),
+                          ),
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      TermsCheckbox(
+                        value: _tncAccepted,
+                        onChanged: (value) =>
+                            setState(() => _tncAccepted = value),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppButton(
+                        label: 'Create account',
+                        isLoading: isBusy,
+                        onPressed: _canSubmit ? _submit : null,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: colors.surfaceRaised,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.lock_outline,
+                              size: AppSizes.iconSm,
+                              color: colors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Your privacy is our priority.',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: AppTypeScale.label,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'No real names. No tracking.',
+                                  style: TextStyle(
+                                    color: colors.textMuted,
+                                    fontSize: AppTypeScale.caption,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 46,
+            right: 0,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/images/bloom.png',
+                width: 176,
+                height: 236,
+                fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            PasswordStrengthBar(password: _password.text),
-            const SizedBox(height: AppSpacing.lg),
-            AppTextField(
-              controller: _referral,
-              label: 'Referral code (optional)',
-              hint: 'ABC123',
-              errorText: _referralError,
-              textInputAction: TextInputAction.done,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                LengthLimitingTextInputFormatter(6),
-              ],
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 46,
+              color: colors.bg,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: AppSpacing.lg),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                icon: Icon(Icons.arrow_back, color: colors.textPrimary),
+                onPressed: () => context.pop(),
+              ),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            TermsCheckbox(
-              value: _tncAccepted,
-              onChanged: (value) => setState(() => _tncAccepted = value),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              label: 'Create account',
-              isLoading: isBusy,
-              onPressed: _canSubmit ? _submit : null,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _usernameMark(AppColors colors) {
+    if (_checkingUsername) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: SizedBox(
+          width: AppSizes.iconSm,
+          height: AppSizes.iconSm,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
+      );
+    }
+
+    if (_usernameAvailable != true) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.lg),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle,
+            size: AppSizes.iconSm,
+            color: colors.success,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            'Available',
+            style: TextStyle(
+              color: colors.success,
+              fontSize: AppTypeScale.label,
+            ),
+          ),
+        ],
       ),
     );
   }

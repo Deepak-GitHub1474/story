@@ -14,14 +14,15 @@ class StoryApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sessionGuardProvider);
 
-    ref.watch(themeProvider);
+    final chosen = ref.watch(themeProvider);
     final mode = ref.read(themeProvider.notifier).mode;
+    final fixed = fixedThemeFor(chosen);
 
     return MaterialApp.router(
       title: 'Story',
       debugShowCheckedModeBanner: false,
-      theme: paperTheme,
-      darkTheme: midnightTheme,
+      theme: fixed ?? paperTheme,
+      darkTheme: fixed ?? midnightTheme,
       themeMode: mode,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) {

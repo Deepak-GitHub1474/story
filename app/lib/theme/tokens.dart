@@ -10,6 +10,7 @@ class AppColors {
     required this.textSecondary,
     required this.textMuted,
     required this.accent,
+    required this.accentStrong,
     required this.accentText,
     required this.danger,
     required this.success,
@@ -23,6 +24,7 @@ class AppColors {
   final Color textSecondary;
   final Color textMuted;
   final Color accent;
+  final Color accentStrong;
   final Color accentText;
   final Color danger;
   final Color success;
@@ -36,23 +38,55 @@ class AppColors {
     textSecondary: Color(0xFFA3AAB8),
     textMuted: Color(0xFF6B7280),
     accent: Color(0xFF9B8CFF),
+    accentStrong: Color(0xFF9B8CFF),
     accentText: Color(0xFF0B0D12),
     danger: Color(0xFFFF8A8A),
     success: Color(0xFF7BD88F),
   );
 
   static const paper = AppColors(
-    bg: Color(0xFFFBFAF7),
+    bg: Color(0xFFF7F8F3),
     surface: Color(0xFFFFFFFF),
-    surfaceRaised: Color(0xFFF3F1EC),
-    border: Color(0xFFE2DFD8),
-    textPrimary: Color(0xFF1B1A17),
-    textSecondary: Color(0xFF57544D),
-    textMuted: Color(0xFF8A867D),
-    accent: Color(0xFF5B4BD6),
+    surfaceRaised: Color(0xFFEFF0EA),
+    border: Color(0xFFDFE1DA),
+    textPrimary: Color(0xFF16161A),
+    textSecondary: Color(0xFF4A4A55),
+    textMuted: Color(0xFF6E6E7A),
+    accent: Color(0xFF6850FF),
+    accentStrong: Color(0xFF6850FF),
     accentText: Color(0xFFFFFFFF),
     danger: Color(0xFFB3261E),
     success: Color(0xFF2E7D45),
+  );
+
+  static const blush = AppColors(
+    bg: Color(0xFFFFF5F7),
+    surface: Color(0xFFFFFFFF),
+    surfaceRaised: Color(0xFFFFE9EE),
+    border: Color(0xFFFFB1C1),
+    textPrimary: Color(0xFF1A1A1A),
+    textSecondary: Color(0xFF5B4A50),
+    textMuted: Color(0xFF8C8C8C),
+    accent: Color(0xFFD6416F),
+    accentStrong: Color(0xFFFF6FA3),
+    accentText: Color(0xFF2A0F1A),
+    danger: Color(0xFFB3261E),
+    success: Color(0xFF2E7D45),
+  );
+
+  static const maroon = AppColors(
+    bg: Color(0xFF1A1114),
+    surface: Color(0xFF241820),
+    surfaceRaised: Color(0xFF2F2029),
+    border: Color(0xFF8E3A59),
+    textPrimary: Color(0xFFF3F0EF),
+    textSecondary: Color(0xFFC9BEC3),
+    textMuted: Color(0xFFA3B0A4),
+    accent: Color(0xFFD06A87),
+    accentStrong: Color(0xFF85223E),
+    accentText: Color(0xFFF1E2E5),
+    danger: Color(0xFFFF8A8A),
+    success: Color(0xFF7BD88F),
   );
 }
 

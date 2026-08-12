@@ -54,6 +54,8 @@ class SettingsScreen extends ConsumerWidget {
                       value: switch (theme) {
                         'midnight' => 'Dark',
                         'paper' => 'Light',
+                        'blush' => 'Blush pink',
+                        'maroon' => 'Maroon',
                         _ => 'System',
                       },
                       icon: Icons.contrast_outlined,
@@ -230,12 +232,17 @@ class SettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final option in const [
-              ('system', 'System'),
-              ('midnight', 'Dark'),
-              ('paper', 'Light'),
+              ('system', 'System', null),
+              ('paper', 'Light', null),
+              ('midnight', 'Dark', null),
+              ('blush', 'Blush pink', AppColors.blush),
+              ('maroon', 'Maroon', AppColors.maroon),
             ])
               AppListRow(
                 label: option.$2,
+                leadingWidget: option.$3 == null
+                    ? null
+                    : _Swatch(colors: option.$3!),
                 trailing: current == option.$1
                     ? Icon(Icons.check, color: colors.accent, size: AppSizes.iconMd)
                     : null,
@@ -286,4 +293,28 @@ class SettingsScreen extends ConsumerWidget {
     AppToast.show(context, 'Signed out.');
     context.go(Routes.welcome);
   }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: AppSizes.iconMd,
+    height: AppSizes.iconMd,
+    decoration: BoxDecoration(
+      color: colors.bg,
+      shape: BoxShape.circle,
+      border: Border.all(color: colors.border, width: 2),
+    ),
+    child: Center(
+      child: Container(
+        width: AppSizes.iconMd / 2.4,
+        height: AppSizes.iconMd / 2.4,
+        decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
+      ),
+    ),
+  );
 }

@@ -12,17 +12,36 @@ Future<T?> showAppSheet<T>({
     horizontal: AppSpacing.xl,
   ),
   Widget? footer,
+  bool isResizable = false,
+  double initialSize = 0.62,
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: isScrollControlled,
   useRootNavigator: true,
   backgroundColor: Colors.transparent,
-  builder: (sheetContext) => AppSheet(
-    title: title,
-    contentPadding: contentPadding,
-    footer: footer,
-    child: builder(sheetContext),
-  ),
+  builder: (sheetContext) => isResizable
+      ? DraggableScrollableSheet(
+          initialChildSize: initialSize,
+          minChildSize: 0.32,
+          maxChildSize: 0.94,
+          expand: false,
+          snap: true,
+          snapSizes: [initialSize],
+          shouldCloseOnMinExtent: true,
+          builder: (context, scrollController) => AppSheet(
+            title: title,
+            contentPadding: contentPadding,
+            footer: footer,
+            scrollController: scrollController,
+            child: builder(sheetContext),
+          ),
+        )
+      : AppSheet(
+          title: title,
+          contentPadding: contentPadding,
+          footer: footer,
+          child: builder(sheetContext),
+        ),
 );
 
 class AppSheet extends StatelessWidget {
@@ -32,23 +51,28 @@ class AppSheet extends StatelessWidget {
     this.title,
     this.contentPadding = EdgeInsets.zero,
     this.footer,
+    this.scrollController,
   });
 
   final Widget child;
   final String? title;
   final EdgeInsets contentPadding;
   final Widget? footer;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final media = MediaQuery.of(context);
+    final isResizable = scrollController != null;
 
     return Container(
-      constraints: BoxConstraints(
-        minHeight: media.size.height * 0.28,
-        maxHeight: media.size.height * 0.88,
-      ),
+      constraints: isResizable
+          ? null
+          : BoxConstraints(
+              minHeight: media.size.height * 0.28,
+              maxHeight: media.size.height * 0.88,
+            ),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: const BorderRadius.vertical(
@@ -57,7 +81,7 @@ class AppSheet extends StatelessWidget {
         border: Border(top: BorderSide(color: colors.border)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isResizable ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
@@ -89,6 +113,7 @@ class AppSheet extends StatelessWidget {
             ),
           Flexible(
             child: SingleChildScrollView(
+              controller: scrollController,
               padding: contentPadding.copyWith(
                 bottom: footer != null
                     ? AppSpacing.lg

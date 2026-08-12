@@ -20,6 +20,8 @@ class AppTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.suffix,
+    this.prefixIcon,
+    this.helperIcon,
     this.maxLines = 1,
   });
 
@@ -36,6 +38,8 @@ class AppTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Widget? suffix;
+  final IconData? prefixIcon;
+  final IconData? helperIcon;
   final int maxLines;
 
   @override
@@ -93,13 +97,29 @@ class _AppTextFieldState extends State<AppTextField> {
           style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
           decoration: InputDecoration(
             hintText: widget.hint,
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.lg,
+                      right: AppSpacing.md,
+                    ),
+                    child: Icon(
+                      widget.prefixIcon,
+                      size: AppSizes.iconMd,
+                      color: colors.textMuted,
+                    ),
+                  ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
             hintStyle: TextStyle(color: colors.textMuted),
             filled: true,
             fillColor: colors.surface,
             suffixIcon: suffix,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.lg,
+            contentPadding: EdgeInsets.only(
+              left: widget.prefixIcon == null ? AppSpacing.lg : 0,
+              right: AppSpacing.lg,
+              top: AppSpacing.lg,
+              bottom: AppSpacing.lg,
             ),
             enabledBorder: _border(hasError ? colors.danger : colors.border),
             focusedBorder: _border(hasError ? colors.danger : colors.accent, width: 1.6),
@@ -108,13 +128,29 @@ class _AppTextFieldState extends State<AppTextField> {
         ),
         if (hasError ||
             (widget.helperText != null && widget.helperText!.isNotEmpty)) ...[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            hasError ? widget.errorText! : widget.helperText!,
-            style: TextStyle(
-              color: hasError ? colors.danger : colors.textMuted,
-              fontSize: AppTypeScale.caption,
-            ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.helperIcon != null && !hasError) ...[
+                Icon(
+                  widget.helperIcon,
+                  size: AppSizes.iconSm,
+                  color: colors.textMuted,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
+              Expanded(
+                child: Text(
+                  hasError ? widget.errorText! : widget.helperText!,
+                  style: TextStyle(
+                    color: hasError ? colors.danger : colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ],

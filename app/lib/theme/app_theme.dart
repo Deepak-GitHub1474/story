@@ -10,6 +10,8 @@ class AppTheme extends ThemeExtension<AppTheme> {
 
   static const midnight = AppTheme(colors: AppColors.midnight);
   static const paper = AppTheme(colors: AppColors.paper);
+  static const blush = AppTheme(colors: AppColors.blush);
+  static const maroon = AppTheme(colors: AppColors.maroon);
 
   @override
   AppTheme copyWith({AppColors? colors}) => AppTheme(colors: colors ?? this.colors);
@@ -43,6 +45,9 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
       displayColor: colors.textPrimary,
     ),
     splashFactory: NoSplash.splashFactory,
+    splashColor: Colors.transparent,
+    highlightColor: Colors.transparent,
+    hoverColor: Colors.transparent,
     appBarTheme: AppBarTheme(
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -68,3 +73,13 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
 ThemeData get midnightTheme => buildTheme(AppColors.midnight, Brightness.dark);
 
 ThemeData get paperTheme => buildTheme(AppColors.paper, Brightness.light);
+
+ThemeData get blushTheme => buildTheme(AppColors.blush, Brightness.light);
+
+ThemeData get maroonTheme => buildTheme(AppColors.maroon, Brightness.dark);
+
+ThemeData? fixedThemeFor(String name) => switch (name) {
+  'blush' => blushTheme,
+  'maroon' => maroonTheme,
+  _ => null,
+};

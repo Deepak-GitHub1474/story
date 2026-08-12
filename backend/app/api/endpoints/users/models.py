@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class PrefsPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    theme: Literal["system", "midnight", "paper"] | None = None
+    theme: Literal["system", "midnight", "paper", "blush", "maroon"] | None = None
     reading_size: Literal["reading", "readingLg"] | None = None
     notify_in_app: bool | None = None
     notify_email: bool | None = None
