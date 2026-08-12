@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
-class AppTextField extends StatelessWidget {
+class AppTextField extends StatefulWidget {
   const AppTextField({
     super.key,
     required this.controller,
@@ -39,15 +39,38 @@ class AppTextField extends StatelessWidget {
   final int maxLines;
 
   @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  bool _isRevealed = false;
+
+  Widget _revealButton(BuildContext context) {
+    final colors = context.colors;
+
+    return IconButton(
+      icon: Icon(
+        _isRevealed ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: colors.textMuted,
+        size: 20,
+      ),
+      tooltip: _isRevealed ? 'Hide' : 'Show',
+      onPressed: () => setState(() => _isRevealed = !_isRevealed),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final hasError = errorText != null && errorText!.isNotEmpty;
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    final suffix = widget.suffix ??
+        (widget.obscureText ? _revealButton(context) : null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          widget.label,
           style: TextStyle(
             color: colors.textSecondary,
             fontSize: AppTypeScale.label,
@@ -56,20 +79,20 @@ class AppTextField extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         TextField(
-          controller: controller,
-          obscureText: obscureText,
-          maxLines: obscureText ? 1 : maxLines,
-          autofocus: autofocus,
-          textInputAction: textInputAction,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
+          controller: widget.controller,
+          obscureText: widget.obscureText && !_isRevealed,
+          maxLines: widget.obscureText ? 1 : widget.maxLines,
+          autofocus: widget.autofocus,
+          textInputAction: widget.textInputAction,
+          keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
+          onChanged: widget.onChanged,
+          onSubmitted: widget.onSubmitted,
           autocorrect: false,
-          enableSuggestions: !obscureText,
+          enableSuggestions: !widget.obscureText,
           style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: widget.hint,
             hintStyle: TextStyle(color: colors.textMuted),
             filled: true,
             fillColor: colors.surface,
@@ -83,10 +106,11 @@ class AppTextField extends StatelessWidget {
             border: _border(colors.border),
           ),
         ),
-        if (hasError || (helperText != null && helperText!.isNotEmpty)) ...[
+        if (hasError ||
+            (widget.helperText != null && widget.helperText!.isNotEmpty)) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
-            hasError ? errorText! : helperText!,
+            hasError ? widget.errorText! : widget.helperText!,
             style: TextStyle(
               color: hasError ? colors.danger : colors.textMuted,
               fontSize: AppTypeScale.caption,

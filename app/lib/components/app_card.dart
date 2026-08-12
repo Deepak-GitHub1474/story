@@ -107,9 +107,9 @@ class AppListRow extends StatelessWidget {
 }
 
 class AppSection extends StatelessWidget {
-  const AppSection({super.key, required this.title, required this.children});
+  const AppSection({super.key, this.title, required this.children});
 
-  final String title;
+  final String? title;
   final List<Widget> children;
 
   @override
@@ -119,22 +119,25 @@ class AppSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.xs,
-            bottom: AppSpacing.sm,
-            top: AppSpacing.xl,
-          ),
-          child: Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              color: colors.textMuted,
-              fontSize: AppTypeScale.caption,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.2,
+        if (title != null)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+              top: AppSpacing.xl,
             ),
-          ),
-        ),
+            child: Text(
+              title!.toUpperCase(),
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: AppTypeScale.caption,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.2,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: AppSpacing.xl),
         Container(
           decoration: BoxDecoration(
             color: colors.surface,
