@@ -30,7 +30,8 @@ class VaultScreen extends ConsumerStatefulWidget {
   ConsumerState<VaultScreen> createState() => _VaultScreenState();
 }
 
-class _VaultScreenState extends ConsumerState<VaultScreen> {
+class _VaultScreenState extends ConsumerState<VaultScreen>
+    with WidgetsBindingObserver {
   final _passcode = TextEditingController();
   final _label = TextEditingController();
 
@@ -39,21 +40,41 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   String? _chosenVaultId;
   VaultItem? _found;
   String? _kindFilter;
+  bool _isPickingFile = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SecureScreen.enable();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     SecureScreen.disable();
     _passcode.dispose();
     _label.dispose();
-    ref.read(vaultSessionProvider.notifier).lock();
     super.dispose();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_isPickingFile) _lockNow();
+  }
+
+  void _lockNow() {
+    if (!ref.read(vaultSessionProvider).isUnlocked) return;
+    ref.read(vaultSessionProvider.notifier).lock();
+    if (mounted) setState(() => _found = null);
+  }
+
+  Widget _guarded(Widget child) => PopScope(
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) _lockNow();
+    },
+    child: child,
+  );
 
   Future<void> _unlock() async {
     setState(() {
@@ -97,7 +118,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       context,
       ok
           ? 'Renamed to $name.'
-          : ref.read(vaultSessionProvider).error ?? 'Could not rename that vault.',
+          : ref.read(vaultSessionProvider).error ??
+                'Could not rename that vault.',
       kind: ok ? AppToastKind.success : AppToastKind.error,
     );
   }
@@ -116,9 +138,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     if (!sure || !mounted) return;
 
-    final ok = await ref.read(vaultSessionProvider.notifier).deleteVault(
-      vault.passcodeId,
-    );
+    final ok = await ref
+        .read(vaultSessionProvider.notifier)
+        .deleteVault(vault.passcodeId);
 
     if (!mounted) return;
     ref.invalidate(vaultOverviewProvider);
@@ -128,7 +150,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       context,
       ok
           ? '${vault.label} deleted.'
-          : ref.read(vaultSessionProvider).error ?? 'Could not delete that vault.',
+          : ref.read(vaultSessionProvider).error ??
+                'Could not delete that vault.',
       kind: ok ? AppToastKind.success : AppToastKind.error,
     );
   }
@@ -211,7 +234,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   }
 
   Future<void> _addFile() async {
+    _isPickingFile = true;
     final file = await FilePicking.pick();
+    _isPickingFile = false;
     if (file == null || !mounted) return;
 
     final kind = detectKind(file.bytes, file.name);
@@ -242,12 +267,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     if (!mounted) return;
 
-    final ok = await ref.read(vaultUploadProvider.notifier).addFile(
-      bytes: file.bytes,
-      filename: file.name,
-      kind: kind,
-      label: label,
-    );
+    final ok = await ref
+        .read(vaultUploadProvider.notifier)
+        .addFile(
+          bytes: file.bytes,
+          filename: file.name,
+          kind: kind,
+          label: label,
+        );
 
     if (!mounted) return;
     AppToast.show(
@@ -278,7 +305,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       final drop = await confirmAction(
         context,
         title: 'This one cannot be opened',
-        body: 'It was locked with keys that no longer exist, so nothing can '
+        body:
+            'It was locked with keys that no longer exist, so nothing can '
             'read it now. Removing it frees the space it is using.',
         confirmLabel: 'Remove it',
         cancelLabel: 'Keep it',
@@ -309,7 +337,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   }
 
   Future<void> _searchHidden() async {
-    final hash = await ref.read(vaultSessionProvider.notifier).hashLabel(_label.text);
+    final hash = await ref
+        .read(vaultSessionProvider.notifier)
+        .hashLabel(_label.text);
     if (hash == null || !mounted) return;
 
     final result = await ref.read(vaultRepositoryProvider).findByLabel(hash);
@@ -331,115 +361,119 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final chosenId = _chosenVaultId ?? vaults.firstOrNull?.passcodeId;
 
     if (!session.isUnlocked) {
-      return AppScaffold(
-        title: 'Vault',
-        leading: BackButton(onPressed: () => context.pop()),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  border: Border.all(color: colors.border),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Text(
-                  'Your vault passcode opens this vault. We never receive it, so nobody '
-                  'here can open your files.',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.label,
-                    height: 1.55,
+      return _guarded(
+        AppScaffold(
+          title: 'Vault',
+          leading: BackButton(onPressed: () => context.pop()),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    border: Border.all(color: colors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Text(
+                    'Your vault passcode opens this vault. We never receive it, so nobody '
+                    'here can open your files.',
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: AppTypeScale.label,
+                      height: 1.55,
+                    ),
                   ),
                 ),
-              ),
-              if (vaults.length > 1) ...[
+                if (vaults.length > 1) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'Which vault',
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.caption,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (final entry in vaults)
+                        _VaultChip(
+                          label: entry.label,
+                          isChosen: entry.passcodeId == chosenId,
+                          onTap: () =>
+                              setState(() => _chosenVaultId = entry.passcodeId),
+                        ),
+                    ],
+                  ),
+                ],
+                if (vaults.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  AppTextField(
+                    controller: _passcode,
+                    label: 'Vault passcode',
+                    obscureText: true,
+                    errorText: _error,
+                    textInputAction: TextInputAction.done,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'Which vault',
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.6,
+                if (vaults.isNotEmpty)
+                  AppButton(
+                    label: 'Unlock',
+                    isLoading: _isBusy,
+                    onPressed: _passcode.text.isEmpty ? null : _unlock,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: [
-                    for (final entry in vaults)
-                      _VaultChip(
-                        label: entry.label,
-                        isChosen: entry.passcodeId == chosenId,
-                        onTap: () =>
-                            setState(() => _chosenVaultId = entry.passcodeId),
+                if (vaults.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    'Your vaults',
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.caption,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final vault in vaults)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        vault.label,
+                        style: TextStyle(color: colors.textPrimary),
                       ),
-                  ],
-                ),
-              ],
-              if (vaults.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xl),
-                AppTextField(
-                  controller: _passcode,
-                  label: 'Vault passcode',
-                  obscureText: true,
-                  errorText: _error,
-                  textInputAction: TextInputAction.done,
-                  onChanged: (_) => setState(() {}),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.xl),
-              if (vaults.isNotEmpty)
-                AppButton(
-                  label: 'Unlock',
-                  isLoading: _isBusy,
-                  onPressed: _passcode.text.isEmpty ? null : _unlock,
-                ),
-              if (vaults.isNotEmpty) ...[
+                      trailing: IconButton(
+                        icon: Icon(Icons.more_horiz, color: colors.textMuted),
+                        onPressed: () => _manageVault(vault),
+                      ),
+                    ),
+                  Text(
+                    'Forgotten a passcode? Deleting that vault is the only way '
+                    'back, and its files go with it.',
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.caption,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'Your vaults',
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: AppTypeScale.caption,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                for (final vault in vaults)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      vault.label,
-                      style: TextStyle(color: colors.textPrimary),
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.more_horiz, color: colors.textMuted),
-                      onPressed: () => _manageVault(vault),
-                    ),
-                  ),
-                Text(
-                  'Forgotten a passcode? Deleting that vault is the only way '
-                  'back, and its files go with it.',
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: AppTypeScale.caption,
-                    height: 1.5,
-                  ),
+                AppButton(
+                  label: vaults.isEmpty
+                      ? 'Create your vault'
+                      : 'Create new vault',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: _newVault,
                 ),
               ],
-              const SizedBox(height: AppSpacing.xxl),
-              AppButton(
-                label: vaults.isEmpty ? 'Create your vault' : 'Create new vault',
-                variant: AppButtonVariant.secondary,
-                onPressed: _newVault,
-              ),
-            ],
+            ),
           ),
         ),
       );
@@ -448,160 +482,161 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final items = ref.watch(vaultItemsProvider);
     final upload = ref.watch(vaultUploadProvider);
 
-    return AppScaffold(
-      title: session.label ?? 'Vault',
-      leading: BackButton(
-        onPressed: () {
-          ref.read(vaultSessionProvider.notifier).lock();
-          context.pop();
-        },
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.add, color: colors.textPrimary),
-          onPressed: upload.isBusy ? null : _addFile,
-        ),
-        IconButton(
-          icon: Icon(Icons.create_new_folder_outlined, color: colors.textMuted),
-          onPressed: upload.isBusy ? null : _newVault,
-        ),
-        IconButton(
-          icon: Icon(Icons.lock_outline, color: colors.textMuted),
-          onPressed: () {
-            ref.read(vaultSessionProvider.notifier).lock();
-            setState(() => _found = null);
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.key_outlined, color: colors.textMuted),
-          onPressed: upload.isBusy ? null : _changePasscode,
-        ),
-        IconButton(
-          icon: Icon(Icons.help_outline, color: colors.textMuted),
-          onPressed: () => context.push(Routes.vaultRecovery),
-        ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (upload.isBusy || upload.canRetry) ...[
-            _UploadCard(
-              state: upload,
-              onRetry: () => ref.read(vaultUploadProvider.notifier).retry(),
-              onDismiss: () => ref.read(vaultUploadProvider.notifier).dismiss(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          if (overview.valueOrNull != null)
-            AppCard(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${overview.value!.itemCount} items · '
-                      '${(overview.value!.usedBytes / 1048576).toStringAsFixed(1)} MB used',
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: AppTypeScale.label,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: AppSpacing.lg),
-          AppTextField(
-            controller: _label,
-            label: 'Find a sealed file',
-            hint: 'Type its secret word',
-            helperText: 'Exact match, capitals included. Sealed files are in no list.',
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _searchHidden(),
+    return _guarded(
+      AppScaffold(
+        title: session.label ?? 'Vault',
+        leading: BackButton(onPressed: () => context.pop()),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add, color: colors.textPrimary),
+            onPressed: upload.isBusy ? null : _addFile,
           ),
-          if (_found != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            VaultTile(
-              item: _found!,
-              isHiddenResult: true,
-              onTap: () => _openItem(_found!),
-              onRemove: () => _removeItem(_found!),
+          IconButton(
+            icon: Icon(
+              Icons.create_new_folder_outlined,
+              color: colors.textMuted,
             ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          _KindTabs(
-            selected: _kindFilter,
-            onSelect: (kind) => setState(() => _kindFilter = kind),
+            onPressed: upload.isBusy ? null : _newVault,
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(
-            child: items.when(
-              loading: () => const SkeletonList(count: 4),
-              error: (error, _) => Center(
-                child: Text(
-                  'Could not load your vault.',
-                  style: TextStyle(color: colors.textSecondary),
-                ),
-              ),
-              data: (list) {
-                final shown = _kindFilter == null
-                    ? list
-                    : list.where((item) => item.kind == _kindFilter).toList();
-                return shown.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lock_outline,
-                              size: 44,
-                              color: colors.textMuted,
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            Text(
-                              'Nothing stored yet',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: AppTypeScale.heading,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Photos, videos, and PDFs. Each one is encrypted on '
-                              'this device before it leaves. We receive ciphertext '
-                              'and no filename.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: colors.textSecondary,
-                                fontSize: AppTypeScale.body,
-                                height: 1.6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      itemCount: shown.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) => VaultTile(
-                        item: shown[index],
-                        onTap: () => _openItem(shown[index]),
-                        onRemove: () => _removeItem(shown[index]),
-                      ),
-                    );
-              },
-            ),
+          IconButton(
+            icon: Icon(Icons.lock_outline, color: colors.textMuted),
+            onPressed: () {
+              ref.read(vaultSessionProvider.notifier).lock();
+              setState(() => _found = null);
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.key_outlined, color: colors.textMuted),
+            onPressed: upload.isBusy ? null : _changePasscode,
+          ),
+          IconButton(
+            icon: Icon(Icons.help_outline, color: colors.textMuted),
+            onPressed: () => context.push(Routes.vaultRecovery),
           ),
         ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (upload.isBusy || upload.canRetry) ...[
+              _UploadCard(
+                state: upload,
+                onRetry: () => ref.read(vaultUploadProvider.notifier).retry(),
+                onDismiss: () =>
+                    ref.read(vaultUploadProvider.notifier).dismiss(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            if (overview.valueOrNull != null)
+              AppCard(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${overview.value!.itemCount} items · '
+                        '${(overview.value!.usedBytes / 1048576).toStringAsFixed(1)} MB used',
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: AppTypeScale.label,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppSpacing.lg),
+            AppTextField(
+              controller: _label,
+              label: 'Find a sealed file',
+              hint: 'Type its secret word',
+              helperText:
+                  'Exact match, capitals included. Sealed files are in no list.',
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _searchHidden(),
+            ),
+            if (_found != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              VaultTile(
+                item: _found!,
+                isHiddenResult: true,
+                onTap: () => _openItem(_found!),
+                onRemove: () => _removeItem(_found!),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            _KindTabs(
+              selected: _kindFilter,
+              onSelect: (kind) => setState(() => _kindFilter = kind),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Expanded(
+              child: items.when(
+                loading: () => const SkeletonList(count: 4),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Could not load your vault.',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ),
+                data: (list) {
+                  final shown = _kindFilter == null
+                      ? list
+                      : list.where((item) => item.kind == _kindFilter).toList();
+                  return shown.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.lock_outline,
+                                  size: 44,
+                                  color: colors.textMuted,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  'Nothing stored yet',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: AppTypeScale.heading,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  'Photos, videos, and PDFs. Each one is encrypted on '
+                                  'this device before it leaves. We receive ciphertext '
+                                  'and no filename.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: AppTypeScale.body,
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: shown.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: AppSpacing.md),
+                          itemBuilder: (context, index) => VaultTile(
+                            item: shown[index],
+                            onTap: () => _openItem(shown[index]),
+                            onRemove: () => _removeItem(shown[index]),
+                          ),
+                        );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
 
 class _HideSheet extends StatefulWidget {
   const _HideSheet({required this.filename});
@@ -681,7 +716,8 @@ class _HideSheetState extends State<_HideSheet> {
               controller: _label,
               label: 'Secret word',
               hint: 'Something only you would type',
-              helperText: 'Case matters. Forget it and the file is gone for good.',
+              helperText:
+                  'Case matters. Forget it and the file is gone for good.',
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
@@ -689,14 +725,14 @@ class _HideSheetState extends State<_HideSheet> {
             label: 'Store in vault',
             onPressed: _isHidden && _label.text.trim().isEmpty
                 ? null
-                : () => Navigator.of(context).pop(_isHidden ? _label.text : null),
+                : () =>
+                      Navigator.of(context).pop(_isHidden ? _label.text : null),
           ),
         ],
       ),
     );
   }
 }
-
 
 class _KindTabs extends StatelessWidget {
   const _KindTabs({required this.selected, required this.onSelect});
@@ -913,7 +949,6 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
   }
 }
 
-
 String _readableSize(int bytes) {
   if (bytes >= 1048576) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
   if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
@@ -1052,8 +1087,9 @@ class _RenameSheet extends StatefulWidget {
 }
 
 class _RenameSheetState extends State<_RenameSheet> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.current);
+  late final TextEditingController _name = TextEditingController(
+    text: widget.current,
+  );
 
   @override
   void dispose() {
@@ -1100,8 +1136,9 @@ class _RenameSheetState extends State<_RenameSheet> {
           const SizedBox(height: AppSpacing.xl),
           AppButton(
             label: 'Save name',
-            onPressed:
-                name.isEmpty ? null : () => Navigator.of(context).pop(name),
+            onPressed: name.isEmpty
+                ? null
+                : () => Navigator.of(context).pop(name),
           ),
         ],
       ),
@@ -1133,7 +1170,8 @@ class _ChangePasscodeSheetState extends State<_ChangePasscodeSheet> {
   void _save() {
     if (!isStrongPasscode(_passcode.text)) {
       setState(
-        () => _error = 'Use at least $passcodeMinLength characters, with '
+        () => _error =
+            'Use at least $passcodeMinLength characters, with '
             'letters as well as numbers.',
       );
       return;
@@ -1149,8 +1187,7 @@ class _ChangePasscodeSheetState extends State<_ChangePasscodeSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final insets = MediaQuery.of(context).viewInsets.bottom;
-    final isReady =
-        _passcode.text.isNotEmpty && _confirm.text.isNotEmpty;
+    final isReady = _passcode.text.isNotEmpty && _confirm.text.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
