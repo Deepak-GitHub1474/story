@@ -77,6 +77,96 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
+  Future<void> _renameVault(VaultPasscode vault) async {
+    final name = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
+      context: context,
+      title: 'Rename vault',
+      builder: (sheetContext) => _RenameSheet(current: vault.label),
+    );
+
+    if (name == null || !mounted || name == vault.label) return;
+
+    final ok = await ref
+        .read(vaultSessionProvider.notifier)
+        .renameVault(passcodeId: vault.passcodeId, label: name);
+
+    if (!mounted) return;
+    ref.invalidate(vaultOverviewProvider);
+    AppToast.show(
+      context,
+      ok
+          ? 'Renamed to $name.'
+          : ref.read(vaultSessionProvider).error ?? 'Could not rename that vault.',
+      kind: ok ? AppToastKind.success : AppToastKind.error,
+    );
+  }
+
+  Future<void> _deleteVault(VaultPasscode vault) async {
+    final sure = await confirmAction(
+      context,
+      title: 'Delete ${vault.label}?',
+      body: 'Everything kept in this vault goes with it.',
+      confirmLabel: 'Delete vault',
+      consequences: const [
+        'Every file in it is erased from storage.',
+        'This cannot be undone, even by us.',
+      ],
+    );
+
+    if (!sure || !mounted) return;
+
+    final ok = await ref.read(vaultSessionProvider.notifier).deleteVault(
+      vault.passcodeId,
+    );
+
+    if (!mounted) return;
+    ref.invalidate(vaultOverviewProvider);
+    ref.invalidate(vaultItemsProvider);
+    if (ok) setState(() => _chosenVaultId = null);
+    AppToast.show(
+      context,
+      ok
+          ? '${vault.label} deleted.'
+          : ref.read(vaultSessionProvider).error ?? 'Could not delete that vault.',
+      kind: ok ? AppToastKind.success : AppToastKind.error,
+    );
+  }
+
+  Future<void> _manageVault(VaultPasscode vault) async {
+    final colors = context.colors;
+
+    await showAppSheet<void>(
+      contentPadding: EdgeInsets.zero,
+      context: context,
+      title: vault.label,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+              title: const Text('Rename'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _renameVault(vault);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: colors.danger),
+              title: Text('Delete', style: TextStyle(color: colors.danger)),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _deleteVault(vault);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _newVault() async {
     final created = await showAppSheet<bool>(
       contentPadding: EdgeInsets.zero,
@@ -277,6 +367,40 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 isLoading: _isBusy,
                 onPressed: _passcode.text.isEmpty ? null : _unlock,
               ),
+              if (vaults.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xxl),
+                Text(
+                  'Your vaults',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final vault in vaults)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      vault.label,
+                      style: TextStyle(color: colors.textPrimary),
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.more_horiz, color: colors.textMuted),
+                      onPressed: () => _manageVault(vault),
+                    ),
+                  ),
+                Text(
+                  'Forgotten a passcode? Deleting that vault is the only way '
+                  'back, and its files go with it.',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: AppTypeScale.caption,
+                    height: 1.5,
+                  ),
+                ),
+              ],
               if (overview.valueOrNull?.hasPasscode == false) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Text(
@@ -712,7 +836,8 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final insets = MediaQuery.of(context).viewInsets.bottom;
-    final isReady = _name.text.trim().isNotEmpty && _passcode.text.length >= 8;
+    final isReady =
+        _name.text.trim().isNotEmpty && isStrongPasscode(_passcode.text);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -885,6 +1010,73 @@ class _UploadCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RenameSheet extends StatefulWidget {
+  const _RenameSheet({required this.current});
+
+  final String current;
+
+  @override
+  State<_RenameSheet> createState() => _RenameSheetState();
+}
+
+class _RenameSheetState extends State<_RenameSheet> {
+  late final TextEditingController _name =
+      TextEditingController(text: widget.current);
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final insets = MediaQuery.of(context).viewInsets.bottom;
+    final name = _name.text.trim();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl + insets,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'The name is only a label. Your passcode and files stay exactly '
+            'as they are.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppTextField(
+            controller: _name,
+            label: 'Vault name',
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) {
+              if (name.isNotEmpty) Navigator.of(context).pop(name);
+            },
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Save name',
+            onPressed:
+                name.isEmpty ? null : () => Navigator.of(context).pop(name),
+          ),
         ],
       ),
     );

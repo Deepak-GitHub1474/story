@@ -44,6 +44,21 @@ class VaultRepository {
         VaultPasscode.fromJson(Map<String, dynamic>.from(data['passcode'] as Map)),
   );
 
+  Future<Result<VaultPasscode>> renameVault({
+    required String passcodeId,
+    required String label,
+  }) => _client.patch(
+    Endpoints.vaultPasscode(passcodeId),
+    body: {'label': label},
+    parse: (data) =>
+        VaultPasscode.fromJson(Map<String, dynamic>.from(data['passcode'] as Map)),
+  );
+
+  Future<Result<int>> deleteVault(String passcodeId) => _client.delete(
+    Endpoints.vaultPasscode(passcodeId),
+    parse: (data) => data['items_removed'] as int? ?? 0,
+  );
+
   Future<Result<List<VaultItem>>> items({String? passcodeId}) => _client.get(
     Endpoints.vaultItems,
     query: passcodeId == null ? null : {'passcode_id': passcodeId},

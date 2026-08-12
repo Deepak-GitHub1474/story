@@ -32,6 +32,12 @@ class CreatePasscodeRequest(BaseModel):
     hint: Annotated[str, Field(max_length=512)] | None = None
 
 
+class RenameVaultRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: Annotated[str, Field(min_length=1, max_length=40)]
+
+
 class CreateItemRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

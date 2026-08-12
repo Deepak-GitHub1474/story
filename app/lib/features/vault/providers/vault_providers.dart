@@ -48,6 +48,15 @@ class VaultSession {
   final String? error;
 
   bool get isUnlocked => state == VaultLockState.unlocked && umk != null;
+
+  VaultSession copyWith({String? label, String? error}) => VaultSession(
+    state: state,
+    umk: umk,
+    passcodeKey: passcodeKey,
+    passcodeId: passcodeId,
+    label: label ?? this.label,
+    error: error,
+  );
 }
 
 final vaultSessionProvider = NotifierProvider<VaultSessionNotifier, VaultSession>(
@@ -237,6 +246,35 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     );
 
     return result.valueOrNull != null;
+  }
+
+  Future<bool> renameVault({
+    required String passcodeId,
+    required String label,
+  }) async {
+    final result = await _repository.renameVault(
+      passcodeId: passcodeId,
+      label: label,
+    );
+
+    if (result.valueOrNull == null) {
+      state = state.copyWith(error: result.failureOrNull?.message);
+      return false;
+    }
+
+    if (state.passcodeId == passcodeId) state = state.copyWith(label: label);
+    return true;
+  }
+
+  Future<bool> deleteVault(String passcodeId) async {
+    final result = await _repository.deleteVault(passcodeId);
+    if (!result.isSuccess) {
+      state = state.copyWith(error: result.failureOrNull?.message);
+      return false;
+    }
+
+    if (state.passcodeId == passcodeId) lock();
+    return true;
   }
 
   Future<String?> hashLabel(String label) async {

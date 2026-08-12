@@ -8,6 +8,7 @@ from app.api.endpoints.vault.models import (
     CreateItemRequest,
     CreatePasscodeRequest,
     InitKeysRequest,
+    RenameVaultRequest,
     SearchRequest,
     UpdateItemRequest,
 )
@@ -55,6 +56,30 @@ async def list_passcodes(claims: CurrentClaims, mongo: MongoDatabase):
 async def create_passcode(body: CreatePasscodeRequest, claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.create_passcode(body, claims=claims, mongo=mongo)
     return ok_response("Passcode created.", data=data)
+
+
+@router.patch("/vault/passcodes/{passcode_id}", status_code=status.HTTP_200_OK)
+async def rename_vault(
+    passcode_id: str,
+    body: RenameVaultRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+):
+    data = await controllers.rename_vault(passcode_id, body, claims=claims, mongo=mongo)
+    return ok_response("Vault renamed.", data=data)
+
+
+@router.delete("/vault/passcodes/{passcode_id}", status_code=status.HTTP_200_OK)
+async def delete_vault(
+    passcode_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    storage: Storage,
+):
+    data = await controllers.delete_vault(
+        passcode_id, claims=claims, mongo=mongo, storage=storage
+    )
+    return ok_response("Vault deleted.", data=data)
 
 
 @router.get("/vault/items", status_code=status.HTTP_200_OK)

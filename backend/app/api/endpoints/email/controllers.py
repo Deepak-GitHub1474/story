@@ -233,7 +233,6 @@ async def complete_reset(
             }
         },
     )
-    await mongo[USER_KEYS].update_one({"_id": user_id}, {"$inc": {"umk_version": 1}}, upsert=True)
 
     families = await redis.smembers(keys.user_sessions(user_id))
     for family_id in families:

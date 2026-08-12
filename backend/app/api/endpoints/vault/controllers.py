@@ -9,6 +9,7 @@ from app.api.endpoints.vault.models import (
     CreateItemRequest,
     CreatePasscodeRequest,
     InitKeysRequest,
+    RenameVaultRequest,
     UpdateItemRequest,
 )
 from app.config import Settings
@@ -120,6 +121,61 @@ async def create_passcode(
             "created_at": to_wire(now),
         }
     }
+
+
+async def _owned_vault(passcode_id: str, user_id: str, mongo: AsyncIOMotorDatabase) -> dict:
+    vault = await mongo[c.PASSCODES].find_one({"_id": passcode_id, "user_id": user_id})
+    if vault is None:
+        raise api_error(ErrorCode.PASSCODE_NOT_FOUND)
+    return vault
+
+
+async def rename_vault(
+    passcode_id: str, body: RenameVaultRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    vault = await _owned_vault(passcode_id, claims.user_id, mongo)
+
+    try:
+        await mongo[c.PASSCODES].update_one(
+            {"_id": passcode_id},
+            {"$set": {"label": body.label, "updated_at": utc_now()}},
+        )
+    except DuplicateKeyError as exc:
+        raise api_error(ErrorCode.PASSCODE_LABEL_TAKEN, field="label") from exc
+
+    return {
+        "passcode": {
+            "passcode_id": passcode_id,
+            "label": body.label,
+            "scope": vault["scope"],
+            "created_at": to_wire(vault["created_at"]),
+        }
+    }
+
+
+async def delete_vault(
+    passcode_id: str, *, claims, mongo: AsyncIOMotorDatabase, storage: StoragePort
+) -> dict[str, Any]:
+    await _owned_vault(passcode_id, claims.user_id, mongo)
+
+    owned = {"user_id": claims.user_id, "passcode_id": passcode_id}
+    removed = 0
+    async for item in mongo[c.VAULT_ITEMS].find(owned, {"object_key": 1}):
+        if item.get("object_key"):
+            await storage.delete(profile=c.VAULT_PROFILE, key=item["object_key"])
+        removed += 1
+
+    await mongo[c.VAULT_ITEMS].delete_many(owned)
+    await mongo[c.PASSCODES].delete_one({"_id": passcode_id})
+
+    remaining = await mongo[c.PASSCODES].count_documents({"user_id": claims.user_id})
+    if remaining == 0:
+        await mongo[c.USER_KEYS].update_one(
+            {"_id": claims.user_id},
+            {"$unset": {"salt_pw": "", "wrapped_umk": "", "kdf": ""}},
+        )
+
+    return {"deleted": True, "passcode_id": passcode_id, "items_removed": removed}
 
 
 async def list_passcodes(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
