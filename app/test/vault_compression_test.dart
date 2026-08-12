@@ -67,13 +67,11 @@ void main() {
 
   test('the encrypted metadata records how the payload was packed', () async {
     final umk = await crypto.randomBytes(VaultCrypto.keyLength);
-    final passcodeKey = await crypto.randomBytes(VaultCrypto.keyLength);
     final plain = textLike(4000);
 
     final payload = await transfer.encrypt(
       plaintext: plain,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'letter.pdf'},
       kind: 'pdf',
     );
@@ -83,7 +81,6 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
 
     expect(metadata['compression'], 'gzip');
@@ -92,13 +89,11 @@ void main() {
 
   test('a compressed item decrypts back to the exact original', () async {
     final umk = await crypto.randomBytes(VaultCrypto.keyLength);
-    final passcodeKey = await crypto.randomBytes(VaultCrypto.keyLength);
     final plain = textLike(8000);
 
     final payload = await transfer.encrypt(
       plaintext: plain,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'long.pdf'},
       kind: 'pdf',
     );
@@ -108,7 +103,6 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
       compression: 'gzip',
     );
 
@@ -117,20 +111,17 @@ void main() {
 
   test('compression shrinks what actually leaves the device', () async {
     final umk = await crypto.randomBytes(VaultCrypto.keyLength);
-    final passcodeKey = await crypto.randomBytes(VaultCrypto.keyLength);
     final plain = textLike(20000);
 
     final compressed = await transfer.encrypt(
       plaintext: plain,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: const {},
       kind: 'pdf',
     );
     final raw = await transfer.encrypt(
       plaintext: plain,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: const {},
       kind: 'image',
     );

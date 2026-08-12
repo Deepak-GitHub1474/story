@@ -53,6 +53,7 @@ class ErrorCode(StrEnum):
     VAULT_ITEM_NOT_FOUND = "VAULT_ITEM_NOT_FOUND"
     PASSCODE_NOT_FOUND = "PASSCODE_NOT_FOUND"
     PASSCODE_LABEL_TAKEN = "PASSCODE_LABEL_TAKEN"
+    VAULT_USES_MASTER_KEY = "VAULT_USES_MASTER_KEY"
     LABEL_REQUIRED = "LABEL_REQUIRED"
     LABEL_TAKEN = "LABEL_TAKEN"
     QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
@@ -157,6 +158,10 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.VAULT_ITEM_NOT_FOUND: (404, "We could not find that item."),
     ErrorCode.PASSCODE_NOT_FOUND: (404, "We could not find that passcode."),
     ErrorCode.PASSCODE_LABEL_TAKEN: (409, "You already have a passcode with that name."),
+    ErrorCode.VAULT_USES_MASTER_KEY: (
+        400,
+        "This vault opens with your main passcode, so change that instead.",
+    ),
     ErrorCode.LABEL_REQUIRED: (422, "A hidden item needs a label."),
     ErrorCode.LABEL_TAKEN: (409, "You already used that label."),
     ErrorCode.QUOTA_EXCEEDED: (400, "Your vault is full."),

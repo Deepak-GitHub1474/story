@@ -5,6 +5,8 @@ from pymongo.errors import DuplicateKeyError
 
 from app.api.endpoints.vault import constants as c
 from app.api.endpoints.vault.models import (
+    ChangeMasterKeyRequest,
+    ChangeVaultKeyRequest,
     CompleteItemRequest,
     CreateItemRequest,
     CreatePasscodeRequest,
@@ -87,7 +89,10 @@ async def get_keys(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
 async def create_passcode(
     body: CreatePasscodeRequest, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:
-    await _require_keys(claims.user_id, mongo)
+    if body.key_source == "master":
+        await _require_keys(claims.user_id, mongo)
+    elif body.wrapped_umk is None:
+        raise api_error(ErrorCode.VALIDATION_FAILED, field="wrapped_umk")
 
     now = utc_now()
     passcode = {
@@ -100,6 +105,9 @@ async def create_passcode(
         "kdf": body.kdf.model_dump(),
         "escrow_ciphertext": body.escrow_payload,
         "escrow_key_id": "local-dev",
+        "key_source": body.key_source,
+        "wrapped_umk": body.wrapped_umk,
+        "crypto_version": 2,
         "hint": body.hint,
         "failed_attempts": 0,
         "locked_until": None,
@@ -118,6 +126,11 @@ async def create_passcode(
             "passcode_id": passcode["_id"],
             "label": passcode["label"],
             "scope": passcode["scope"],
+            "key_source": passcode["key_source"],
+            "salt_pc": passcode["salt_pc"],
+            "wrapped_umk": passcode["wrapped_umk"],
+            "kdf": passcode["kdf"],
+            "crypto_version": 2,
             "created_at": to_wire(now),
         }
     }
@@ -151,6 +164,46 @@ async def rename_vault(
             "created_at": to_wire(vault["created_at"]),
         }
     }
+
+
+async def change_master_key(
+    body: ChangeMasterKeyRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    await _require_keys(claims.user_id, mongo)
+
+    await mongo[c.USER_KEYS].update_one(
+        {"_id": claims.user_id},
+        {
+            "$set": {
+                "salt_pw": body.salt_pw,
+                "wrapped_umk": body.wrapped_umk,
+                "kdf": body.kdf.model_dump(),
+                "updated_at": utc_now(),
+            }
+        },
+    )
+    return {"key_changed": True}
+
+
+async def change_vault_key(
+    passcode_id: str, body: ChangeVaultKeyRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    vault = await _owned_vault(passcode_id, claims.user_id, mongo)
+    if vault.get("key_source", "master") != "own":
+        raise api_error(ErrorCode.VAULT_USES_MASTER_KEY)
+
+    await mongo[c.PASSCODES].update_one(
+        {"_id": passcode_id},
+        {
+            "$set": {
+                "salt_pc": body.salt_pc,
+                "wrapped_umk": body.wrapped_umk,
+                "kdf": body.kdf.model_dump(),
+                "updated_at": utc_now(),
+            }
+        },
+    )
+    return {"key_changed": True}
 
 
 async def delete_vault(
@@ -189,6 +242,9 @@ async def list_passcodes(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, An
                 "scope": 1,
                 "salt_pc": 1,
                 "kdf": 1,
+                "key_source": 1,
+                "wrapped_umk": 1,
+                "crypto_version": 1,
                 "created_at": 1,
                 "last_used_at": 1,
             },
@@ -204,6 +260,9 @@ async def list_passcodes(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, An
                 "scope": doc["scope"],
                 "salt_pc": doc["salt_pc"],
                 "kdf": doc.get("kdf", {}),
+                "key_source": doc.get("key_source", "master"),
+                "wrapped_umk": doc.get("wrapped_umk"),
+                "crypto_version": doc.get("crypto_version", 1),
                 "created_at": to_wire(doc.get("created_at")),
                 "last_used_at": to_wire(doc.get("last_used_at")),
             }

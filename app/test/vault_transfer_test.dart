@@ -14,13 +14,11 @@ Uint8List file(int length) =>
 void main() {
   test('an encrypted file round trips back to the original bytes', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
     final plaintext = file(4096);
 
     final payload = await transfer.encrypt(
       plaintext: plaintext,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'wedding.jpg', 'mime': 'image/jpeg'},
     );
 
@@ -29,7 +27,6 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
 
     expect(opened, equals(plaintext));
@@ -41,7 +38,6 @@ void main() {
     final payload = await transfer.encrypt(
       plaintext: marker,
       umk: await crypto.randomBytes(32),
-      passcodeKey: await crypto.randomBytes(32),
       metadata: const {},
     );
 
@@ -50,12 +46,10 @@ void main() {
 
   test('the filename lives only inside encrypted metadata', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
 
     final payload = await transfer.encrypt(
       plaintext: file(64),
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'divorce-papers.pdf'},
     );
 
@@ -69,39 +63,32 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
     expect(metadata['filename'], 'divorce-papers.pdf');
   });
 
-  test('a wrong passcode cannot decrypt', () async {
+  test('a file still opens after the passcode is changed', () async {
     final umk = await crypto.randomBytes(32);
     final payload = await transfer.encrypt(
       plaintext: file(256),
       umk: umk,
-      passcodeKey: await crypto.randomBytes(32),
       metadata: const {},
     );
-    final wrongPasscode = await crypto.randomBytes(32);
 
-    expect(
-      () => transfer.decrypt(
-        ciphertext: payload.ciphertext,
-        wrappedDek: payload.wrappedDek,
-        saltItem: payload.saltItem,
-        umk: umk,
-        passcodeKey: wrongPasscode,
-      ),
-      throwsA(isA<Exception>()),
+    final opened = await transfer.decrypt(
+      ciphertext: payload.ciphertext,
+      wrappedDek: payload.wrappedDek,
+      saltItem: payload.saltItem,
+      umk: umk,
     );
+
+    expect(opened.length, 256, reason: 'only the wrapper changes, never the file');
   });
 
   test('a wrong master key cannot decrypt', () async {
-    final passcodeKey = await crypto.randomBytes(32);
     final payload = await transfer.encrypt(
       plaintext: file(256),
       umk: await crypto.randomBytes(32),
-      passcodeKey: passcodeKey,
       metadata: const {},
     );
 
@@ -113,7 +100,6 @@ void main() {
         wrappedDek: payload.wrappedDek,
         saltItem: payload.saltItem,
         umk: wrongUmk,
-        passcodeKey: passcodeKey,
       ),
       throwsA(isA<Exception>()),
     );
@@ -121,18 +107,15 @@ void main() {
 
   test('a wrapped key moved to another item fails the tag check', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
 
     final payload = await transfer.encrypt(
       plaintext: file(256),
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: const {},
     );
     final other = await transfer.encrypt(
       plaintext: file(256),
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: const {},
     );
 
@@ -142,7 +125,6 @@ void main() {
         wrappedDek: other.wrappedDek,
         saltItem: other.saltItem,
         umk: umk,
-        passcodeKey: passcodeKey,
       ),
       throwsA(isA<Exception>()),
     );
@@ -157,13 +139,11 @@ void main() {
 
   test('a large file still round trips', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
     final plaintext = file(300 * 1024);
 
     final payload = await transfer.encrypt(
       plaintext: plaintext,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: const {},
     );
     final opened = await transfer.decrypt(
@@ -171,7 +151,6 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
 
     expect(opened.length, plaintext.length);

@@ -70,7 +70,6 @@ class VaultTransfer {
   Future<EncryptedPayload> encrypt({
     required Uint8List plaintext,
     required Uint8List umk,
-    required Uint8List passcodeKey,
     required Map<String, dynamic> metadata,
     String kind = 'other',
   }) async {
@@ -79,11 +78,7 @@ class VaultTransfer {
     final dek = await _crypto.randomBytes(VaultCrypto.keyLength);
 
     final binding = VaultCrypto.itemBinding(saltItem);
-    final itemKey = await _crypto.deriveItemKey(
-      umk: umk,
-      kekPasscode: passcodeKey,
-      saltItem: saltItem,
-    );
+    final itemKey = await _crypto.deriveItemKey(umk: umk, saltItem: saltItem);
 
     final wrappedDek = await _crypto.wrap(
       key: itemKey,
@@ -120,15 +115,10 @@ class VaultTransfer {
     required Uint8List wrappedDek,
     required Uint8List saltItem,
     required Uint8List umk,
-    required Uint8List passcodeKey,
     String compression = 'none',
   }) async {
     final binding = VaultCrypto.itemBinding(saltItem);
-    final itemKey = await _crypto.deriveItemKey(
-      umk: umk,
-      kekPasscode: passcodeKey,
-      saltItem: saltItem,
-    );
+    final itemKey = await _crypto.deriveItemKey(umk: umk, saltItem: saltItem);
 
     final dek = await _crypto.unwrap(
       key: itemKey,
@@ -150,14 +140,12 @@ class VaultTransfer {
     required Uint8List wrappedDek,
     required Uint8List saltItem,
     required Uint8List umk,
-    required Uint8List passcodeKey,
   }) async {
     final plaintext = await decrypt(
       ciphertext: encryptedMetadata,
       wrappedDek: wrappedDek,
       saltItem: saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
     return Map<String, dynamic>.from(jsonDecode(utf8.decode(plaintext)) as Map);
   }

@@ -100,6 +100,7 @@ class Endpoints {
   static const String vaultOverview = '/vault/overview';
   static const String vaultPasscodes = '/vault/passcodes';
   static String vaultPasscode(String id) => '/vault/passcodes/$id';
+  static String vaultPasscodeKey(String id) => '/vault/passcodes/$id/key';
   static const String realtimeTicket = '/realtime/ticket';
   static const String suggestions = '/suggestions';
   static const String aiPolish = '/ai/polish';

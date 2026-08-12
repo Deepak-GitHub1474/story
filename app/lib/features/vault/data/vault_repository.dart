@@ -26,22 +26,43 @@ class VaultRepository {
 
   Future<Result<VaultPasscode>> createPasscode({
     required String label,
-    required String passcodeHash,
     required String saltPc,
     required Map<String, dynamic> kdf,
-    required String escrowPayload,
+    required String keySource,
+    String? wrappedUmk,
   }) => _client.post(
     Endpoints.vaultPasscodes,
     body: {
       'label': label,
       'scope': 'vault',
-      'passcode_hash': passcodeHash,
       'salt_pc': saltPc,
       'kdf': kdf,
-      'escrow_payload': escrowPayload,
+      'key_source': keySource,
+      'wrapped_umk': ?wrappedUmk,
     },
     parse: (data) =>
         VaultPasscode.fromJson(Map<String, dynamic>.from(data['passcode'] as Map)),
+  );
+
+  Future<Result<bool>> changeMasterKey({
+    required String saltPw,
+    required String wrappedUmk,
+    required Map<String, dynamic> kdf,
+  }) => _client.put(
+    Endpoints.keys,
+    body: {'salt_pw': saltPw, 'wrapped_umk': wrappedUmk, 'kdf': kdf},
+    parse: (data) => data['key_changed'] as bool? ?? true,
+  );
+
+  Future<Result<bool>> changeVaultKey({
+    required String passcodeId,
+    required String saltPc,
+    required String wrappedUmk,
+    required Map<String, dynamic> kdf,
+  }) => _client.put(
+    Endpoints.vaultPasscodeKey(passcodeId),
+    body: {'salt_pc': saltPc, 'wrapped_umk': wrappedUmk, 'kdf': kdf},
+    parse: (data) => data['key_changed'] as bool? ?? true,
   );
 
   Future<Result<VaultPasscode>> renameVault({

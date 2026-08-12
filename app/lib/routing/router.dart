@@ -30,7 +30,6 @@ import '../features/settings/screens/settings_screen.dart';
 import '../features/chat/screens/chat_list_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/vault/screens/recovery_screen.dart';
-import '../features/vault/screens/vault_setup_screen.dart';
 import '../features/vault/screens/vault_screen.dart';
 import 'routes.dart';
 import 'transitions.dart';
@@ -180,11 +179,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.vault,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const VaultScreen()),
-      ),
-      GoRoute(
-        path: Routes.vaultSetup,
-        pageBuilder: (context, state) =>
-            slidePage(key: state.pageKey, child: const VaultSetupScreen()),
       ),
       GoRoute(
         path: Routes.vaultRecovery,

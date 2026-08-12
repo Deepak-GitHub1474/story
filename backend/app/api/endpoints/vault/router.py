@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, status
 
 from app.api.endpoints.vault import controllers
 from app.api.endpoints.vault.models import (
+    ChangeMasterKeyRequest,
+    ChangeVaultKeyRequest,
     CompleteItemRequest,
     CreateItemRequest,
     CreatePasscodeRequest,
@@ -56,6 +58,25 @@ async def list_passcodes(claims: CurrentClaims, mongo: MongoDatabase):
 async def create_passcode(body: CreatePasscodeRequest, claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.create_passcode(body, claims=claims, mongo=mongo)
     return ok_response("Passcode created.", data=data)
+
+
+@router.put("/users/me/keys", status_code=status.HTTP_200_OK)
+async def change_master_key(
+    body: ChangeMasterKeyRequest, claims: CurrentClaims, mongo: MongoDatabase
+):
+    data = await controllers.change_master_key(body, claims=claims, mongo=mongo)
+    return ok_response("Main passcode changed.", data=data)
+
+
+@router.put("/vault/passcodes/{passcode_id}/key", status_code=status.HTTP_200_OK)
+async def change_vault_key(
+    passcode_id: str,
+    body: ChangeVaultKeyRequest,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+):
+    data = await controllers.change_vault_key(passcode_id, body, claims=claims, mongo=mongo)
+    return ok_response("Vault passcode changed.", data=data)
 
 
 @router.patch("/vault/passcodes/{passcode_id}", status_code=status.HTTP_200_OK)

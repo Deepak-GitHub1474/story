@@ -25,11 +25,29 @@ class CreatePasscodeRequest(BaseModel):
 
     label: Annotated[str, Field(min_length=1, max_length=40)]
     scope: Literal["vault", "item"] = "vault"
-    passcode_hash: Annotated[str, Field(min_length=16, max_length=256)]
+    passcode_hash: Annotated[str, Field(min_length=16, max_length=256)] | None = None
     salt_pc: Annotated[str, Field(min_length=8, max_length=128)]
     kdf: KdfParams
-    escrow_payload: Annotated[str, Field(min_length=8, max_length=1024)]
+    escrow_payload: Annotated[str, Field(min_length=8, max_length=1024)] | None = None
     hint: Annotated[str, Field(max_length=512)] | None = None
+    key_source: Literal["master", "own"] = "master"
+    wrapped_umk: Annotated[str, Field(min_length=16, max_length=512)] | None = None
+
+
+class ChangeVaultKeyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    salt_pc: Annotated[str, Field(min_length=8, max_length=128)]
+    wrapped_umk: Annotated[str, Field(min_length=16, max_length=512)]
+    kdf: KdfParams
+
+
+class ChangeMasterKeyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    salt_pw: Annotated[str, Field(min_length=8, max_length=128)]
+    wrapped_umk: Annotated[str, Field(min_length=16, max_length=512)]
+    kdf: KdfParams
 
 
 class RenameVaultRequest(BaseModel):

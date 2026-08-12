@@ -26,6 +26,8 @@ class VaultPasscode {
     required this.scope,
     required this.saltPc,
     required this.kdf,
+    required this.keySource,
+    this.wrappedUmk,
   });
 
   factory VaultPasscode.fromJson(Map<String, dynamic> json) => VaultPasscode(
@@ -34,6 +36,8 @@ class VaultPasscode {
     scope: json['scope'] as String? ?? 'vault',
     saltPc: json['salt_pc'] as String? ?? '',
     kdf: Map<String, dynamic>.from(json['kdf'] as Map? ?? {}),
+    keySource: json['key_source'] as String? ?? 'master',
+    wrappedUmk: json['wrapped_umk'] as String?,
   );
 
   final String passcodeId;
@@ -41,6 +45,10 @@ class VaultPasscode {
   final String scope;
   final String saltPc;
   final Map<String, dynamic> kdf;
+  final String keySource;
+  final String? wrappedUmk;
+
+  bool get hasOwnKey => keySource == 'own' && wrappedUmk != null;
 }
 
 class VaultItem {

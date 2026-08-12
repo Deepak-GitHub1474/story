@@ -71,12 +71,11 @@ class VaultCrypto {
 
   Future<Uint8List> deriveItemKey({
     required Uint8List umk,
-    required Uint8List kekPasscode,
     required Uint8List saltItem,
   }) async {
     final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: keyLength);
     final key = await hkdf.deriveKey(
-      secretKey: SecretKey([...umk, ...kekPasscode]),
+      secretKey: SecretKey(umk),
       nonce: saltItem,
       info: utf8.encode('$itemInfoPrefix${itemBinding(saltItem)}'),
     );

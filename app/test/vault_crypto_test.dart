@@ -133,44 +133,34 @@ void main() {
     );
   });
 
-  test('an item key needs both halves', () async {
+  test('an item key is bound to its vault key and its own salt', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
     final salt = await crypto.randomBytes(16);
 
-    final correct = await crypto.deriveItemKey(
-      umk: umk,
-      kekPasscode: passcodeKey,
-      saltItem: salt,
-    );
-    final withoutUmk = await crypto.deriveItemKey(
+    final correct = await crypto.deriveItemKey(umk: umk, saltItem: salt);
+    final anotherVault = await crypto.deriveItemKey(
       umk: await crypto.randomBytes(32),
-      kekPasscode: passcodeKey,
       saltItem: salt,
     );
-    final withoutPasscode = await crypto.deriveItemKey(
+    final anotherItem = await crypto.deriveItemKey(
       umk: umk,
-      kekPasscode: await crypto.randomBytes(32),
-      saltItem: salt,
+      saltItem: await crypto.randomBytes(16),
     );
 
-    expect(correct, isNot(equals(withoutUmk)));
-    expect(correct, isNot(equals(withoutPasscode)));
+    expect(correct, isNot(equals(anotherVault)));
+    expect(correct, isNot(equals(anotherItem)));
   });
 
   test('the same secrets and salt always give the same item key', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
     final salt = await crypto.randomBytes(16);
 
     final first = await crypto.deriveItemKey(
       umk: umk,
-      kekPasscode: passcodeKey,
       saltItem: salt,
     );
     final again = await crypto.deriveItemKey(
       umk: umk,
-      kekPasscode: passcodeKey,
       saltItem: salt,
     );
 
@@ -179,16 +169,13 @@ void main() {
 
   test('two items with the same secrets get different keys', () async {
     final umk = await crypto.randomBytes(32);
-    final passcodeKey = await crypto.randomBytes(32);
 
     final first = await crypto.deriveItemKey(
       umk: umk,
-      kekPasscode: passcodeKey,
       saltItem: await crypto.randomBytes(16),
     );
     final second = await crypto.deriveItemKey(
       umk: umk,
-      kekPasscode: passcodeKey,
       saltItem: await crypto.randomBytes(16),
     );
 

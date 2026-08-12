@@ -10,14 +10,12 @@ void main() {
   final transfer = VaultTransfer(crypto, null);
 
   final umk = Uint8List.fromList(List.generate(32, (i) => i));
-  final passcodeKey = Uint8List.fromList(List.generate(32, (i) => 255 - i));
   final plaintext = Uint8List.fromList(utf8.encode('the thing i kept'));
 
   test('a file stored in the vault opens again', () async {
     final payload = await transfer.encrypt(
       plaintext: plaintext,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'note.png'},
     );
 
@@ -26,7 +24,6 @@ void main() {
       wrappedDek: payload.wrappedDek,
       saltItem: payload.saltItem,
       umk: umk,
-      passcodeKey: passcodeKey,
     );
 
     expect(utf8.decode(opened), 'the thing i kept');
@@ -36,13 +33,11 @@ void main() {
     final mine = await transfer.encrypt(
       plaintext: plaintext,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'note.png'},
     );
     final other = await transfer.encrypt(
       plaintext: plaintext,
       umk: umk,
-      passcodeKey: passcodeKey,
       metadata: {'filename': 'other.png'},
     );
 
@@ -52,7 +47,6 @@ void main() {
         wrappedDek: other.wrappedDek,
         saltItem: other.saltItem,
         umk: umk,
-        passcodeKey: passcodeKey,
       ),
       throwsA(anything),
     );

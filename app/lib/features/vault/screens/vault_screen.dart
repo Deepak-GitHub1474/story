@@ -167,6 +167,35 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     );
   }
 
+  Future<void> _changePasscode() async {
+    final session = ref.read(vaultSessionProvider);
+    final isOwn = session.keySource == 'own';
+
+    final chosen = await showAppSheet<String>(
+      contentPadding: EdgeInsets.zero,
+      context: context,
+      title: isOwn ? 'Change this vault passcode' : 'Change your main passcode',
+      builder: (sheetContext) => _ChangePasscodeSheet(isOwn: isOwn),
+    );
+
+    if (chosen == null || !mounted) return;
+
+    final ok = await ref
+        .read(vaultSessionProvider.notifier)
+        .changePasscode(chosen);
+
+    if (!mounted) return;
+    ref.invalidate(vaultOverviewProvider);
+    AppToast.show(
+      context,
+      ok
+          ? 'Passcode changed. Your files were not touched.'
+          : ref.read(vaultSessionProvider).error ??
+                'Could not change that passcode.',
+      kind: ok ? AppToastKind.success : AppToastKind.error,
+    );
+  }
+
   Future<void> _newVault() async {
     final created = await showAppSheet<bool>(
       contentPadding: EdgeInsets.zero,
@@ -352,21 +381,24 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   ],
                 ),
               ],
+              if (vaults.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xl),
+                AppTextField(
+                  controller: _passcode,
+                  label: 'Vault passcode',
+                  obscureText: true,
+                  errorText: _error,
+                  textInputAction: TextInputAction.done,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
               const SizedBox(height: AppSpacing.xl),
-              AppTextField(
-                controller: _passcode,
-                label: 'Vault passcode',
-                obscureText: true,
-                errorText: _error,
-                textInputAction: TextInputAction.done,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              AppButton(
-                label: 'Unlock',
-                isLoading: _isBusy,
-                onPressed: _passcode.text.isEmpty ? null : _unlock,
-              ),
+              if (vaults.isNotEmpty)
+                AppButton(
+                  label: 'Unlock',
+                  isLoading: _isBusy,
+                  onPressed: _passcode.text.isEmpty ? null : _unlock,
+                ),
               if (vaults.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xxl),
                 Text(
@@ -401,23 +433,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   ),
                 ),
               ],
-              if (overview.valueOrNull?.hasPasscode == false) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'You have not set up a vault yet.',
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: AppTypeScale.caption,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppButton(
-                  label: 'Set up your vault',
-                  variant: AppButtonVariant.secondary,
-                  onPressed: () => context.push(Routes.vaultSetup),
-                ),
-              ],
+              const SizedBox(height: AppSpacing.xxl),
+              AppButton(
+                label: vaults.isEmpty ? 'Create your vault' : 'Create new vault',
+                variant: AppButtonVariant.secondary,
+                onPressed: _newVault,
+              ),
             ],
           ),
         ),
@@ -450,6 +471,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             ref.read(vaultSessionProvider.notifier).lock();
             setState(() => _found = null);
           },
+        ),
+        IconButton(
+          icon: Icon(Icons.key_outlined, color: colors.textMuted),
+          onPressed: upload.isBusy ? null : _changePasscode,
         ),
         IconButton(
           icon: Icon(Icons.help_outline, color: colors.textMuted),
@@ -801,7 +826,7 @@ class _NewVaultSheet extends ConsumerStatefulWidget {
 }
 
 class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
-  final _name = TextEditingController();
+  final _name = TextEditingController(text: 'Main vault');
   final _passcode = TextEditingController();
   bool _isBusy = false;
   String? _error;
@@ -821,7 +846,7 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
 
     final ok = await ref
         .read(vaultSessionProvider.notifier)
-        .createPasscode(passcode: _passcode.text, label: _name.text.trim());
+        .createVault(label: _name.text.trim(), passcode: _passcode.text);
 
     if (!mounted) return;
     setState(() {
@@ -851,8 +876,9 @@ class _NewVaultSheetState extends ConsumerState<_NewVaultSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'A second vault has its own passcode. Nothing in one opens the '
-            'other, and forgetting a passcode loses only that vault.',
+            'Use your usual passcode and this vault opens with the others. '
+            'Type a different one and it becomes separate, with its own key '
+            'that nothing else can open.',
             style: TextStyle(
               color: colors.textSecondary,
               fontSize: AppTypeScale.label,
@@ -1077,6 +1103,95 @@ class _RenameSheetState extends State<_RenameSheet> {
             onPressed:
                 name.isEmpty ? null : () => Navigator.of(context).pop(name),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangePasscodeSheet extends StatefulWidget {
+  const _ChangePasscodeSheet({required this.isOwn});
+
+  final bool isOwn;
+
+  @override
+  State<_ChangePasscodeSheet> createState() => _ChangePasscodeSheetState();
+}
+
+class _ChangePasscodeSheetState extends State<_ChangePasscodeSheet> {
+  final _passcode = TextEditingController();
+  final _confirm = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _passcode.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!isStrongPasscode(_passcode.text)) {
+      setState(
+        () => _error = 'Use at least $passcodeMinLength characters, with '
+            'letters as well as numbers.',
+      );
+      return;
+    }
+    if (_passcode.text.trim() != _confirm.text.trim()) {
+      setState(() => _error = 'Those two passcodes are not the same.');
+      return;
+    }
+    Navigator.of(context).pop(_passcode.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final insets = MediaQuery.of(context).viewInsets.bottom;
+    final isReady =
+        _passcode.text.isNotEmpty && _confirm.text.isNotEmpty;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.xl + insets,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.isOwn
+                ? 'Only this vault changes. Everything inside stays where it is.'
+                : 'Every vault that opens with your main passcode will use the '
+                      'new one. Nothing inside them is touched.',
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppTextField(
+            controller: _passcode,
+            label: 'New passcode',
+            obscureText: true,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppTextField(
+            controller: _confirm,
+            label: 'Repeat new passcode',
+            obscureText: true,
+            errorText: _error,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(label: 'Save passcode', onPressed: isReady ? _save : null),
         ],
       ),
     );

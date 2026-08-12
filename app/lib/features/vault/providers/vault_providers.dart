@@ -34,17 +34,17 @@ class VaultSession {
   const VaultSession({
     required this.state,
     this.umk,
-    this.passcodeKey,
     this.passcodeId,
     this.label,
+    this.keySource,
     this.error,
   });
 
   final VaultLockState state;
   final Uint8List? umk;
-  final Uint8List? passcodeKey;
   final String? passcodeId;
   final String? label;
+  final String? keySource;
   final String? error;
 
   bool get isUnlocked => state == VaultLockState.unlocked && umk != null;
@@ -52,9 +52,9 @@ class VaultSession {
   VaultSession copyWith({String? label, String? error}) => VaultSession(
     state: state,
     umk: umk,
-    passcodeKey: passcodeKey,
     passcodeId: passcodeId,
     label: label ?? this.label,
+    keySource: keySource,
     error: error,
   );
 }
@@ -71,23 +71,45 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
 
   VaultRepository get _repository => ref.read(vaultRepositoryProvider);
 
-  Future<bool> setUpKeys(String passcode) async {
-    final crypto = _crypto;
-    final userId = ref.read(authProvider).user?.userId ?? '';
+  String _umkAad(String userId) => '${VaultCrypto.umkAadPrefix}$userId';
 
-    final salt = await crypto.randomBytes(VaultCrypto.saltLength);
-    final umk = await crypto.randomBytes(VaultCrypto.keyLength);
+  String _vaultAad(String userId, String saltPc) =>
+      '${VaultCrypto.umkAadPrefix}$userId|$saltPc';
+
+  Future<Uint8List?> _openMaster(String passcode, String userId) async {
+    final keys = (await _repository.keys()).valueOrNull;
+    if (keys == null) return null;
+
+    final kek = await _crypto.deriveKek(
+      Uint8List.fromList(utf8.encode(passcode)),
+      Uint8List.fromList(base64Decode(keys.saltPw)),
+      KdfParams.fromJson(keys.kdf),
+    );
+
+    try {
+      return await _crypto.unwrap(
+        key: kek,
+        sealed: Uint8List.fromList(base64Decode(keys.wrappedUmk)),
+        aad: _umkAad(userId),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> _createMaster(String passcode, Uint8List umk, String userId) async {
+    final salt = await _crypto.randomBytes(VaultCrypto.saltLength);
     const kdf = KdfParams();
 
-    final kek = await crypto.deriveKek(
+    final kek = await _crypto.deriveKek(
       Uint8List.fromList(utf8.encode(passcode)),
       salt,
       kdf,
     );
-    final wrapped = await crypto.wrap(
+    final wrapped = await _crypto.wrap(
       key: kek,
       plaintext: umk,
-      aad: '${VaultCrypto.umkAadPrefix}$userId',
+      aad: _umkAad(userId),
     );
 
     final result = await _repository.initKeys(
@@ -97,11 +119,57 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     );
 
     if (!result.isSuccess) {
-      state = VaultSession(state: state.state, error: result.failureOrNull!.message);
+      state = state.copyWith(error: result.failureOrNull!.message);
       return false;
     }
+    return true;
+  }
 
-    state = VaultSession(state: VaultLockState.locked, umk: null);
+  Future<bool> createVault({
+    required String label,
+    required String passcode,
+  }) async {
+    if (!isStrongPasscode(passcode)) return false;
+
+    final userId = ref.read(authProvider).user?.userId ?? '';
+    const kdf = KdfParams();
+    final saltPc = await _crypto.randomBytes(VaultCrypto.saltLength);
+
+    final hasMaster = (await _repository.keys()).valueOrNull != null;
+    var keySource = 'master';
+    String? wrappedUmk;
+
+    if (!hasMaster) {
+      final umk = await _crypto.randomBytes(VaultCrypto.keyLength);
+      if (!await _createMaster(passcode, umk, userId)) return false;
+    } else if (await _openMaster(passcode, userId) == null) {
+      final umk = await _crypto.randomBytes(VaultCrypto.keyLength);
+      final kek = await _crypto.deriveKek(
+        Uint8List.fromList(utf8.encode(passcode)),
+        saltPc,
+        kdf,
+      );
+      final sealed = await _crypto.wrap(
+        key: kek,
+        plaintext: umk,
+        aad: _vaultAad(userId, base64Encode(saltPc)),
+      );
+      keySource = 'own';
+      wrappedUmk = base64Encode(sealed);
+    }
+
+    final result = await _repository.createPasscode(
+      label: label,
+      saltPc: base64Encode(saltPc),
+      kdf: kdf.toJson(),
+      keySource: keySource,
+      wrappedUmk: wrappedUmk,
+    );
+
+    if (result.valueOrNull == null) {
+      state = state.copyWith(error: result.failureOrNull?.message);
+      return false;
+    }
     return true;
   }
 
@@ -109,37 +177,7 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     required String passcode,
     String? passcodeId,
   }) async {
-    final crypto = _crypto;
     final userId = ref.read(authProvider).user?.userId ?? '';
-
-    final keysResult = await _repository.keys();
-    final keys = keysResult.valueOrNull;
-    if (keys == null) {
-      state = const VaultSession(state: VaultLockState.needsSetup);
-      return false;
-    }
-
-    final kdf = KdfParams.fromJson(keys.kdf);
-    final kek = await crypto.deriveKek(
-      Uint8List.fromList(utf8.encode(passcode)),
-      Uint8List.fromList(base64Decode(keys.saltPw)),
-      kdf,
-    );
-
-    Uint8List umk;
-    try {
-      umk = await crypto.unwrap(
-        key: kek,
-        sealed: Uint8List.fromList(base64Decode(keys.wrappedUmk)),
-        aad: '${VaultCrypto.umkAadPrefix}$userId',
-      );
-    } catch (_) {
-      state = const VaultSession(
-        state: VaultLockState.locked,
-        error: 'That passcode did not open your vault.',
-      );
-      return false;
-    }
 
     final overview = await _repository.overview();
     final record = selectVault(
@@ -147,21 +185,31 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
       passcodeId,
     );
     if (record == null) {
-      state = VaultSession(state: VaultLockState.needsSetup, umk: umk);
+      state = const VaultSession(state: VaultLockState.needsSetup);
       return false;
     }
 
-    final passcodeKey = await crypto.deriveKek(
-      Uint8List.fromList(utf8.encode(passcode)),
-      Uint8List.fromList(base64Decode(record.saltPc)),
-      record.kdf.isEmpty ? kdf : KdfParams.fromJson(record.kdf),
-    );
+    Uint8List? umk;
+    if (record.hasOwnKey) {
+      final kek = await _crypto.deriveKek(
+        Uint8List.fromList(utf8.encode(passcode)),
+        Uint8List.fromList(base64Decode(record.saltPc)),
+        KdfParams.fromJson(record.kdf),
+      );
+      try {
+        umk = await _crypto.unwrap(
+          key: kek,
+          sealed: Uint8List.fromList(base64Decode(record.wrappedUmk!)),
+          aad: _vaultAad(userId, record.saltPc),
+        );
+      } catch (_) {
+        umk = null;
+      }
+    } else {
+      umk = await _openMaster(passcode, userId);
+    }
 
-    if (!await _opensTheVault(
-      umk: umk,
-      passcodeKey: passcodeKey,
-      passcodeId: record.passcodeId,
-    )) {
+    if (umk == null) {
       state = const VaultSession(
         state: VaultLockState.locked,
         error: 'That passcode did not open this vault.',
@@ -172,80 +220,56 @@ class VaultSessionNotifier extends Notifier<VaultSession> {
     state = VaultSession(
       state: VaultLockState.unlocked,
       umk: umk,
-      passcodeKey: passcodeKey,
       passcodeId: record.passcodeId,
       label: record.label,
+      keySource: record.keySource,
     );
     return true;
-  }
-
-  Future<bool> _opensTheVault({
-    required Uint8List umk,
-    required Uint8List passcodeKey,
-    required String passcodeId,
-  }) async {
-    final listed = await _repository.items(passcodeId: passcodeId);
-    final newest = listed.valueOrNull?.firstOrNull;
-    if (newest == null) return true;
-
-    final detail = await _repository.item(newest.itemId);
-    final item = detail.valueOrNull;
-    if (item?.wrappedDek == null || item?.saltItem == null) return true;
-
-    try {
-      await ref
-          .read(vaultTransferProvider)
-          .decryptMetadata(
-            encryptedMetadata: Uint8List.fromList(
-              base64Decode(item!.encryptedMetadata),
-            ),
-            wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
-            saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
-            umk: umk,
-            passcodeKey: passcodeKey,
-          );
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   void lock() {
     state = const VaultSession(state: VaultLockState.locked);
   }
 
-  Future<bool> createPasscode({
-    required String passcode,
-    String label = 'Main vault',
-  }) async {
-    final crypto = _crypto;
+  Future<bool> changePasscode(String newPasscode) async {
+    final session = state;
+    final umk = session.umk;
+    if (umk == null || !isStrongPasscode(newPasscode)) return false;
+
+    final userId = ref.read(authProvider).user?.userId ?? '';
     const kdf = KdfParams();
+    final salt = await _crypto.randomBytes(VaultCrypto.saltLength);
+    final isOwn = session.keySource == 'own';
 
-    if (!isStrongPasscode(passcode)) return false;
-    if (state.umk == null && !await setUpKeys(passcode)) return false;
-
-    final saltPc = await crypto.randomBytes(VaultCrypto.saltLength);
-    final passcodeKey = await crypto.deriveKek(
-      Uint8List.fromList(utf8.encode(passcode)),
-      saltPc,
+    final kek = await _crypto.deriveKek(
+      Uint8List.fromList(utf8.encode(newPasscode)),
+      salt,
       kdf,
     );
-
-    final verifier = await crypto.wrap(
-      key: passcodeKey,
-      plaintext: Uint8List.fromList(utf8.encode('story.passcode.v1')),
-      aad: 'story.passcode.v1',
+    final sealed = await _crypto.wrap(
+      key: kek,
+      plaintext: umk,
+      aad: isOwn ? _vaultAad(userId, base64Encode(salt)) : _umkAad(userId),
     );
 
-    final result = await _repository.createPasscode(
-      label: label,
-      passcodeHash: base64Encode(verifier),
-      saltPc: base64Encode(saltPc),
-      kdf: kdf.toJson(),
-      escrowPayload: base64Encode(verifier),
-    );
+    final result = isOwn
+        ? await _repository.changeVaultKey(
+            passcodeId: session.passcodeId!,
+            saltPc: base64Encode(salt),
+            wrappedUmk: base64Encode(sealed),
+            kdf: kdf.toJson(),
+          )
+        : await _repository.changeMasterKey(
+            saltPw: base64Encode(salt),
+            wrappedUmk: base64Encode(sealed),
+            kdf: kdf.toJson(),
+          );
 
-    return result.valueOrNull != null;
+    if (!result.isSuccess) {
+      state = state.copyWith(error: result.failureOrNull?.message);
+      return false;
+    }
+    return true;
   }
 
   Future<bool> renameVault({
@@ -404,7 +428,6 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
     final payload = await transfer.encrypt(
       plaintext: bytes,
       umk: session.umk!,
-      passcodeKey: session.passcodeKey!,
       metadata: {'filename': filename, 'size': bytes.length},
       kind: kind,
     );
@@ -511,7 +534,6 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
         saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
         umk: session.umk!,
-        passcodeKey: session.passcodeKey!,
       );
 
       final plain = await transfer.decrypt(
@@ -519,7 +541,6 @@ class VaultUploadNotifier extends Notifier<VaultUploadState> {
         wrappedDek: Uint8List.fromList(base64Decode(item.wrappedDek!)),
         saltItem: Uint8List.fromList(base64Decode(item.saltItem!)),
         umk: session.umk!,
-        passcodeKey: session.passcodeKey!,
         compression: metadata['compression'] as String? ?? 'none',
       );
 
