@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,22 +12,15 @@ import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
 import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/story_post.dart';
-import '../models/community_models.dart';
 import '../providers/community_providers.dart';
 
-final _communityDetailProvider =
-    FutureProvider.family<Community, String>((ref, slug) async {
-      final result = await ref.watch(communityRepositoryProvider).detail(slug);
-      final community = result.valueOrNull;
-      if (community == null) throw Exception('Not found');
-      return community;
-    });
-
-final _communityStoriesProvider =
-    FutureProvider.family<List<Story>, String>((ref, slug) async {
-      final result = await ref.watch(communityRepositoryProvider).stories(slug);
-      return result.valueOrNull?.items ?? const [];
-    });
+final _communityStoriesProvider = FutureProvider.family<List<Story>, String>((
+  ref,
+  slug,
+) async {
+  final result = await ref.watch(communityRepositoryProvider).stories(slug);
+  return result.valueOrNull?.items ?? const [];
+});
 
 class CommunityDetailScreen extends ConsumerWidget {
   const CommunityDetailScreen({super.key, required this.slug});
@@ -35,12 +30,12 @@ class CommunityDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final community = ref.watch(_communityDetailProvider(slug));
+    final community = ref.watch(communityDetailProvider(slug));
     final stories = ref.watch(_communityStoriesProvider(slug));
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
+      appBar: AppBar(leading: const AppBackButton()),
       body: community.when(
         loading: () => const SkeletonList(count: 4),
         error: (error, _) => Center(
@@ -53,7 +48,7 @@ class CommunityDetailScreen extends ConsumerWidget {
           color: colors.accent,
           backgroundColor: colors.surface,
           onRefresh: () async {
-            ref.invalidate(_communityDetailProvider(slug));
+            ref.invalidate(communityDetailProvider(slug));
             ref.invalidate(_communityStoriesProvider(slug));
           },
           child: ListView(
@@ -93,29 +88,30 @@ class CommunityDetailScreen extends ConsumerWidget {
                     SizedBox(
                       width: double.infinity,
                       child: Material(
-                        color: data.isMember ? Colors.transparent : colors.accent,
+                        color: data.isMember
+                            ? Colors.transparent
+                            : colors.accentStrong,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: InkWell(
-                          onTap: () async {
-                            await ref
-                                .read(communityRepositoryProvider)
-                                .setMembership(slug, join: !data.isMember);
-                            ref.invalidate(_communityDetailProvider(slug));
-                            ref.invalidate(myCommunitiesProvider);
-                            ref.invalidate(communityBrowseProvider);
-                          },
+                          onTap: () => ref
+                              .read(communityBrowseProvider.notifier)
+                              .toggleMembership(data),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           child: Container(
                             height: 44,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: data.isMember ? colors.border : colors.accent,
+                                color: data.isMember
+                                    ? colors.border
+                                    : colors.accentStrong,
                               ),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Text(
-                              data.isMember ? 'Leave community' : 'Join community',
+                              data.isMember
+                                  ? 'Leave community'
+                                  : 'Join community',
                               style: TextStyle(
                                 color: data.isMember
                                     ? colors.textSecondary
@@ -172,8 +168,9 @@ class CommunityDetailScreen extends ConsumerWidget {
                           for (final story in items) ...[
                             _InteractiveStory(
                               story: story,
-                              onChanged: () =>
-                                  ref.invalidate(_communityStoriesProvider(slug)),
+                              onChanged: () => ref.invalidate(
+                                _communityStoriesProvider(slug),
+                              ),
                             ),
                             Divider(height: 1, color: colors.border),
                           ],
@@ -188,7 +185,6 @@ class CommunityDetailScreen extends ConsumerWidget {
     );
   }
 }
-
 
 class _InteractiveStory extends ConsumerStatefulWidget {
   const _InteractiveStory({required this.story, required this.onChanged});
@@ -221,7 +217,9 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
 
     if (!mounted) return;
     if (result.isSuccess) {
-      setState(() => _override = _override!.copyWith(likes: result.valueOrNull));
+      setState(
+        () => _override = _override!.copyWith(likes: result.valueOrNull),
+      );
     } else {
       setState(() => _override = current);
     }
@@ -241,7 +239,8 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
       },
       onLike: _toggleLike,
       onShare: _story.isPublic ? _share : null,
-      onAuthorTap: () => context.push('${Routes.user}/${_story.author.username}'),
+      onAuthorTap: () =>
+          context.push('${Routes.user}/${_story.author.username}'),
       onSharedTap: _story.shared == null
           ? null
           : () => context.push('${Routes.story}/${_story.shared!.storyId}'),

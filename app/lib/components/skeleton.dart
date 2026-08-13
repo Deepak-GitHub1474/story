@@ -35,11 +35,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
         shaderCallback: (bounds) => LinearGradient(
           begin: Alignment(-1 - 2 * _controller.value, 0),
           end: Alignment(1 - 2 * _controller.value, 0),
-          colors: [
-            colors.surfaceRaised,
-            colors.border,
-            colors.surfaceRaised,
-          ],
+          colors: [colors.surfaceRaised, colors.border, colors.surfaceRaised],
           stops: const [0.35, 0.5, 0.65],
         ).createShader(bounds),
         child: child,
@@ -90,7 +86,11 @@ class StorySkeleton extends StatelessWidget {
           children: [
             Row(
               children: [
-                const SkeletonBox(width: 34, height: 34, radius: AppRadius.pill),
+                const SkeletonBox(
+                  width: 34,
+                  height: 34,
+                  radius: AppRadius.pill,
+                ),
                 const SizedBox(width: AppSpacing.md),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,8 +198,9 @@ class ChatSkeleton extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: Row(
-              mainAxisAlignment:
-                  isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+              mainAxisAlignment: isMine
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.start,
               children: [
                 SkeletonBox(
                   width: width * _widths[index % _widths.length],
@@ -210,6 +211,37 @@ class ChatSkeleton extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class ConversationSkeleton extends StatelessWidget {
+  const ConversationSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            const SkeletonBox(width: 52, height: 52, radius: AppRadius.pill),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  SkeletonBox(width: 132, height: 14),
+                  SizedBox(height: AppSpacing.sm),
+                  SkeletonBox(width: 84, height: 12),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const SkeletonBox(width: 28, height: 12),
+          ],
+        ),
       ),
     );
   }

@@ -175,7 +175,7 @@ class _InterestChip extends StatelessWidget {
       duration: AppMotion.fast,
       curve: AppMotion.easeOut,
       child: Material(
-        color: isSelected ? colors.accent : colors.surface,
+        color: isSelected ? colors.accentStrong : colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         child: InkWell(
           onTap: onTap,

@@ -23,6 +23,16 @@ final myCommunitiesProvider = FutureProvider<List<Community>>((ref) async {
   return result.valueOrNull ?? const [];
 });
 
+final communityDetailProvider = FutureProvider.family<Community, String>((
+  ref,
+  slug,
+) async {
+  final result = await ref.watch(communityRepositoryProvider).detail(slug);
+  final community = result.valueOrNull;
+  if (community == null) throw Exception('Not found');
+  return community;
+});
+
 final communityBrowseProvider =
     NotifierProvider<CommunityBrowseNotifier, AsyncValue<List<Community>>>(
       CommunityBrowseNotifier.new,
@@ -45,7 +55,8 @@ class CommunityBrowseNotifier extends Notifier<AsyncValue<List<Community>>> {
         .browse(category: _category);
     state = result.fold(
       onSuccess: (success) => AsyncValue.data(success.value),
-      onFailure: (failure) => AsyncValue.error(failure.message, StackTrace.current),
+      onFailure: (failure) =>
+          AsyncValue.error(failure.message, StackTrace.current),
     );
   }
 
@@ -57,37 +68,45 @@ class CommunityBrowseNotifier extends Notifier<AsyncValue<List<Community>>> {
 
   Future<void> toggleMembership(Community community) async {
     final joining = !community.isMember;
-    final current = state.valueOrNull ?? const [];
+    final before = state;
+    final listed = state.valueOrNull;
 
-    state = AsyncValue.data([
-      for (final item in current)
-        if (item.slug == community.slug)
-          item.copyWith(
-            isMember: joining,
-            members: item.members + (joining ? 1 : -1),
-          )
-        else
-          item,
-    ]);
+    if (listed != null) {
+      state = AsyncValue.data([
+        for (final item in listed)
+          if (item.slug == community.slug)
+            item.copyWith(
+              isMember: joining,
+              members: item.members + (joining ? 1 : -1),
+            )
+          else
+            item,
+      ]);
+    }
 
     final result = await ref
         .read(communityRepositoryProvider)
         .setMembership(community.slug, join: joining);
 
     if (result.failureOrNull != null) {
-      state = AsyncValue.data(current);
+      state = before;
       return;
     }
+
     ref.invalidate(myCommunitiesProvider);
+    ref.invalidate(suggestionsProvider);
+    ref.invalidate(communityDetailProvider(community.slug));
   }
 }
 
-final publicProfileProvider =
-    FutureProvider.family<PublicProfile, String>((ref, username) async {
-      final result = await ref.watch(communityRepositoryProvider).profile(username);
-      final profile = result.valueOrNull;
-      if (profile == null) {
-        throw Exception(result.failureOrNull?.message ?? 'Not found');
-      }
-      return profile;
-    });
+final publicProfileProvider = FutureProvider.family<PublicProfile, String>((
+  ref,
+  username,
+) async {
+  final result = await ref.watch(communityRepositoryProvider).profile(username);
+  final profile = result.valueOrNull;
+  if (profile == null) {
+    throw Exception(result.failureOrNull?.message ?? 'Not found');
+  }
+  return profile;
+});

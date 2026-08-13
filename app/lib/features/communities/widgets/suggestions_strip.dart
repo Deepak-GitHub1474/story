@@ -30,7 +30,9 @@ class SuggestionsStrip extends ConsumerWidget {
                 height: 132,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
                   itemCount: data.communities.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: AppSpacing.md),
@@ -49,7 +51,9 @@ class SuggestionsStrip extends ConsumerWidget {
                 height: 118,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
                   itemCount: data.people.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: AppSpacing.md),
@@ -119,7 +123,7 @@ class _RoomCard extends StatelessWidget {
         width: 208,
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.border, width: AppSizes.hairline),
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
@@ -179,7 +183,7 @@ class _PersonCard extends StatelessWidget {
         width: 152,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.border, width: AppSizes.hairline),
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(

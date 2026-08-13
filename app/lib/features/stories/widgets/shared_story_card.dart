@@ -21,7 +21,7 @@ class SharedStoryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.border, width: AppSizes.hairline),
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(

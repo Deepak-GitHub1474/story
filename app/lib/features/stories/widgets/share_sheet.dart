@@ -114,9 +114,16 @@ class _ShareOption extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: colors.border,
+                  width: AppSizes.hairline,
+                ),
               ),
-              child: Icon(icon, size: AppSizes.iconMd, color: colors.textPrimary),
+              child: Icon(
+                icon,
+                size: AppSizes.iconMd,
+                color: colors.textPrimary,
+              ),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
@@ -214,7 +221,11 @@ class _ReshareComposerState extends ConsumerState<_ReshareComposer> {
     published.fold(
       onSuccess: (_) {
         Navigator.of(context).pop(true);
-        AppToast.show(context, 'Added to your story.', kind: AppToastKind.success);
+        AppToast.show(
+          context,
+          'Added to your story.',
+          kind: AppToastKind.success,
+        );
       },
       onFailure: (failure) =>
           AppToast.show(context, failure.message, kind: AppToastKind.error),

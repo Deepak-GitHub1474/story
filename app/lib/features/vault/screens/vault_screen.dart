@@ -373,7 +373,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: colors.surface,
-                    border: Border.all(color: colors.border),
+                    border: Border.all(
+                      color: colors.border,
+                      width: AppSizes.hairline,
+                    ),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
@@ -827,7 +830,10 @@ class _VaultChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isChosen ? colors.accent : Colors.transparent,
-          border: Border.all(color: isChosen ? colors.accent : colors.border),
+          border: Border.all(
+            color: isChosen ? colors.accent : colors.border,
+            width: AppSizes.hairline,
+          ),
           borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
         child: Row(
@@ -977,7 +983,10 @@ class _UploadCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: failed ? colors.danger : colors.border),
+        border: Border.all(
+          color: failed ? colors.danger : colors.border,
+          width: AppSizes.hairline,
+        ),
       ),
       child: Row(
         children: [

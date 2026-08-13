@@ -95,11 +95,17 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Keep', style: TextStyle(color: context.colors.textSecondary)),
+            child: Text(
+              'Keep',
+              style: TextStyle(color: context.colors.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('Remove', style: TextStyle(color: context.colors.danger)),
+            child: Text(
+              'Remove',
+              style: TextStyle(color: context.colors.danger),
+            ),
           ),
         ],
       ),
@@ -138,7 +144,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: colors.surface,
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: colors.border,
+                  width: AppSizes.hairline,
+                ),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
@@ -158,7 +167,9 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 children: [
                   Icon(
                     user!.emailVerified ? Icons.verified : Icons.error_outline,
-                    color: user.emailVerified ? colors.success : colors.textMuted,
+                    color: user.emailVerified
+                        ? colors.success
+                        : colors.textMuted,
                     size: AppSizes.iconMd,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -175,7 +186,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 user.emailVerified ? 'Verified.' : 'Not verified yet.',
-                style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: AppTypeScale.caption,
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
@@ -210,7 +224,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   _error!,
-                  style: TextStyle(color: colors.danger, fontSize: AppTypeScale.caption),
+                  style: TextStyle(
+                    color: colors.danger,
+                    fontSize: AppTypeScale.caption,
+                  ),
                 ),
               ],
               const SizedBox(height: AppSpacing.lg),
@@ -230,7 +247,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                         : AppToastKind.error,
                   );
                 },
-                child: Text('Send another code', style: TextStyle(color: colors.accent)),
+                child: Text(
+                  'Send another code',
+                  style: TextStyle(color: colors.accent),
+                ),
               ),
             ] else ...[
               AppTextField(

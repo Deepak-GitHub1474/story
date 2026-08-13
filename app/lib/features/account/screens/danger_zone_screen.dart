@@ -76,7 +76,8 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Delete your account?',
-      body: 'This is scheduled for 14 days from now. After that nothing can '
+      body:
+          'This is scheduled for 14 days from now. After that nothing can '
           'bring it back, including us.',
       confirmLabel: 'Delete my account',
       consequences: const [
@@ -128,7 +129,8 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
             const SizedBox(height: AppSpacing.xxl),
             _Section(
               title: 'Deactivate',
-              body: 'Your stories and profile are hidden. Sign in any time to '
+              body:
+                  'Your stories and profile are hidden. Sign in any time to '
                   'bring everything back exactly as it was.',
               action: AppButton(
                 label: 'Deactivate account',
@@ -140,7 +142,8 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
             const SizedBox(height: AppSpacing.xxl),
             _Section(
               title: 'Delete',
-              body: 'Scheduled for 14 days from now. Sign in before then to '
+              body:
+                  'Scheduled for 14 days from now. Sign in before then to '
                   'cancel. After that, everything is gone and your username '
                   'is released.',
               isDanger: true,
@@ -158,7 +161,8 @@ class _DangerZoneScreenState extends ConsumerState<DangerZoneScreen> {
                     variant: AppButtonVariant.secondary,
                     isLoading: _isBusy,
                     onPressed:
-                        _password.text.isEmpty || _confirm.text.trim() != _confirmWord
+                        _password.text.isEmpty ||
+                            _confirm.text.trim() != _confirmWord
                         ? null
                         : _delete,
                   ),
@@ -194,7 +198,10 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border.all(color: isDanger ? colors.danger : colors.border),
+        border: Border.all(
+          color: isDanger ? colors.danger : colors.border,
+          width: AppSizes.hairline,
+        ),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(

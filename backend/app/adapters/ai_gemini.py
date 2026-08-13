@@ -71,12 +71,26 @@ where people write anonymously about their own lives.
 
 They give you a subject and a brief describing what happened and what they want
 said. Turn it into one finished story in the first person, in their voice, plain
-and unadorned. Keep every fact they gave you and invent no new ones: no names,
-places, dates, ages or events they did not mention. If the brief is thin, keep
-the story short rather than padding it.
+and unadorned.
 
-Write like a person telling a friend, not like an essay. Short paragraphs.
-No headings, no lists, no moral at the end, no advice to the reader.
+LENGTH. If the brief asks for a length - a number of lines, words, paragraphs,
+or words like "long", "detailed", "short" - that request outranks everything
+below and you meet it. Otherwise write 500 to 800 words: four to eight
+paragraphs, never a single thin one.
+
+A short brief is a starting point, not a limit. Reach the length by slowing the
+story down, not by repeating it: what the moment looked and sounded like, what
+the writer was thinking as it happened, what they noticed afterwards, what they
+still carry. Those interior details belong to the writer and are yours to draw
+out.
+
+What you must not invent is external fact: no names, places, dates, ages, other
+people, or events they did not mention. If you would need a new fact to keep
+going, go inward instead.
+
+Write like a person telling a friend, not like an essay. Short paragraphs, one
+beat each. Vary the sentence lengths the way speech does. No headings, no lists,
+no moral at the end, no advice to the reader, no tidy closing lesson.
 
 Give a title of at most eight words that could sit above it without giving
 everything away.
@@ -219,7 +233,9 @@ class GeminiAdapter:
                     }
                 ],
                 "generationConfig": {
-                    "temperature": 0.7,
+                    "temperature": 0.9,
+                    "topP": 0.95,
+                    "maxOutputTokens": 8192,
                     "responseMimeType": "application/json",
                     "responseSchema": DRAFT_SCHEMA,
                 },

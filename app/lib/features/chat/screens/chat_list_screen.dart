@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/app_back_button.dart';
 import '../../../components/app_button.dart';
 import '../../../components/app_close_button.dart';
 import '../../../components/app_sheet.dart';
@@ -105,13 +106,19 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
+              AppSpacing.xs,
+              AppSpacing.sm,
               AppSpacing.lg,
               AppSpacing.md,
             ),
             child: Row(
               children: [
+                AppBackButton(
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go(Routes.stories),
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   'Messages',
                   style: TextStyle(
@@ -154,10 +161,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               loading: () => ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 itemCount: 6,
-                itemBuilder: (context, index) => const Padding(
-                  padding: EdgeInsets.only(bottom: AppSpacing.lg),
-                  child: SkeletonBox(height: 56, width: double.infinity),
-                ),
+                itemBuilder: (context, index) => const ConversationSkeleton(),
               ),
               error: (_, _) => _Empty(
                 title: 'Could not load your messages',
@@ -167,14 +171,18 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   ? (_showRequests
                         ? const _Empty(
                             title: 'No requests',
-                            body: 'People who do not follow you back land here first.',
+                            body:
+                                'People who do not follow you back land here first.',
                           )
                         : ListView(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.xxxl,
+                            ),
                             children: const [
                               _Empty(
                                 title: 'No messages yet',
-                                body: 'Say something to someone you follow. If you '
+                                body:
+                                    'Say something to someone you follow. If you '
                                     'both follow each other it opens straight away.',
                               ),
                               _FollowSuggestions(),
@@ -183,7 +191,9 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   : RefreshIndicator(
                       onRefresh: () async {
                         ref.invalidate(
-                          conversationsProvider(_showRequests ? 'pending' : null),
+                          conversationsProvider(
+                            _showRequests ? 'pending' : null,
+                          ),
                         );
                         ref.invalidate(chatUnreadProvider);
                       },
@@ -221,7 +231,11 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
 }
 
 class _Segment extends StatelessWidget {
-  const _Segment({required this.label, required this.isActive, required this.onTap});
+  const _Segment({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
   final String label;
   final bool isActive;
@@ -241,9 +255,12 @@ class _Segment extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isActive ? colors.accent : colors.surface,
+          color: isActive ? colors.accentStrong : colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: isActive ? colors.accent : colors.border),
+          border: Border.all(
+            color: isActive ? colors.accentStrong : colors.border,
+            width: AppSizes.hairline,
+          ),
         ),
         child: Text(
           label,
@@ -298,7 +315,9 @@ class _ConversationRow extends StatelessWidget {
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: AppTypeScale.body,
-                      fontWeight: unread > 0 ? FontWeight.w500 : FontWeight.w500,
+                      fontWeight: unread > 0
+                          ? FontWeight.w500
+                          : FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -446,7 +465,6 @@ class _LockedBanner extends StatelessWidget {
   }
 }
 
-
 class _FollowSuggestions extends ConsumerStatefulWidget {
   const _FollowSuggestions();
 
@@ -512,7 +530,8 @@ class _FollowSuggestionsState extends ConsumerState<_FollowSuggestions> {
           _SuggestionRow(
             person: person,
             isFollowed: _followed.contains(person.userId),
-            onOpen: () => context.push('${Routes.user}/${person.username ?? ''}'),
+            onOpen: () =>
+                context.push('${Routes.user}/${person.username ?? ''}'),
             onFollow: () async {
               setState(() => _followed.add(person.userId));
               await ref
@@ -576,7 +595,9 @@ class _SuggestionRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    person.username == null ? person.reason : '@${person.username}',
+                    person.username == null
+                        ? person.reason
+                        : '@${person.username}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: colors.textMuted,
@@ -590,8 +611,12 @@ class _SuggestionRow extends StatelessWidget {
             TextButton(
               onPressed: isFollowed ? null : onFollow,
               style: TextButton.styleFrom(
-                backgroundColor: isFollowed ? colors.surfaceRaised : colors.accent,
-                foregroundColor: isFollowed ? colors.textMuted : colors.accentText,
+                backgroundColor: isFollowed
+                    ? colors.surfaceRaised
+                    : colors.accent,
+                foregroundColor: isFollowed
+                    ? colors.textMuted
+                    : colors.accentText,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
                   vertical: AppSpacing.sm,

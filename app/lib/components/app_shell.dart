@@ -70,59 +70,60 @@ class AppShell extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: colors.bg,
         body: AnimatedSwitcher(
-        duration: AppMotion.base,
-        switchInCurve: AppMotion.easeOut,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.015),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
+          duration: AppMotion.base,
+          switchInCurve: AppMotion.easeOut,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.015),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
           ),
-        ),
           child: KeyedSubtree(key: ValueKey(currentIndex), child: child),
         ),
         bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: colors.bg,
-          border: Border(
-            top: BorderSide(color: colors.border.withValues(alpha: 0.6)),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 54,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ShellTab(
-                    destination: destinations[0],
-                    isActive: currentIndex == 0,
-                    onTap: () => context.go(destinations[0].route),
-                  ),
-                ),
-                Expanded(child: _ComposeButton(onTap: onCompose)),
-                for (var index = 1; index < destinations.length; index++)
-                  Expanded(
-                    child: _ShellTab(
-                      destination: destinations[index],
-                      isActive: index == currentIndex,
-                      onTap: () => context.go(destinations[index].route),
-                      badgeCount: switch (destinations[index].route) {
-                        Routes.activity => unread,
-                        Routes.chats =>
-                          (chatUnread?.unread ?? 0) + (chatUnread?.requests ?? 0),
-                        _ => 0,
-                      },
-                    ),
-                  ),
-              ],
+          decoration: BoxDecoration(
+            color: colors.bg,
+            border: Border(
+              top: BorderSide(color: colors.border, width: AppSizes.hairline),
             ),
           ),
-        ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 54,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _ShellTab(
+                      destination: destinations[0],
+                      isActive: currentIndex == 0,
+                      onTap: () => context.go(destinations[0].route),
+                    ),
+                  ),
+                  Expanded(child: _ComposeButton(onTap: onCompose)),
+                  for (var index = 1; index < destinations.length; index++)
+                    Expanded(
+                      child: _ShellTab(
+                        destination: destinations[index],
+                        isActive: index == currentIndex,
+                        onTap: () => context.go(destinations[index].route),
+                        badgeCount: switch (destinations[index].route) {
+                          Routes.activity => unread,
+                          Routes.chats =>
+                            (chatUnread?.unread ?? 0) +
+                                (chatUnread?.requests ?? 0),
+                          _ => 0,
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -145,7 +146,7 @@ class _ShellTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final color = isActive ? colors.accent : colors.textSecondary;
+    final color = isActive ? colors.accentStrong : colors.textSecondary;
 
     return Semantics(
       label: destination.label,
@@ -156,7 +157,7 @@ class _ShellTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Stack(
+            Stack(
               clipBehavior: Clip.none,
               children: [
                 Icon(
@@ -179,14 +180,13 @@ class _ShellTab extends StatelessWidget {
                     ),
                   ),
               ],
-          ),
+            ),
           ],
         ),
       ),
     );
   }
 }
-
 
 class _ComposeButton extends StatefulWidget {
   const _ComposeButton({required this.onTap});

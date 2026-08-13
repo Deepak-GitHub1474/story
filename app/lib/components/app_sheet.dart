@@ -80,7 +80,9 @@ class AppSheet extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppRadius.lg),
         ),
-        border: Border(top: BorderSide(color: colors.border)),
+        border: Border(
+          top: BorderSide(color: colors.border, width: AppSizes.hairline),
+        ),
       ),
       child: Column(
         mainAxisSize: isResizable ? MainAxisSize.max : MainAxisSize.min,

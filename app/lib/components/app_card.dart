@@ -28,7 +28,7 @@ class AppCard extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            border: Border.all(color: colors.border),
+            border: Border.all(color: colors.border, width: AppSizes.hairline),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: child,
@@ -83,7 +83,10 @@ class AppListRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(color: labelColor, fontSize: AppTypeScale.body),
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: AppTypeScale.body,
+                ),
               ),
             ),
             if (value != null)
@@ -146,7 +149,7 @@ class AppSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: colors.surface,
-            border: Border.all(color: colors.border),
+            border: Border.all(color: colors.border, width: AppSizes.hairline),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Column(
@@ -154,7 +157,12 @@ class AppSection extends StatelessWidget {
               for (var index = 0; index < children.length; index++) ...[
                 children[index],
                 if (index < children.length - 1)
-                  Divider(height: 1, thickness: 1, color: colors.border, indent: AppSpacing.lg),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: colors.border,
+                    indent: AppSpacing.lg,
+                  ),
               ],
             ],
           ),

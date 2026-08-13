@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../components/app_back_button.dart';
+
 import '../../../components/app_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,26 +27,206 @@ import '../widgets/message_bubble.dart';
 const quickReactions = ['❤️', '😂', '😮', '😢', '🙏', '🔥'];
 
 const moreReactions = [
-  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
-  '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💯', '💢',
-  '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
-  '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙',
-  '😋', '😛', '😜', '🤪', '😝', '🤗', '🤭', '🤫', '🤔', '🤐',
-  '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😌', '😔', '😪',
-  '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🥵', '🥶', '🥴', '😵',
-  '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮',
-  '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢',
-  '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤',
-  '😡', '😠', '🤬', '😈', '💀', '💩', '🤡', '👻', '👽', '🤖',
-  '🙈', '🙉', '🙊', '😺', '😹', '😻', '😽', '🙀', '😿', '😾',
-  '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲',
-  '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '👀', '👁️', '🧠',
-  '✌️', '🤞', '🫰', '🤟', '🤘', '👌', '🤌', '🤏', '👈', '👉',
-  '👆', '👇', '☝️', '👋', '🤙', '🫶', '🫡', '🫠', '🫢', '🫣',
-  '🔥', '✨', '⭐', '🌟', '💫', '⚡', '☄️', '💥', '🌈', '☀️',
-  '🌙', '⛅', '☁️', '❄️', '🌊', '🍀', '🌸', '🌹', '🌻', '🌷',
-  '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🎯', '🎵', '🎶', '📸',
-  '☕', '🍵', '🍺', '🍻', '🥂', '🍰', '🎂', '🍕', '🍔', '🍫',
+  '❤️',
+  '🧡',
+  '💛',
+  '💚',
+  '💙',
+  '💜',
+  '🖤',
+  '🤍',
+  '🤎',
+  '💔',
+  '❣️',
+  '💕',
+  '💞',
+  '💓',
+  '💗',
+  '💖',
+  '💘',
+  '💝',
+  '💯',
+  '💢',
+  '😀',
+  '😃',
+  '😄',
+  '😁',
+  '😆',
+  '😅',
+  '🤣',
+  '😂',
+  '🙂',
+  '🙃',
+  '😉',
+  '😊',
+  '😇',
+  '🥰',
+  '😍',
+  '🤩',
+  '😘',
+  '😗',
+  '😚',
+  '😙',
+  '😋',
+  '😛',
+  '😜',
+  '🤪',
+  '😝',
+  '🤗',
+  '🤭',
+  '🤫',
+  '🤔',
+  '🤐',
+  '😐',
+  '😑',
+  '😶',
+  '😏',
+  '😒',
+  '🙄',
+  '😬',
+  '😌',
+  '😔',
+  '😪',
+  '😴',
+  '😷',
+  '🤒',
+  '🤕',
+  '🤢',
+  '🤮',
+  '🥵',
+  '🥶',
+  '🥴',
+  '😵',
+  '🤯',
+  '🤠',
+  '🥳',
+  '😎',
+  '🤓',
+  '🧐',
+  '😕',
+  '😟',
+  '🙁',
+  '😮',
+  '😯',
+  '😲',
+  '😳',
+  '🥺',
+  '😦',
+  '😧',
+  '😨',
+  '😰',
+  '😥',
+  '😢',
+  '😭',
+  '😱',
+  '😖',
+  '😣',
+  '😞',
+  '😓',
+  '😩',
+  '😫',
+  '🥱',
+  '😤',
+  '😡',
+  '😠',
+  '🤬',
+  '😈',
+  '💀',
+  '💩',
+  '🤡',
+  '👻',
+  '👽',
+  '🤖',
+  '🙈',
+  '🙉',
+  '🙊',
+  '😺',
+  '😹',
+  '😻',
+  '😽',
+  '🙀',
+  '😿',
+  '😾',
+  '👍',
+  '👎',
+  '👊',
+  '✊',
+  '🤛',
+  '🤜',
+  '👏',
+  '🙌',
+  '👐',
+  '🤲',
+  '🤝',
+  '🙏',
+  '✍️',
+  '💅',
+  '🤳',
+  '💪',
+  '🦾',
+  '👀',
+  '👁️',
+  '🧠',
+  '✌️',
+  '🤞',
+  '🫰',
+  '🤟',
+  '🤘',
+  '👌',
+  '🤌',
+  '🤏',
+  '👈',
+  '👉',
+  '👆',
+  '👇',
+  '☝️',
+  '👋',
+  '🤙',
+  '🫶',
+  '🫡',
+  '🫠',
+  '🫢',
+  '🫣',
+  '🔥',
+  '✨',
+  '⭐',
+  '🌟',
+  '💫',
+  '⚡',
+  '☄️',
+  '💥',
+  '🌈',
+  '☀️',
+  '🌙',
+  '⛅',
+  '☁️',
+  '❄️',
+  '🌊',
+  '🍀',
+  '🌸',
+  '🌹',
+  '🌻',
+  '🌷',
+  '🎉',
+  '🎊',
+  '🎈',
+  '🎁',
+  '🏆',
+  '🥇',
+  '🎯',
+  '🎵',
+  '🎶',
+  '📸',
+  '☕',
+  '🍵',
+  '🍺',
+  '🍻',
+  '🥂',
+  '🍰',
+  '🎂',
+  '🍕',
+  '🍔',
+  '🍫',
 ];
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -94,7 +276,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(
-        ref.read(conversationProvider(widget.conversationId).notifier).catchUp(),
+        ref
+            .read(conversationProvider(widget.conversationId).notifier)
+            .catchUp(),
       );
     });
     _scroll.addListener(_onScroll);
@@ -112,7 +296,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _onScroll() {
     if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 400) {
-      ref.read(conversationProvider(widget.conversationId).notifier).loadOlder();
+      ref
+          .read(conversationProvider(widget.conversationId).notifier)
+          .loadOlder();
     }
   }
 
@@ -130,7 +316,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(conversationProvider(widget.conversationId).notifier)
           .edit(editing, text);
       if (!saved && mounted) {
-        AppToast.show(context, 'That edit did not save.', kind: AppToastKind.error);
+        AppToast.show(
+          context,
+          'That edit did not save.',
+          kind: AppToastKind.error,
+        );
       }
       return;
     }
@@ -151,7 +341,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _openMessageMenu(ChatMessage message, bool isMine) async {
     final colors = context.colors;
     final me = ref.read(authProvider).user?.userId ?? '';
-    final notifier = ref.read(conversationProvider(widget.conversationId).notifier);
+    final notifier = ref.read(
+      conversationProvider(widget.conversationId).notifier,
+    );
 
     await showAppSheet<void>(
       contentPadding: EdgeInsets.zero,
@@ -178,7 +370,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         );
                         ref
                             .read(
-                              conversationProvider(widget.conversationId).notifier,
+                              conversationProvider(
+                                widget.conversationId,
+                              ).notifier,
                             )
                             .react(message.messageId, already ? null : emoji);
                       },
@@ -229,7 +423,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 },
               ),
             ListTile(
-              leading: Icon(Icons.visibility_off_outlined, color: colors.textPrimary),
+              leading: Icon(
+                Icons.visibility_off_outlined,
+                color: colors.textPrimary,
+              ),
               title: const Text('Delete for me'),
               subtitle: Text(
                 'It stays for them.',
@@ -257,7 +454,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   ref
-                      .read(conversationProvider(widget.conversationId).notifier)
+                      .read(
+                        conversationProvider(widget.conversationId).notifier,
+                      )
                       .unsend(message.messageId);
                 },
               ),
@@ -275,11 +474,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final other = state.conversation?.other;
     final isPending = state.conversation?.isPending ?? false;
     final canWrite =
-        (!isPending || (state.conversation?.isRequester ?? false)) && state.canSend;
+        (!isPending || (state.conversation?.isRequester ?? false)) &&
+        state.canSend;
 
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
+        leading: const AppBackButton(),
         titleSpacing: 0,
         title: other == null
             ? const SizedBox.shrink()
@@ -323,7 +524,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               final confirmed = await confirmAction(
                 context,
                 title: 'Delete this chat?',
-                body: 'It disappears from your list. The other person keeps theirs.',
+                body:
+                    'It disappears from your list. The other person keeps theirs.',
                 confirmLabel: 'Delete',
                 cancelLabel: 'Keep',
               );
@@ -364,7 +566,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         onPressed: () async {
                           final ok = await ref
                               .read(
-                                conversationProvider(widget.conversationId).notifier,
+                                conversationProvider(
+                                  widget.conversationId,
+                                ).notifier,
                               )
                               .rekey();
                           if (!context.mounted) return;
@@ -373,7 +577,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ok
                                 ? 'Fresh key. You can talk again.'
                                 : 'Could not reset. They may need to open the app.',
-                            kind: ok ? AppToastKind.success : AppToastKind.error,
+                            kind: ok
+                                ? AppToastKind.success
+                                : AppToastKind.error,
                           );
                         },
                       ),
@@ -410,7 +616,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   .firstOrNull;
                         final seen =
                             isMine &&
-                            state.conversation?.theirLastReadMessageId != null &&
+                            state.conversation?.theirLastReadMessageId !=
+                                null &&
                             message.messageId.compareTo(
                                   state.conversation!.theirLastReadMessageId!,
                                 ) <=
@@ -440,7 +647,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           isHighlighted: _highlighted == message.messageId,
                           onDoubleTap: () => ref
                               .read(
-                                conversationProvider(widget.conversationId).notifier,
+                                conversationProvider(
+                                  widget.conversationId,
+                                ).notifier,
                               )
                               .react(
                                 message.messageId,
@@ -468,7 +677,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     .accept(),
                 onReject: () async {
                   final done = await ref
-                      .read(conversationProvider(widget.conversationId).notifier)
+                      .read(
+                        conversationProvider(widget.conversationId).notifier,
+                      )
                       .reject();
                   if (done && context.mounted) context.pop();
                 },
@@ -605,7 +816,9 @@ class _RequestBar extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border(top: BorderSide(color: colors.border)),
+        border: Border(
+          top: BorderSide(color: colors.border, width: AppSizes.hairline),
+        ),
       ),
       child: Column(
         children: [
@@ -670,7 +883,9 @@ class _Composer extends StatelessWidget {
             : AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.border)),
+        border: Border(
+          top: BorderSide(color: colors.border, width: AppSizes.hairline),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -681,7 +896,9 @@ class _Composer extends StatelessWidget {
             child: (editing ?? replyTo) == null
                 ? const SizedBox(width: double.infinity)
                 : _ComposerContext(
-                    label: editing != null ? 'Editing message' : 'Replying to message',
+                    label: editing != null
+                        ? 'Editing message'
+                        : 'Replying to message',
                     body: (editing ?? replyTo)!.text ?? 'Message',
                     tooltip: editing != null ? 'Stop editing' : 'Stop replying',
                     onCancel: editing != null ? onCancelEdit : onCancelReply,
@@ -714,11 +931,17 @@ class _Composer extends StatelessWidget {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.lg + 6),
-                      borderSide: BorderSide(color: colors.border),
+                      borderSide: BorderSide(
+                        color: colors.border,
+                        width: AppSizes.hairline,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.lg + 6),
-                      borderSide: BorderSide(color: colors.border),
+                      borderSide: BorderSide(
+                        color: colors.border,
+                        width: AppSizes.hairline,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.lg + 6),
@@ -761,31 +984,36 @@ class _SendButton extends StatelessWidget {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, child) {
-        final isReady = value.text.trim().isNotEmpty &&
+        final isReady =
+            value.text.trim().isNotEmpty &&
             (original == null || value.text != original);
         return SizedBox(
           width: 44,
           height: 44,
           child: Center(
             child: AnimatedScale(
-          scale: isReady ? 1 : 0.85,
-          duration: AppMotion.fast,
-          curve: AppMotion.easeOut,
-          child: AnimatedOpacity(
-            opacity: isReady ? 1 : 0.4,
-            duration: AppMotion.fast,
-            child: Material(
-              color: colors.accent,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: isReady ? onSend : null,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Icon(Icons.arrow_upward, color: colors.accentText, size: 20),
+              scale: isReady ? 1 : 0.85,
+              duration: AppMotion.fast,
+              curve: AppMotion.easeOut,
+              child: AnimatedOpacity(
+                opacity: isReady ? 1 : 0.4,
+                duration: AppMotion.fast,
+                child: Material(
+                  color: colors.accent,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: isReady ? onSend : null,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Icon(
+                        Icons.arrow_upward,
+                        color: colors.accentText,
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
               ),
             ),
           ),
@@ -794,7 +1022,6 @@ class _SendButton extends StatelessWidget {
     );
   }
 }
-
 
 class _PresenceLine extends StatelessWidget {
   const _PresenceLine({
@@ -847,7 +1074,6 @@ class _PresenceLine extends StatelessWidget {
     );
   }
 }
-
 
 class _DaySeparator extends StatelessWidget {
   const _DaySeparator({required this.isoUtc});
@@ -961,17 +1187,17 @@ class _MoreReactions extends StatelessWidget {
       builder: (sheetContext) => SizedBox(
         height: MediaQuery.of(sheetContext).size.height * 0.42,
         child: GridView.count(
-        crossAxisCount: 8,
-        children: [
-          for (final emoji in moreReactions)
-            InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => Navigator.of(sheetContext).pop(emoji),
-              child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 26)),
+          crossAxisCount: 8,
+          children: [
+            for (final emoji in moreReactions)
+              InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(sheetContext).pop(emoji),
+                child: Center(
+                  child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                ),
               ),
-            ),
-        ],
+          ],
         ),
       ),
     );
@@ -991,9 +1217,13 @@ class _MoreReactions extends StatelessWidget {
         height: 38,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.border, width: AppSizes.hairline),
         ),
-        child: Icon(Icons.add, size: AppSizes.iconSm, color: colors.textSecondary),
+        child: Icon(
+          Icons.add,
+          size: AppSizes.iconSm,
+          color: colors.textSecondary,
+        ),
       ),
     );
   }

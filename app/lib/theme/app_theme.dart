@@ -14,7 +14,8 @@ class AppTheme extends ThemeExtension<AppTheme> {
   static const maroon = AppTheme(colors: AppColors.maroon);
 
   @override
-  AppTheme copyWith({AppColors? colors}) => AppTheme(colors: colors ?? this.colors);
+  AppTheme copyWith({AppColors? colors}) =>
+      AppTheme(colors: colors ?? this.colors);
 
   @override
   AppTheme lerp(ThemeExtension<AppTheme>? other, double t) {
@@ -48,6 +49,12 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
     splashColor: Colors.transparent,
     highlightColor: Colors.transparent,
     hoverColor: Colors.transparent,
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: colors.accent),
+    dividerTheme: DividerThemeData(
+      color: colors.border,
+      thickness: AppSizes.hairline,
+      space: AppSizes.hairline,
+    ),
     appBarTheme: AppBarTheme(
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

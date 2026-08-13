@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,7 +62,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     if (_storyId != null) {
       _load();
     } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _bodyFocus.requestFocus());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _bodyFocus.requestFocus(),
+      );
     }
   }
 
@@ -133,12 +136,17 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       });
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
     } else {
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      AppToast.show(
+        context,
+        result.failureOrNull!.message,
+        kind: AppToastKind.error,
+      );
     }
     return story;
   }
 
-  String? get _titleOrNull => _title.text.trim().isEmpty ? null : _title.text.trim();
+  String? get _titleOrNull =>
+      _title.text.trim().isEmpty ? null : _title.text.trim();
 
   Future<DateTime?> _pickSchedule() async {
     final now = DateTime.now();
@@ -250,13 +258,15 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       return;
     }
 
-    final result = await ref.read(storyRepositoryProvider).publish(
-      storyId,
-      visibility: visibility,
-      communitySlug: _communitySlug,
-      scheduledFor: scheduledFor,
-      exposureAck: exposureAck,
-    );
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .publish(
+          storyId,
+          visibility: visibility,
+          communitySlug: _communitySlug,
+          scheduledFor: scheduledFor,
+          exposureAck: exposureAck,
+        );
 
     if (!mounted) return;
     setState(() => _isPublishing = false);
@@ -267,15 +277,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
       await ref.read(authProvider.notifier).refreshUser();
       if (!mounted) return;
-      AppToast.show(
-        context,
-        switch (visibility) {
-          'public' => 'Your story is live.',
-          'scheduled' => 'Scheduled. It publishes on its own.',
-          _ => 'Saved as private.',
-        },
-        kind: AppToastKind.success,
-      );
+      AppToast.show(context, switch (visibility) {
+        'public' => 'Your story is live.',
+        'scheduled' => 'Scheduled. It publishes on its own.',
+        _ => 'Saved as private.',
+      }, kind: AppToastKind.success);
 
       if (outcome.needsCare || outcome.suggestedCommunity != null) {
         await showAppSheet<void>(
@@ -364,14 +370,16 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
               _VisibilityOption(
                 icon: Icons.lock_outline,
                 title: 'Private',
-                subtitle: 'Only you. Nobody else can open it, not even by link.',
+                subtitle:
+                    'Only you. Nobody else can open it, not even by link.',
                 onTap: () => Navigator.of(sheetContext).pop('private'),
               ),
               const SizedBox(height: AppSpacing.md),
               _VisibilityOption(
                 icon: Icons.schedule,
                 title: 'Schedule',
-                subtitle: 'Pick a time. It publishes itself, even if you are offline.',
+                subtitle:
+                    'Pick a time. It publishes itself, even if you are offline.',
                 onTap: () => Navigator.of(sheetContext).pop('scheduled'),
               ),
             ],
@@ -451,7 +459,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
+                      ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           maxWidth: AppSizes.maxContentWidth,
@@ -519,7 +529,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                         isFitting: _imageFit == 'contain',
                                         onTap: () {
                                           setState(
-                                            () => _imageFit = _imageFit == 'contain'
+                                            () => _imageFit =
+                                                _imageFit == 'contain'
                                                 ? 'cover'
                                                 : 'contain',
                                           );
@@ -545,7 +556,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                 height: 1.7,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Say it here. Nobody knows who you are.',
+                                hintText:
+                                    'Say it here. Nobody knows who you are.',
                                 hintStyle: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: AppTypeScale.label,
@@ -568,7 +580,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                       vertical: AppSpacing.md,
                     ),
                     decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: colors.border)),
+                      border: Border(
+                        top: BorderSide(
+                          color: colors.border,
+                          width: AppSizes.hairline,
+                        ),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -658,7 +675,6 @@ class _VisibilityOption extends StatelessWidget {
   }
 }
 
-
 class _CommunityPicker extends ConsumerWidget {
   const _CommunityPicker({required this.slug, required this.onPick});
 
@@ -680,9 +696,9 @@ class _CommunityPicker extends ConsumerWidget {
         return InkWell(
           onTap: () async {
             final choice = await showAppSheet<String?>(
-      contentPadding: EdgeInsets.zero,
-      context: context,
-      builder: (sheetContext) => SafeArea(
+              contentPadding: EdgeInsets.zero,
+              context: context,
+              builder: (sheetContext) => SafeArea(
                 child: ListView(
                   shrinkWrap: true,
                   children: [
@@ -696,12 +712,16 @@ class _CommunityPicker extends ConsumerWidget {
                     ),
                     for (final community in items)
                       ListTile(
-                        leading: Icon(Icons.groups_outlined, color: colors.accent),
+                        leading: Icon(
+                          Icons.groups_outlined,
+                          color: colors.accent,
+                        ),
                         title: Text(
                           community.name,
                           style: TextStyle(color: colors.textPrimary),
                         ),
-                        onTap: () => Navigator.of(sheetContext).pop(community.slug),
+                        onTap: () =>
+                            Navigator.of(sheetContext).pop(community.slug),
                       ),
                   ],
                 ),
@@ -716,7 +736,10 @@ class _CommunityPicker extends ConsumerWidget {
               vertical: AppSpacing.sm,
             ),
             decoration: BoxDecoration(
-              border: Border.all(color: colors.border),
+              border: Border.all(
+                color: colors.border,
+                width: AppSizes.hairline,
+              ),
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Row(
@@ -873,7 +896,10 @@ class _BlockedSheet extends StatelessWidget {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: colors.border,
+                  width: AppSizes.hairline,
+                ),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
@@ -1095,7 +1121,9 @@ class _VisibilityChip extends StatelessWidget {
                 title: Text(
                   entry.value,
                   style: TextStyle(
-                    color: entry.key == value ? colors.accent : colors.textPrimary,
+                    color: entry.key == value
+                        ? colors.accent
+                        : colors.textPrimary,
                     fontSize: AppTypeScale.body,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1108,7 +1136,11 @@ class _VisibilityChip extends StatelessWidget {
                   ),
                 ),
                 trailing: entry.key == value
-                    ? Icon(Icons.check, color: colors.accent, size: AppSizes.iconSm)
+                    ? Icon(
+                        Icons.check,
+                        color: colors.accent,
+                        size: AppSizes.iconSm,
+                      )
                     : null,
                 onTap: () => Navigator.of(sheetContext).pop(entry.key),
               ),
@@ -1137,7 +1169,10 @@ class _VisibilityChip extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: colors.border),
+              border: Border.all(
+                color: colors.border,
+                width: AppSizes.hairline,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

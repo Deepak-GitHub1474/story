@@ -135,9 +135,9 @@ class TermsCheckbox extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: value ? colors.accent : Colors.transparent,
+                      color: value ? colors.accentStrong : Colors.transparent,
                       border: Border.all(
-                        color: value ? colors.accent : colors.border,
+                        color: value ? colors.accentStrong : colors.border,
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(6),

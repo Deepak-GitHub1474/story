@@ -67,8 +67,8 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
-    final suffix = widget.suffix ??
-        (widget.obscureText ? _revealButton(context) : null);
+    final suffix =
+        widget.suffix ?? (widget.obscureText ? _revealButton(context) : null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,7 +94,10 @@ class _AppTextFieldState extends State<AppTextField> {
           onSubmitted: widget.onSubmitted,
           autocorrect: false,
           enableSuggestions: !widget.obscureText,
-          style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: AppTypeScale.body,
+          ),
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: widget.prefixIcon == null
@@ -110,7 +113,10 @@ class _AppTextFieldState extends State<AppTextField> {
                       color: colors.textMuted,
                     ),
                   ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
             hintStyle: TextStyle(color: colors.textMuted),
             filled: true,
             fillColor: colors.surface,
@@ -122,7 +128,10 @@ class _AppTextFieldState extends State<AppTextField> {
               bottom: 14,
             ),
             enabledBorder: _border(hasError ? colors.danger : colors.border),
-            focusedBorder: _border(hasError ? colors.danger : colors.accent, width: 1.6),
+            focusedBorder: _border(
+              hasError ? colors.danger : colors.accent,
+              width: 1.6,
+            ),
             border: _border(colors.border),
           ),
         ),
@@ -157,8 +166,9 @@ class _AppTextFieldState extends State<AppTextField> {
     );
   }
 
-  OutlineInputBorder _border(Color color, {double width = 1}) => OutlineInputBorder(
-    borderRadius: BorderRadius.circular(AppRadius.md),
-    borderSide: BorderSide(color: color, width: width),
-  );
+  OutlineInputBorder _border(Color color, {double width = AppSizes.hairline}) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide(color: color, width: width),
+      );
 }

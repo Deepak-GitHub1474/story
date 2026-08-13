@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../components/app_back_button.dart';
+
 import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,11 +25,13 @@ import '../../stories/widgets/story_post.dart';
 import '../models/community_models.dart';
 import '../providers/community_providers.dart';
 
-final _userStoriesProvider =
-    FutureProvider.family<List<Story>, String>((ref, username) async {
-      final result = await ref.watch(storyRepositoryProvider).byUser(username);
-      return result.valueOrNull?.items ?? const [];
-    });
+final _userStoriesProvider = FutureProvider.family<List<Story>, String>((
+  ref,
+  username,
+) async {
+  final result = await ref.watch(storyRepositoryProvider).byUser(username);
+  return result.valueOrNull?.items ?? const [];
+});
 
 class PublicProfileScreen extends ConsumerStatefulWidget {
   const PublicProfileScreen({super.key, required this.username});
@@ -35,7 +39,8 @@ class PublicProfileScreen extends ConsumerStatefulWidget {
   final String username;
 
   @override
-  ConsumerState<PublicProfileScreen> createState() => _PublicProfileScreenState();
+  ConsumerState<PublicProfileScreen> createState() =>
+      _PublicProfileScreenState();
 }
 
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
@@ -78,7 +83,11 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     if (!mounted) return;
     if (result.failureOrNull != null) {
       setState(() => _override = profile);
-      AppToast.show(context, result.failureOrNull!.message, kind: AppToastKind.error);
+      AppToast.show(
+        context,
+        result.failureOrNull!.message,
+        kind: AppToastKind.error,
+      );
     } else {
       ref.invalidate(feedProvider);
     }
@@ -86,7 +95,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
   Future<void> _openMenu() async {
     final colors = context.colors;
-    final profile = _override ?? ref.read(publicProfileProvider(widget.username)).valueOrNull;
+    final profile =
+        _override ??
+        ref.read(publicProfileProvider(widget.username)).valueOrNull;
     if (profile == null || profile.isMe) return;
 
     await showAppSheet<void>(
@@ -98,7 +109,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           children: [
             ListTile(
               leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
-              title: Text('Report', style: TextStyle(color: colors.textPrimary)),
+              title: Text(
+                'Report',
+                style: TextStyle(color: colors.textPrimary),
+              ),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 showReportSheet(
@@ -114,14 +128,19 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               title: Text('Block', style: TextStyle(color: colors.danger)),
               subtitle: Text(
                 'They disappear from your feed, and you from theirs.',
-                style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: AppTypeScale.caption,
+                ),
               ),
               onTap: () async {
                 Navigator.of(sheetContext).pop();
-                final result = await ref.read(apiClientProvider).post<bool>(
-                  '${Endpoints.connection(profile.username)}/block',
-                  parse: (data) => true,
-                );
+                final result = await ref
+                    .read(apiClientProvider)
+                    .post<bool>(
+                      '${Endpoints.connection(profile.username)}/block',
+                      parse: (data) => true,
+                    );
                 if (!mounted) return;
                 if (result.isSuccess) {
                   ref.invalidate(feedProvider);
@@ -151,7 +170,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.pop()),
+        leading: const AppBackButton(),
         title: Text('@${widget.username}'),
         actions: [
           IconButton(
@@ -211,11 +230,21 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _Stat(value: '${profile.stories}', label: 'Stories'),
-                                    _Stat(value: '${profile.followers}', label: 'Followers'),
-                                    _Stat(value: '${profile.following}', label: 'Following'),
+                                    _Stat(
+                                      value: '${profile.stories}',
+                                      label: 'Stories',
+                                    ),
+                                    _Stat(
+                                      value: '${profile.followers}',
+                                      label: 'Followers',
+                                    ),
+                                    _Stat(
+                                      value: '${profile.following}',
+                                      label: 'Following',
+                                    ),
                                   ],
                                 ),
                               ],
@@ -238,57 +267,74 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         Row(
                           children: [
-                        Expanded(
-                          child: Material(
-                            color: profile.isFollowing
-                                ? Colors.transparent
-                                : colors.accent,
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                            child: InkWell(
-                              onTap: () => _toggleFollow(profile),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              child: AnimatedContainer(
-                                duration: AppMotion.fast,
-                                height: 42,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: profile.isFollowing
-                                        ? colors.border
-                                        : colors.accent,
-                                  ),
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                            Expanded(
+                              child: Material(
+                                color: profile.isFollowing
+                                    ? Colors.transparent
+                                    : colors.accent,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
                                 ),
-                                child: Text(
-                                  profile.isFollowing ? 'Following' : 'Follow',
-                                  style: TextStyle(
-                                    color: profile.isFollowing
-                                        ? colors.textPrimary
-                                        : colors.accentText,
-                                    fontSize: AppTypeScale.body,
-                                    fontWeight: FontWeight.w500,
+                                child: InkWell(
+                                  onTap: () => _toggleFollow(profile),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.fast,
+                                    height: 42,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: profile.isFollowing
+                                            ? colors.border
+                                            : colors.accent,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.md,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      profile.isFollowing
+                                          ? 'Following'
+                                          : 'Follow',
+                                      style: TextStyle(
+                                        color: profile.isFollowing
+                                            ? colors.textPrimary
+                                            : colors.accentText,
+                                        fontSize: AppTypeScale.body,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Material(
                                 color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
+                                ),
                                 child: InkWell(
                                   onTap: _isOpeningChat
                                       ? null
                                       : () => _openChat(profile.username),
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
                                   child: Container(
                                     height: 42,
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      border: Border.all(color: colors.border),
-                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                      border: Border.all(
+                                        color: colors.border,
+                                        width: AppSizes.hairline,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.md,
+                                      ),
                                     ),
                                     child: Text(
                                       _isOpeningChat ? 'Opening' : 'Message',
@@ -369,13 +415,15 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           label,
-          style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+          style: TextStyle(
+            color: colors.textMuted,
+            fontSize: AppTypeScale.caption,
+          ),
         ),
       ],
     );
   }
 }
-
 
 class _InteractiveStory extends ConsumerStatefulWidget {
   const _InteractiveStory({required this.story, required this.onChanged});
@@ -408,7 +456,9 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
 
     if (!mounted) return;
     if (result.isSuccess) {
-      setState(() => _override = _override!.copyWith(likes: result.valueOrNull));
+      setState(
+        () => _override = _override!.copyWith(likes: result.valueOrNull),
+      );
     } else {
       setState(() => _override = current);
     }
@@ -428,7 +478,8 @@ class _InteractiveStoryState extends ConsumerState<_InteractiveStory> {
       },
       onLike: _toggleLike,
       onShare: _story.isPublic ? _share : null,
-      onAuthorTap: () => context.push('${Routes.user}/${_story.author.username}'),
+      onAuthorTap: () =>
+          context.push('${Routes.user}/${_story.author.username}'),
       onSharedTap: _story.shared == null
           ? null
           : () => context.push('${Routes.story}/${_story.shared!.storyId}'),

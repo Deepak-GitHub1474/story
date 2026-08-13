@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -80,7 +82,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Edit profile',
-      leading: BackButton(onPressed: () => context.pop()),
+      leading: const AppBackButton(),
       alignment: Alignment.topCenter,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

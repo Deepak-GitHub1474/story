@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,7 +25,7 @@ class CommunitiesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.pop()),
+        leading: const AppBackButton(),
         title: const Text('Communities'),
       ),
       body: SafeArea(
@@ -32,31 +34,34 @@ class CommunitiesScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: SizedBox(
-              height: 44,
-              child: categories.when(
-                loading: () => const SizedBox.shrink(),
-                error: (error, _) => const SizedBox.shrink(),
-                data: (items) => ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                  children: [
-                    _CategoryChip(
-                      label: 'All',
-                      isActive: selected == null,
-                      onTap: () =>
-                          ref.read(communityBrowseProvider.notifier).filter(null),
+                height: 44,
+                child: categories.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (error, _) => const SizedBox.shrink(),
+                  data: (items) => ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
                     ),
-                    for (final category in items)
+                    children: [
                       _CategoryChip(
-                        label: category.name,
-                        isActive: selected == category.slug,
+                        label: 'All',
+                        isActive: selected == null,
                         onTap: () => ref
                             .read(communityBrowseProvider.notifier)
-                            .filter(category.slug),
+                            .filter(null),
                       ),
-                  ],
+                      for (final category in items)
+                        _CategoryChip(
+                          label: category.name,
+                          isActive: selected == category.slug,
+                          onTap: () => ref
+                              .read(communityBrowseProvider.notifier)
+                              .filter(category.slug),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
             Expanded(
@@ -92,8 +97,9 @@ class CommunitiesScreen extends ConsumerWidget {
                       final community = items[index - 1];
                       return CommunityTile(
                         community: community,
-                        onTap: () =>
-                            context.push('${Routes.community}/${community.slug}'),
+                        onTap: () => context.push(
+                          '${Routes.community}/${community.slug}',
+                        ),
                         onToggle: () => ref
                             .read(communityBrowseProvider.notifier)
                             .toggleMembership(community),
@@ -128,7 +134,7 @@ class _CategoryChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.xs),
       child: Material(
-        color: isActive ? colors.accent : colors.surface,
+        color: isActive ? colors.accentStrong : colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         child: InkWell(
           onTap: onTap,
@@ -140,7 +146,10 @@ class _CategoryChip extends StatelessWidget {
               vertical: AppSpacing.sm,
             ),
             decoration: BoxDecoration(
-              border: Border.all(color: isActive ? colors.accent : colors.border),
+              border: Border.all(
+                color: isActive ? colors.accentStrong : colors.border,
+                width: AppSizes.hairline,
+              ),
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Text(

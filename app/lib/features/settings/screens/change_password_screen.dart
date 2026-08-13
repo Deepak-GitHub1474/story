@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,7 +19,8 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() =>
+      _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
@@ -44,10 +47,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       _nextError = null;
     });
 
-    final result = await ref.read(profileRepositoryProvider).changePassword(
-      currentPassword: _current.text,
-      newPassword: _next.text,
-    );
+    final result = await ref
+        .read(profileRepositoryProvider)
+        .changePassword(
+          currentPassword: _current.text,
+          newPassword: _next.text,
+        );
 
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -81,7 +86,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     return AppScaffold(
       title: 'Change password',
-      leading: BackButton(onPressed: () => context.pop()),
+      leading: const AppBackButton(),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +95,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: colors.surface,
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: colors.border,
+                  width: AppSizes.hairline,
+                ),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(

@@ -33,7 +33,7 @@ class AppColors {
     bg: Color(0xFF0B0D12),
     surface: Color(0xFF13161D),
     surfaceRaised: Color(0xFF1B1F28),
-    border: Color(0xFF262B36),
+    border: Color(0xFF1F242D),
     textPrimary: Color(0xFFEDEFF3),
     textSecondary: Color(0xFFA3AAB8),
     textMuted: Color(0xFF6B7280),
@@ -48,7 +48,7 @@ class AppColors {
     bg: Color(0xFFF7F8F3),
     surface: Color(0xFFFFFFFF),
     surfaceRaised: Color(0xFFEFF0EA),
-    border: Color(0xFFDFE1DA),
+    border: Color(0xFFEAEBE5),
     textPrimary: Color(0xFF16161A),
     textSecondary: Color(0xFF4A4A55),
     textMuted: Color(0xFF6E6E7A),
@@ -63,7 +63,7 @@ class AppColors {
     bg: Color(0xFFFFF5F7),
     surface: Color(0xFFFFFFFF),
     surfaceRaised: Color(0xFFFFE9EE),
-    border: Color(0xFFFFB1C1),
+    border: Color(0xFFF6DDE4),
     textPrimary: Color(0xFF1A1A1A),
     textSecondary: Color(0xFF5B4A50),
     textMuted: Color(0xFF8C8C8C),
@@ -78,7 +78,7 @@ class AppColors {
     bg: Color(0xFF1A1114),
     surface: Color(0xFF241820),
     surfaceRaised: Color(0xFF2F2029),
-    border: Color(0xFF8E3A59),
+    border: Color(0xFF3A2831),
     textPrimary: Color(0xFFF3F0EF),
     textSecondary: Color(0xFFC9BEC3),
     textMuted: Color(0xFFA3B0A4),
@@ -130,6 +130,7 @@ class AppSizes {
   static const double iconSm = 18;
   static const double iconMd = 22;
   static const double iconNav = 26;
+  static const double hairline = 0.6;
   static const double maxContentWidth = 560;
 }
 

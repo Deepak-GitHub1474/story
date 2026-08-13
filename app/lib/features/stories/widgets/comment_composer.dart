@@ -29,7 +29,9 @@ class CommentComposer extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: colors.border, width: AppSizes.hairline),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -119,7 +121,8 @@ class CommentComposer extends StatelessWidget {
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: controller,
                     builder: (context, value, child) {
-                      final canSend = value.text.trim().isNotEmpty && !isSending;
+                      final canSend =
+                          value.text.trim().isNotEmpty && !isSending;
 
                       return AnimatedScale(
                         scale: canSend ? 1 : 0.85,
@@ -130,11 +133,15 @@ class CommentComposer extends StatelessWidget {
                               ? const SizedBox(
                                   width: AppSizes.iconSm,
                                   height: AppSizes.iconSm,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Icon(
                                   Icons.send_rounded,
-                                  color: canSend ? colors.accent : colors.textMuted,
+                                  color: canSend
+                                      ? colors.accent
+                                      : colors.textMuted,
                                 ),
                           onPressed: canSend ? onSend : null,
                         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/tokens.dart';
 import 'avatar_face.dart';
 
 String initialFor({required String? displayName, required String username}) {
@@ -36,7 +37,10 @@ class AppAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: context.colors.border),
+        border: Border.all(
+          color: context.colors.border,
+          width: AppSizes.hairline,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: AvatarFace(seed: seed, size: size),

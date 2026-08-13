@@ -93,7 +93,10 @@ class _PolishSheetState extends ConsumerState<PolishSheet> {
                       vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: colors.border),
+                      border: Border.all(
+                        color: colors.border,
+                        width: AppSizes.hairline,
+                      ),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
@@ -121,7 +124,10 @@ class _PolishSheetState extends ConsumerState<PolishSheet> {
               constraints: const BoxConstraints(maxHeight: 220),
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: colors.border,
+                  width: AppSizes.hairline,
+                ),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: SingleChildScrollView(

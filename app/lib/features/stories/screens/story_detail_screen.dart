@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../components/app_back_button.dart';
+
 import '../../../components/app_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -325,7 +327,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
+      appBar: AppBar(leading: const AppBackButton()),
       body: asyncStory.when(
         loading: () => const SkeletonList(count: 3),
         error: (error, _) => Center(

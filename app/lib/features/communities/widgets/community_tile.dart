@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/community_models.dart';
+import 'community_icon.dart';
 
 class CommunityTile extends StatelessWidget {
   const CommunityTile({
@@ -28,6 +29,7 @@ class CommunityTile extends StatelessWidget {
           vertical: AppSpacing.lg,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 44,
@@ -37,13 +39,10 @@ class CommunityTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               alignment: Alignment.center,
-              child: Text(
-                community.name.characters.first.toUpperCase(),
-                style: TextStyle(
-                  color: colors.accent,
-                  fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Icon(
+                iconForCategory(community.categoryId),
+                size: AppSizes.iconMd,
+                color: colors.accent,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -100,7 +99,7 @@ class _JoinButton extends StatelessWidget {
     final colors = context.colors;
 
     return Material(
-      color: isMember ? Colors.transparent : colors.accent,
+      color: isMember ? Colors.transparent : colors.accentStrong,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: onTap,
@@ -112,7 +111,9 @@ class _JoinButton extends StatelessWidget {
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            border: Border.all(color: isMember ? colors.border : colors.accent),
+            border: Border.all(
+              color: isMember ? colors.border : colors.accentStrong,
+            ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text(

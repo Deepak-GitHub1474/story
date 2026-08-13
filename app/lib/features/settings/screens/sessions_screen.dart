@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../components/app_card.dart';
 import '../../../components/app_scaffold.dart';
@@ -25,7 +26,7 @@ class SessionsScreen extends ConsumerWidget {
 
     return AppScaffold(
       title: 'Active sessions',
-      leading: BackButton(onPressed: () => context.pop()),
+      leading: const AppBackButton(),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: sessions.when(
         loading: () => const Center(child: CircularProgressIndicator()),

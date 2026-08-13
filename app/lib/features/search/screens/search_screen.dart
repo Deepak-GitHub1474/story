@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,7 +46,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.pop()),
+        leading: const AppBackButton(),
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(right: AppSpacing.xs),
@@ -52,8 +54,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             controller: _controller,
             autofocus: true,
             textInputAction: TextInputAction.search,
-            style: TextStyle(color: colors.textPrimary, fontSize: AppTypeScale.body),
-            onChanged: (value) => ref.read(searchProvider.notifier).query(value),
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.body,
+            ),
+            onChanged: (value) =>
+                ref.read(searchProvider.notifier).query(value),
             decoration: InputDecoration(
               isDense: true,
               hintText: widget.peopleOnly
@@ -96,7 +102,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Builder(
           builder: (context) {
             if (state.query.isEmpty) {
-              return _RecentSearches(onPick: _pick, peopleOnly: widget.peopleOnly);
+              return _RecentSearches(
+                onPick: _pick,
+                peopleOnly: widget.peopleOnly,
+              );
             }
             if (state.isLoading) return const SkeletonList(count: 4);
             final nothing = widget.peopleOnly
@@ -141,7 +150,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   _SectionHeader(label: 'Communities'),
                   for (final community in results.communities)
                     ListTile(
-                      leading: Icon(Icons.groups_outlined, color: colors.accent),
+                      leading: Icon(
+                        Icons.groups_outlined,
+                        color: colors.accent,
+                      ),
                       title: Text(
                         community.name,
                         style: TextStyle(
@@ -162,9 +174,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   for (final story in results.stories) ...[
                     StoryPost(
                       story: story,
-                      onTap: () => context.push('${Routes.story}/${story.storyId}'),
-                      onAuthorTap: () =>
-                          context.push('${Routes.user}/${story.author.username}'),
+                      onTap: () =>
+                          context.push('${Routes.story}/${story.storyId}'),
+                      onAuthorTap: () => context.push(
+                        '${Routes.user}/${story.author.username}',
+                      ),
                     ),
                     Divider(height: 1, color: colors.border),
                   ],
@@ -253,7 +267,6 @@ class _Hint extends StatelessWidget {
   }
 }
 
-
 class _RecentSearches extends ConsumerStatefulWidget {
   const _RecentSearches({required this.onPick, this.peopleOnly = false});
 
@@ -333,7 +346,6 @@ class _RecentSearchesState extends ConsumerState<_RecentSearches> {
   }
 }
 
-
 class _NoMatch extends StatelessWidget {
   const _NoMatch({required this.query});
 
@@ -349,11 +361,7 @@ class _NoMatch extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.search_off_outlined,
-              size: 44,
-              color: colors.textMuted,
-            ),
+            Icon(Icons.search_off_outlined, size: 44, color: colors.textMuted),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Nothing matched',

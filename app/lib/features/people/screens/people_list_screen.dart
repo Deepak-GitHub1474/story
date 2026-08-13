@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../components/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,22 +16,30 @@ import '../../communities/models/community_models.dart';
 
 enum PeopleKind { following, followers, blocked }
 
-final peopleProvider =
-    FutureProvider.family<List<PublicProfile>, PeopleKind>((ref, kind) async {
-      final path = switch (kind) {
-        PeopleKind.following => Endpoints.following,
-        PeopleKind.followers => Endpoints.followers,
-        PeopleKind.blocked => Endpoints.blocked,
-      };
+final peopleProvider = FutureProvider.family<List<PublicProfile>, PeopleKind>((
+  ref,
+  kind,
+) async {
+  final path = switch (kind) {
+    PeopleKind.following => Endpoints.following,
+    PeopleKind.followers => Endpoints.followers,
+    PeopleKind.blocked => Endpoints.blocked,
+  };
 
-      final result = await ref.watch(apiClientProvider).get<List<PublicProfile>>(
+  final result = await ref
+      .watch(apiClientProvider)
+      .get<List<PublicProfile>>(
         path,
         parse: (data) => (data['items'] as List<dynamic>)
-            .map((item) => PublicProfile.fromJson(Map<String, dynamic>.from(item as Map)))
+            .map(
+              (item) => PublicProfile.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ),
+            )
             .toList(),
       );
-      return result.valueOrNull ?? const [];
-    });
+  return result.valueOrNull ?? const [];
+});
 
 class PeopleListScreen extends ConsumerWidget {
   const PeopleListScreen({super.key, required this.kind});
@@ -43,9 +53,11 @@ class PeopleListScreen extends ConsumerWidget {
   };
 
   String get _emptyBody => switch (kind) {
-    PeopleKind.following => 'When you follow someone, their stories move to the top of yours.',
+    PeopleKind.following =>
+      'When you follow someone, their stories move to the top of yours.',
     PeopleKind.followers => 'People who follow you appear here.',
-    PeopleKind.blocked => 'Blocked accounts cannot see you and you cannot see them.',
+    PeopleKind.blocked =>
+      'Blocked accounts cannot see you and you cannot see them.',
   };
 
   @override
@@ -55,10 +67,7 @@ class PeopleListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.pop()),
-        title: Text(_title),
-      ),
+      appBar: AppBar(leading: const AppBackButton(), title: Text(_title)),
       body: SafeArea(
         child: people.when(
           loading: () => const SkeletonList(count: 5),
@@ -154,7 +163,8 @@ class PeopleListScreen extends ConsumerWidget {
                                 ),
                               )
                             : null,
-                        onTap: () => context.push('${Routes.user}/${person.username}'),
+                        onTap: () =>
+                            context.push('${Routes.user}/${person.username}'),
                       );
                     },
                   ),

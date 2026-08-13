@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -25,7 +26,7 @@ class SplashScreen extends StatelessWidget {
               height: AppSizes.iconMd,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.midnight.accent,
+                color: context.colors.accent,
               ),
             ),
           ],
