@@ -38,6 +38,50 @@ void main() {
     );
   });
 
+  testWidgets('the terms follow the finger instead of jumping to stops', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(showTermsSheet));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final sheet = tester.widget<DraggableScrollableSheet>(
+      find.byType(DraggableScrollableSheet),
+    );
+    expect(
+      sheet.snap,
+      isFalse,
+      reason: 'snapping is what makes it feel like three fixed heights',
+    );
+    expect(sheet.snapSizes, isNull);
+    expect(sheet.maxChildSize, 1);
+  });
+
+  testWidgets('a half drag leaves the terms at a height of their own', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(showTermsSheet));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final before = tester.getTopLeft(find.byType(DraggableScrollableSheet)).dy;
+    final sheetHeightBefore =
+        tester.getSize(find.byType(DraggableScrollableSheet)).height;
+
+    await tester.drag(find.text('You stay anonymous'), const Offset(0, -120));
+    await tester.pumpAndSettle();
+
+    final grown = tester.getSize(find.byType(DraggableScrollableSheet)).height;
+    expect(
+      grown,
+      greaterThan(sheetHeightBefore),
+      reason: 'dragging up should grow the sheet',
+    );
+    expect(before, isNotNull);
+  });
+
   testWidgets('dragging the terms down closes them', (tester) async {
     await tester.pumpWidget(_host(showTermsSheet));
 

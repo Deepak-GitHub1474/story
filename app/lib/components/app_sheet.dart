@@ -13,20 +13,19 @@ Future<T?> showAppSheet<T>({
   ),
   Widget? footer,
   bool isResizable = false,
-  double initialSize = 0.62,
+  double initialSize = 0.68,
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: isScrollControlled,
   useRootNavigator: true,
+  useSafeArea: isResizable,
   backgroundColor: Colors.transparent,
   builder: (sheetContext) => isResizable
       ? DraggableScrollableSheet(
           initialChildSize: initialSize,
-          minChildSize: 0.32,
-          maxChildSize: 0.94,
+          minChildSize: 0.45,
+          maxChildSize: 1,
           expand: false,
-          snap: true,
-          snapSizes: [initialSize],
           shouldCloseOnMinExtent: true,
           builder: (context, scrollController) => AppSheet(
             title: title,
@@ -114,6 +113,9 @@ class AppSheet extends StatelessWidget {
           Flexible(
             child: SingleChildScrollView(
               controller: scrollController,
+              physics: isResizable
+                  ? const AlwaysScrollableScrollPhysics()
+                  : null,
               padding: contentPadding.copyWith(
                 bottom: footer != null
                     ? AppSpacing.lg

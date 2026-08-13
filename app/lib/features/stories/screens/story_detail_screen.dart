@@ -369,7 +369,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 ),
                               ),
                               Text(
-                                '${timeAgo(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min read',
+                                '${timeAgoLong(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min read',
                                 style: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: AppTypeScale.caption,

@@ -129,6 +129,7 @@ class AppSizes {
   static const double controlHeight = 52;
   static const double iconSm = 18;
   static const double iconMd = 22;
+  static const double iconNav = 26;
   static const double maxContentWidth = 560;
 }
 

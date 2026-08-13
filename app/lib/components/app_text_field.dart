@@ -118,8 +118,8 @@ class _AppTextFieldState extends State<AppTextField> {
             contentPadding: EdgeInsets.only(
               left: widget.prefixIcon == null ? AppSpacing.lg : 0,
               right: AppSpacing.lg,
-              top: AppSpacing.lg,
-              bottom: AppSpacing.lg,
+              top: 14,
+              bottom: 14,
             ),
             enabledBorder: _border(hasError ? colors.danger : colors.border),
             focusedBorder: _border(hasError ? colors.danger : colors.accent, width: 1.6),

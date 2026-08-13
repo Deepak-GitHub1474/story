@@ -69,161 +69,154 @@ class _SigninScreenState extends ConsumerState<SigninScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 46),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    0,
-                    AppSpacing.xl,
-                    AppSpacing.lg,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Welcome back',
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 26,
-                          height: 1.15,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SizedBox(
-                        width: 215,
-                        child: Text(
-                          'Your stories are where you left them.',
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: AppTypeScale.body,
-                            height: 1.5,
+          Column(
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 46 + AppSpacing.xl),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.xl,
+                            0,
+                            AppSpacing.xl,
+                            AppSpacing.lg,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Welcome back',
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 26,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              SizedBox(
+                                width: 215,
+                                child: Text(
+                                  'Your stories are where you left them.',
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: AppTypeScale.body,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppSpacing.sm),
-                      AppTextField(
-                        controller: _username,
-                        label: 'Username',
-                        hint: 'quiet_fox',
-                        prefixIcon: Icons.person_outline,
-                        autofocus: true,
-                        onChanged: (_) => setState(() {}),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-z0-9_]'),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
                           ),
-                          LengthLimitingTextInputFormatter(20),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppTextField(
-                        controller: _password,
-                        label: 'Password',
-                        prefixIcon: Icons.lock_outline,
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        onChanged: (_) => setState(() {}),
-                        onSubmitted: (_) => _canSubmit ? _submit() : null,
-                      ),
-                      if (_formError != null) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            border: Border.all(color: colors.danger),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Text(
-                            _formError!,
-                            style: TextStyle(
-                              color: colors.danger,
-                              fontSize: AppTypeScale.label,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: (constraints.maxHeight * 0.26).clamp(
+                                  AppSpacing.xl,
+                                  180,
+                                ),
+                              ),
+                              AppTextField(
+                                controller: _username,
+                                label: 'Username',
+                                hint: 'quiet_fox',
+                                prefixIcon: Icons.person_outline,
+                                autofocus: true,
+                                onChanged: (_) => setState(() {}),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-z0-9_]'),
+                                  ),
+                                  LengthLimitingTextInputFormatter(20),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              AppTextField(
+                                controller: _password,
+                                label: 'Password',
+                                prefixIcon: Icons.lock_outline,
+                                obscureText: true,
+                                textInputAction: TextInputAction.done,
+                                onChanged: (_) => setState(() {}),
+                                onSubmitted: (_) =>
+                                    _canSubmit ? _submit() : null,
+                              ),
+                              if (_formError != null) ...[
+                                const SizedBox(height: AppSpacing.lg),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    border: Border.all(color: colors.danger),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _formError!,
+                                    style: TextStyle(
+                                      color: colors.danger,
+                                      fontSize: AppTypeScale.label,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: AppSpacing.sm),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () =>
+                                      context.push(Routes.forgotPassword),
+                                  child: Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      color: colors.accent,
+                                      fontSize: AppTypeScale.label,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
                           ),
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.sm),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: () => context.push(Routes.forgotPassword),
-                          child: Text(
-                            'Forgot password?',
-                            style: TextStyle(
-                              color: colors.accent,
-                              fontSize: AppTypeScale.label,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      AppButton(
-                        label: 'Sign in',
-                        isLoading: isBusy,
-                        onPressed: _canSubmit ? _submit : null,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Center(
-                        child: Text(
-                          'Your privacy is our priority.',
-                          style: TextStyle(
-                            color: colors.textMuted,
-                            fontSize: AppTypeScale.label,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lock_outline,
-                              size: AppSizes.iconSm,
-                              color: colors.accent,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              'No tracking. No real names. Just you and your story.',
-                              style: TextStyle(
-                                color: colors.textMuted,
-                                fontSize: AppTypeScale.label,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.md,
+                  AppSpacing.xl,
+                  AppSpacing.xxl,
+                ),
+                child: AppButton(
+                  label: 'Sign in',
+                  isLoading: isBusy,
+                  onPressed: _canSubmit ? _submit : null,
+                ),
+              ),
+            ],
           ),
           Positioned(
             top: 46,

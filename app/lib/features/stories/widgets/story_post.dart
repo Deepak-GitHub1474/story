@@ -88,7 +88,7 @@ class _StoryPostState extends State<StoryPost> {
                     Text(
                       story.shared != null
                           ? 'Shared ${story.shared!.author.handle}\'s story'
-                          : '${timeAgo(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min',
+                          : '${timeAgoLong(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min read',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textMuted,
@@ -173,14 +173,6 @@ class _StoryPostState extends State<StoryPost> {
                 const SizedBox(height: AppSpacing.md),
                 SharedStoryCard(shared: story.shared!, onTap: widget.onSharedTap),
               ],
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                timeAgo(story.publishedAt ?? story.createdAt),
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: AppTypeScale.caption,
-                ),
-              ),
               const SizedBox(height: AppSpacing.lg),
             ],
           ),

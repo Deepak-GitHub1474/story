@@ -38,7 +38,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Create your account'), findsOneWidget);
-      expect(find.text('Your privacy is our priority.'), findsOneWidget);
+      expect(
+        find.text('Your privacy is our priority.'),
+        findsNothing,
+        reason: 'the footer promise lives on welcome and sign in, not here',
+      );
       expect(find.byIcon(Icons.person_outline), findsOneWidget);
       expect(find.byIcon(Icons.lock_outline), findsWidgets);
       expect(find.byIcon(Icons.card_giftcard_outlined), findsOneWidget);

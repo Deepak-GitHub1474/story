@@ -19,7 +19,6 @@ class ShellDestination {
     required this.icon,
     required this.activeIcon,
     this.badgeCount = 0,
-    this.isAvatar = false,
   });
 
   final String route;
@@ -27,7 +26,6 @@ class ShellDestination {
   final IconData icon;
   final IconData activeIcon;
   final int badgeCount;
-  final bool isAvatar;
 
   ShellDestination withBadge(int count) => ShellDestination(
     route: route,
@@ -35,7 +33,6 @@ class ShellDestination {
     icon: icon,
     activeIcon: activeIcon,
     badgeCount: count,
-    isAvatar: isAvatar,
   );
 }
 
@@ -89,13 +86,15 @@ class AppShell extends ConsumerWidget {
         ),
         bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.border)),
+          color: colors.bg,
+          border: Border(
+            top: BorderSide(color: colors.border.withValues(alpha: 0.6)),
+          ),
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 56,
+            height: 54,
             child: Row(
               children: [
                 Expanded(
@@ -105,7 +104,7 @@ class AppShell extends ConsumerWidget {
                     onTap: () => context.go(destinations[0].route),
                   ),
                 ),
-                _ComposeButton(onTap: onCompose),
+                Expanded(child: _ComposeButton(onTap: onCompose)),
                 for (var index = 1; index < destinations.length; index++)
                   Expanded(
                     child: _ShellTab(
@@ -146,7 +145,7 @@ class _ShellTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final color = isActive ? colors.accent : colors.textMuted;
+    final color = isActive ? colors.accent : colors.textSecondary;
 
     return Semantics(
       label: destination.label,
@@ -160,38 +159,22 @@ class _ShellTab extends StatelessWidget {
           Stack(
               clipBehavior: Clip.none,
               children: [
-                if (destination.isAvatar)
-                  Container(
-                    width: AppSizes.iconMd,
-                    height: AppSizes.iconMd,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: color, width: isActive ? 2 : 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      isActive ? destination.activeIcon : destination.icon,
-                      color: color,
-                      size: AppSizes.iconMd - 8,
-                    ),
-                  )
-                else
-                  Icon(
-                    isActive ? destination.activeIcon : destination.icon,
-                    color: color,
-                    size: AppSizes.iconMd,
-                  ),
+                Icon(
+                  isActive ? destination.activeIcon : destination.icon,
+                  color: color,
+                  size: AppSizes.iconNav,
+                ),
                 if (badgeCount > 0)
                   Positioned(
                     right: -2,
                     top: -1,
                     child: Container(
-                      width: 9,
-                      height: 9,
+                      width: 8,
+                      height: 8,
                       decoration: BoxDecoration(
                         color: colors.danger,
                         shape: BoxShape.circle,
-                        border: Border.all(color: colors.surface, width: 1.5),
+                        border: Border.all(color: colors.bg, width: 1.5),
                       ),
                     ),
                   ),
@@ -221,8 +204,7 @@ class _ComposeButtonState extends State<_ComposeButton> {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    return Center(
       child: GestureDetector(
         onTapDown: (_) => setState(() => _isPressed = true),
         onTapUp: (_) => setState(() => _isPressed = false),
@@ -240,8 +222,8 @@ class _ComposeButtonState extends State<_ComposeButton> {
               height: 40,
               child: Icon(
                 Icons.add_box_outlined,
-                color: colors.textMuted,
-                size: AppSizes.iconMd,
+                color: colors.textSecondary,
+                size: AppSizes.iconNav,
               ),
             ),
           ),

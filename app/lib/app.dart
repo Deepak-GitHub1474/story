@@ -34,8 +34,8 @@ class StoryApp extends ConsumerWidget {
             statusBarColor: Colors.transparent,
             statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-            systemNavigationBarColor: colors.surface,
-            systemNavigationBarDividerColor: colors.border,
+            systemNavigationBarColor: colors.bg,
+            systemNavigationBarDividerColor: Colors.transparent,
             systemNavigationBarIconBrightness: isDark
                 ? Brightness.light
                 : Brightness.dark,

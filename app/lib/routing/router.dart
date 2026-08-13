@@ -4,10 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../components/app_shell.dart';
 import '../features/auth/providers/auth_provider.dart';
-import '../features/auth/screens/signin_screen.dart';
-import '../features/auth/screens/signup_screen.dart';
+import '../features/auth/screens/auth_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
-import '../features/auth/screens/welcome_screen.dart';
 import '../features/home/screens/feed_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
 import '../features/account/screens/danger_zone_screen.dart';
@@ -58,7 +56,6 @@ const shellDestinations = [
     label: 'You',
     icon: Icons.person_outline,
     activeIcon: Icons.person,
-    isAvatar: true,
   ),
 ];
 
@@ -89,17 +86,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.welcome,
         pageBuilder: (context, state) =>
-            fadePage(key: state.pageKey, child: const WelcomeScreen()),
+            fadePage(key: state.pageKey, child: const AuthScreen()),
       ),
       GoRoute(
         path: Routes.signup,
-        pageBuilder: (context, state) =>
-            slidePage(key: state.pageKey, child: const SignupScreen()),
+        pageBuilder: (context, state) => fadePage(
+          key: state.pageKey,
+          child: const AuthScreen(initialTab: AuthTab.signup),
+        ),
       ),
       GoRoute(
         path: Routes.signin,
-        pageBuilder: (context, state) =>
-            slidePage(key: state.pageKey, child: const SigninScreen()),
+        pageBuilder: (context, state) => fadePage(
+          key: state.pageKey,
+          child: const AuthScreen(initialTab: AuthTab.login),
+        ),
       ),
       GoRoute(
         path: Routes.compose,

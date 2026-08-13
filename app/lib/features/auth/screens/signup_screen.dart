@@ -125,163 +125,132 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 46),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    0,
-                    AppSpacing.xl,
-                    AppSpacing.lg,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Create your account',
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 26,
-                          height: 1.15,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SizedBox(
-                        width: 215,
-                        child: Text(
-                          'Pick a name nobody can trace back to you.',
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: AppTypeScale.body,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                  ),
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: AppSpacing.sm),
-                      AppTextField(
-                        controller: _username,
-                        label: 'Username',
-                        hint: 'quiet_fox',
-                        prefixIcon: Icons.person_outline,
-                        autofocus: true,
-                        errorText: _usernameAvailable == false
-                            ? 'That username is already taken.'
-                            : _usernameError,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-z0-9_-]'),
-                          ),
-                          LengthLimitingTextInputFormatter(30),
-                        ],
-                        onChanged: _onUsernameChanged,
-                        suffix: _usernameMark(colors),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppTextField(
-                        controller: _password,
-                        label: 'Password',
-                        prefixIcon: Icons.lock_outline,
-                        obscureText: true,
-                        errorText: _passwordError,
-                        helperText: 'At least 10 characters.',
-                        helperIcon: Icons.shield_outlined,
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      PasswordStrengthBar(password: _password.text),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppTextField(
-                        controller: _referral,
-                        label: 'Referral code (optional)',
-                        hint: 'ABC123',
-                        prefixIcon: Icons.card_giftcard_outlined,
-                        errorText: _referralError,
-                        textInputAction: TextInputAction.done,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[A-Za-z0-9]'),
-                          ),
-                          LengthLimitingTextInputFormatter(6),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      TermsCheckbox(
-                        value: _tncAccepted,
-                        onChanged: (value) =>
-                            setState(() => _tncAccepted = value),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppButton(
-                        label: 'Create account',
-                        isLoading: isBusy,
-                        onPressed: _canSubmit ? _submit : null,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: colors.surfaceRaised,
-                              shape: BoxShape.circle,
+                      const SizedBox(height: 46 + AppSpacing.md),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl,
+                          0,
+                          AppSpacing.xl,
+                          AppSpacing.lg,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Create your account',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 26,
+                                height: 1.15,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.lock_outline,
-                              size: AppSizes.iconSm,
-                              color: colors.accent,
+                            const SizedBox(height: AppSpacing.sm),
+                            SizedBox(
+                              width: 215,
+                              child: Text(
+                                'Pick a name nobody can trace back to you.',
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: AppTypeScale.body,
+                                  height: 1.5,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Your privacy is our priority.',
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontSize: AppTypeScale.label,
-                                  ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xl,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppSpacing.xxl),
+                            AppTextField(
+                              controller: _username,
+                              label: 'Username',
+                              hint: 'quiet_fox',
+                              prefixIcon: Icons.person_outline,
+                              autofocus: true,
+                              errorText: _usernameAvailable == false
+                                  ? 'That username is already taken.'
+                                  : _usernameError,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-z0-9_-]'),
                                 ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  'No real names. No tracking.',
-                                  style: TextStyle(
-                                    color: colors.textMuted,
-                                    fontSize: AppTypeScale.caption,
-                                    height: 1.45,
-                                  ),
+                                LengthLimitingTextInputFormatter(30),
+                              ],
+                              onChanged: _onUsernameChanged,
+                              suffix: _usernameMark(colors),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            AppTextField(
+                              controller: _password,
+                              label: 'Password',
+                              prefixIcon: Icons.lock_outline,
+                              obscureText: true,
+                              errorText: _passwordError,
+                              helperText: 'At least 10 characters.',
+                              helperIcon: Icons.shield_outlined,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            PasswordStrengthBar(password: _password.text),
+                            const SizedBox(height: AppSpacing.xl),
+                            AppTextField(
+                              controller: _referral,
+                              label: 'Referral code (optional)',
+                              hint: 'ABC123',
+                              prefixIcon: Icons.card_giftcard_outlined,
+                              errorText: _referralError,
+                              textInputAction: TextInputAction.done,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[A-Za-z0-9]'),
                                 ),
+                                LengthLimitingTextInputFormatter(6),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: AppSpacing.lg),
+                            TermsCheckbox(
+                              value: _tncAccepted,
+                              onChanged: (value) =>
+                                  setState(() => _tncAccepted = value),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                        ),
                       ),
-
-                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.md,
+                  AppSpacing.xl,
+                  AppSpacing.xxl,
+                ),
+                child: AppButton(
+                  label: 'Create account',
+                  isLoading: isBusy,
+                  onPressed: _canSubmit ? _submit : null,
+                ),
+              ),
+            ],
           ),
           Positioned(
             top: 46,
