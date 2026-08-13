@@ -18,7 +18,12 @@ Future<void> showAuth(
   addTearDown(tester.view.reset);
 
   final router = GoRouter(
-    routes: [GoRoute(path: '/', builder: (_, _) => AuthScreen(initialTab: tab))],
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => AuthScreen(initialTab: tab),
+      ),
+    ],
   );
   addTearDown(router.dispose);
 
@@ -39,52 +44,62 @@ Future<void> showAuth(
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+int shownTab(WidgetTester tester) =>
+    tester.widget<IndexedStack>(find.byType(IndexedStack)).index!;
+
 void main() {
   testWidgets('both ways in live on one screen', (tester) async {
     await showAuth(tester);
 
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.text('Sign up'), findsOneWidget);
-    expect(find.text('STORY'), findsOneWidget);
+    expect(find.text('Login'), findsWidgets);
+    expect(find.text('Sign up'), findsWidgets);
+    expect(find.text('STORY'), findsWidgets);
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Log in'), findsOneWidget);
+    expect(shownTab(tester), AuthTab.login.index);
   });
 
   testWidgets('the sign up tab swaps the form and the wording', (tester) async {
     await showAuth(tester);
-    expect(find.text('Referral code (optional)'), findsNothing);
+    expect(shownTab(tester), AuthTab.login.index);
 
-    await tester.tap(find.text('Sign up'));
+    await tester.tap(find.text('Sign up').first);
     await tester.pumpAndSettle();
 
+    expect(shownTab(tester), AuthTab.signup.index);
     expect(find.text('Create account'), findsWidgets);
-    expect(find.text('Pick a name nobody can trace back to you.'), findsOneWidget);
+    expect(
+      find.text('Pick a name nobody can trace back to you.'),
+      findsWidgets,
+    );
     expect(find.text('Referral code (optional)'), findsOneWidget);
     expect(find.text('I accept the Terms & Conditions'), findsOneWidget);
-    expect(find.text('Forgot password?'), findsNothing);
   });
 
   testWidgets('a deep link opens straight on the sign up tab', (tester) async {
     await showAuth(tester, tab: AuthTab.signup);
 
     expect(find.text('Referral code (optional)'), findsOneWidget);
+    expect(shownTab(tester), AuthTab.signup.index);
   });
 
   testWidgets('typing survives a trip to the other tab', (tester) async {
     await showAuth(tester);
 
     await tester.enterText(
-      find.descendant(
-        of: find.byType(SigninForm),
-        matching: find.byType(TextField),
-      ).first,
+      find
+          .descendant(
+            of: find.byType(SigninForm),
+            matching: find.byType(TextField),
+          )
+          .first,
       'zebra_owl',
     );
     await tester.pump();
 
-    await tester.tap(find.text('Sign up'));
+    await tester.tap(find.text('Sign up').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.text('Login').first);
     await tester.pumpAndSettle();
 
     expect(find.text('zebra_owl'), findsOneWidget);
@@ -106,7 +121,10 @@ void main() {
   });
 
   testWidgets('the action stays pinned on both tabs', (tester) async {
-    for (final entry in {AuthTab.login: 'Log in', AuthTab.signup: 'Create account'}.entries) {
+    for (final entry in {
+      AuthTab.login: 'Log in',
+      AuthTab.signup: 'Create account',
+    }.entries) {
       await showAuth(tester, tab: entry.key);
 
       final button = find
@@ -127,7 +145,7 @@ void main() {
     await showAuth(tester);
 
     final bloomBottom = tester.getBottomLeft(find.byType(Image)).dy;
-    final tabTop = tester.getTopLeft(find.text('Sign up')).dy;
+    final tabTop = tester.getTopLeft(find.text('Sign up').first).dy;
 
     expect(
       tabTop,

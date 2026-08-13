@@ -20,8 +20,6 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   late AuthTab _tab = widget.initialTab;
 
-  bool get _isLogin => _tab == AuthTab.login;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -38,8 +36,8 @@ class _AuthScreenState extends State<AuthScreen> {
             child: IgnorePointer(
               child: Image.asset(
                 'assets/images/bloom.png',
-                width: 140,
-                height: 210,
+                width: 151,
+                height: 226,
               ),
             ),
           ),
@@ -50,8 +48,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   index: _tab.index,
                   sizing: StackFit.expand,
                   children: [
-                    SigninForm(header: _header(colors)),
-                    SignupForm(header: _header(colors)),
+                    SigninForm(header: _header(colors, isLogin: true)),
+                    SignupForm(header: _header(colors, isLogin: false)),
                   ],
                 ),
               ),
@@ -62,10 +60,10 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _header(AppColors colors) => Padding(
+  Widget _header(AppColors colors, {required bool isLogin}) => Padding(
     padding: const EdgeInsets.fromLTRB(
       AppSpacing.xl,
-      AppSpacing.lg,
+      AppSpacing.xxl + AppSpacing.md,
       AppSpacing.xl,
       AppSpacing.lg,
     ),
@@ -74,7 +72,7 @@ class _AuthScreenState extends State<AuthScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 196),
+          constraints: const BoxConstraints(minHeight: 184),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -92,7 +90,7 @@ class _AuthScreenState extends State<AuthScreen> {
               SizedBox(
                 width: 200,
                 child: Text(
-                  _isLogin ? 'Welcome back' : 'Create account',
+                  isLogin ? 'Welcome back' : 'Create account',
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 26,
@@ -106,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
               SizedBox(
                 width: 215,
                 child: Text(
-                  _isLogin
+                  isLogin
                       ? 'Your space. Your story. Always private.'
                       : 'Pick a name nobody can trace back to you.',
                   style: TextStyle(
@@ -173,9 +171,7 @@ class _TabButton extends StatelessWidget {
                 ),
               ),
             ),
-            AnimatedContainer(
-              duration: AppMotion.base,
-              curve: AppMotion.easeOut,
+            Container(
               height: 2,
               decoration: BoxDecoration(
                 color: isActive ? colors.accent : Colors.transparent,

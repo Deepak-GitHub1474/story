@@ -67,93 +67,84 @@ class _SigninFormState extends ConsumerState<SigninForm> {
     return Column(
       children: [
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  widget.header,
-                  SizedBox(
-                    height: (constraints.maxHeight * 0.12).clamp(
-                      AppSpacing.sm,
-                      72,
-                    ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                widget.header,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppTextField(
-                          controller: _username,
-                          label: 'Username',
-                          hint: 'quiet_fox',
-                          prefixIcon: Icons.person_outline,
-                          onChanged: (_) => setState(() {}),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[a-z0-9_]'),
-                            ),
-                            LengthLimitingTextInputFormatter(20),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        AppTextField(
-                          controller: _password,
-                          label: 'Password',
-                          prefixIcon: Icons.lock_outline,
-                          obscureText: true,
-                          textInputAction: TextInputAction.done,
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (_) => _canSubmit ? _submit() : null,
-                        ),
-                        if (_formError != null) ...[
-                          const SizedBox(height: AppSpacing.lg),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: colors.surface,
-                              border: Border.all(color: colors.danger),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: Text(
-                              _formError!,
-                              style: TextStyle(
-                                color: colors.danger,
-                                fontSize: AppTypeScale.label,
-                              ),
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppTextField(
+                        controller: _username,
+                        label: 'Username',
+                        hint: 'quiet_fox',
+                        prefixIcon: Icons.person_outline,
+                        onChanged: (_) => setState(() {}),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[a-z0-9_]'),
                           ),
+                          LengthLimitingTextInputFormatter(20),
                         ],
-                        const SizedBox(height: AppSpacing.sm),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () =>
-                                context.push(Routes.forgotPassword),
-                            child: Text(
-                              'Forgot password?',
-                              style: TextStyle(
-                                color: colors.accent,
-                                fontSize: AppTypeScale.label,
-                              ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      AppTextField(
+                        controller: _password,
+                        label: 'Password',
+                        prefixIcon: Icons.lock_outline,
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _canSubmit ? _submit() : null,
+                      ),
+                      if (_formError != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            border: Border.all(color: colors.danger),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Text(
+                            _formError!,
+                            style: TextStyle(
+                              color: colors.danger,
+                              fontSize: AppTypeScale.label,
                             ),
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
                       ],
-                    ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => context.push(Routes.forgotPassword),
+                          child: Text(
+                            'Forgot password?',
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontSize: AppTypeScale.label,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
