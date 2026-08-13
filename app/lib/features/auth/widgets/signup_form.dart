@@ -12,13 +12,15 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../providers/auth_provider.dart';
+import 'auth_switch_link.dart';
 import 'password_strength_bar.dart';
 import 'terms_checkbox.dart';
 
 class SignupForm extends ConsumerStatefulWidget {
-  const SignupForm({super.key, required this.header});
+  const SignupForm({super.key, required this.header, required this.onSwitch});
 
   final Widget header;
+  final VoidCallback onSwitch;
 
   @override
   ConsumerState<SignupForm> createState() => _SignupFormState();
@@ -199,12 +201,20 @@ class _SignupFormState extends ConsumerState<SignupForm> {
             AppSpacing.xl,
             AppSpacing.sm,
             AppSpacing.xl,
-            AppSpacing.xl,
+            AppSpacing.md,
           ),
           child: AppButton(
             label: 'Create account',
             isLoading: isBusy,
             onPressed: _canSubmit ? _submit : null,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: AuthSwitchLink(
+            question: 'Already have an account?',
+            action: 'Sign in',
+            onTap: widget.onSwitch,
           ),
         ),
       ],

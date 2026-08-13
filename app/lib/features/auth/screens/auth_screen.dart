@@ -48,8 +48,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   index: _tab.index,
                   sizing: StackFit.expand,
                   children: [
-                    SigninForm(header: _header(colors, isLogin: true)),
-                    SignupForm(header: _header(colors, isLogin: false)),
+                    SigninForm(
+                      header: _header(colors, isLogin: true),
+                      onSwitch: () => setState(() => _tab = AuthTab.signup),
+                    ),
+                    SignupForm(
+                      header: _header(colors, isLogin: false),
+                      onSwitch: () => setState(() => _tab = AuthTab.login),
+                    ),
                   ],
                 ),
               ),
@@ -117,70 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            for (final tab in AuthTab.values)
-              Expanded(
-                child: _TabButton(
-                  label: tab == AuthTab.login ? 'Login' : 'Sign up',
-                  isActive: tab == _tab,
-                  onTap: () => setState(() => _tab = tab),
-                ),
-              ),
-          ],
-        ),
       ],
     ),
   );
-}
-
-class _TabButton extends StatelessWidget {
-  const _TabButton({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Semantics(
-      button: true,
-      selected: isActive,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isActive ? colors.accent : colors.textMuted,
-                  fontSize: AppTypeScale.body,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                ),
-              ),
-            ),
-            Container(
-              height: 2,
-              decoration: BoxDecoration(
-                color: isActive ? colors.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

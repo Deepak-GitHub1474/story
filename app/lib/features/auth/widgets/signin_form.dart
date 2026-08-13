@@ -10,11 +10,13 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../providers/auth_provider.dart';
+import 'auth_switch_link.dart';
 
 class SigninForm extends ConsumerStatefulWidget {
-  const SigninForm({super.key, required this.header});
+  const SigninForm({super.key, required this.header, required this.onSwitch});
 
   final Widget header;
+  final VoidCallback onSwitch;
 
   @override
   ConsumerState<SigninForm> createState() => _SigninFormState();
@@ -153,12 +155,20 @@ class _SigninFormState extends ConsumerState<SigninForm> {
             AppSpacing.xl,
             AppSpacing.sm,
             AppSpacing.xl,
-            AppSpacing.xl,
+            AppSpacing.md,
           ),
           child: AppButton(
             label: 'Log in',
             isLoading: isBusy,
             onPressed: _canSubmit ? _submit : null,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: AuthSwitchLink(
+            question: 'New here?',
+            action: 'Create account',
+            onTap: widget.onSwitch,
           ),
         ),
       ],

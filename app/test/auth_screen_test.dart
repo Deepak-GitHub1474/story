@@ -51,9 +51,8 @@ void main() {
   testWidgets('both ways in live on one screen', (tester) async {
     await showAuth(tester);
 
-    expect(find.text('Login'), findsWidgets);
-    expect(find.text('Sign up'), findsWidgets);
     expect(find.text('STORY'), findsWidgets);
+    expect(find.text('New here?'), findsOneWidget);
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Log in'), findsOneWidget);
     expect(shownTab(tester), AuthTab.login.index);
@@ -63,7 +62,7 @@ void main() {
     await showAuth(tester);
     expect(shownTab(tester), AuthTab.login.index);
 
-    await tester.tap(find.text('Sign up').first);
+    await tester.tap(find.text('Create account').last);
     await tester.pumpAndSettle();
 
     expect(shownTab(tester), AuthTab.signup.index);
@@ -97,9 +96,9 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Sign up').first);
+    await tester.tap(find.text('Create account').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Login').first);
+    await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
     expect(find.text('zebra_owl'), findsOneWidget);
@@ -141,17 +140,41 @@ void main() {
     }
   });
 
-  testWidgets('the tabs sit clear of the artwork', (tester) async {
+  testWidgets('the form clears the artwork', (tester) async {
     await showAuth(tester);
 
     final bloomBottom = tester.getBottomLeft(find.byType(Image)).dy;
-    final tabTop = tester.getTopLeft(find.text('Sign up').first).dy;
+    final firstField = tester.getTopLeft(find.text('Username')).dy;
 
     expect(
-      tabTop,
+      firstField,
       greaterThan(bloomBottom),
-      reason: 'the bloom overlapped the Sign up tab and its underline',
+      reason: 'the bloom must not reach the first field',
     );
+  });
+
+  testWidgets('each screen offers the other one at the bottom', (tester) async {
+    await showAuth(tester);
+    expect(find.text('New here?'), findsOneWidget);
+    expect(find.text('Already have an account?'), findsNothing);
+
+    await tester.tap(find.text('Create account').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Already have an account?'), findsOneWidget);
+    expect(find.text('New here?'), findsNothing);
+
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(shownTab(tester), AuthTab.login.index);
+  });
+
+  testWidgets('sign in is what opens by default', (tester) async {
+    await showAuth(tester);
+
+    expect(shownTab(tester), AuthTab.login.index);
+    expect(find.text('Welcome back'), findsOneWidget);
   });
 
   testWidgets('neither tab hides anything on an ordinary phone', (
