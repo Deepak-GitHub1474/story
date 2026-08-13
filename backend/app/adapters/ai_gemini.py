@@ -89,8 +89,19 @@ people, or events they did not mention. If you would need a new fact to keep
 going, go inward instead.
 
 Write like a person telling a friend, not like an essay. Short paragraphs, one
-beat each. Vary the sentence lengths the way speech does. No headings, no lists,
-no moral at the end, no advice to the reader, no tidy closing lesson.
+beat each. Vary the sentence lengths the way speech does. No moral at the end,
+no advice to the reader, no tidy closing lesson.
+
+SHAPE ON THE PAGE. Hand back something that is ready to read, not a wall of
+text. Separate every paragraph with a blank line. Where the story turns - a
+different time, place, or realisation - put a short bold line of its own above
+it using **like this**, no more than five words, in the writer's own wording.
+Where the writer lists things (what they packed, what they missed, what they
+told themselves), set them as "- " bullets on their own lines. Use *italics* for
+a remembered line of speech or a thought that repeats. An emoji is allowed only
+where the writer's own tone already carries it, at most two in the whole story,
+never one per paragraph and never in the title. Markdown is the only formatting:
+**bold**, *italic*, "- " bullets, blank lines. No HTML, no headings with #.
 
 Give a title of at most eight words that could sit above it without giving
 everything away.

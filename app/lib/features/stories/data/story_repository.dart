@@ -19,7 +19,11 @@ Map<String, dynamic> _patch({
   return patch;
 }
 
-Map<String, dynamic> _pageQuery({String? cursor, String? visibility, int limit = 20}) {
+Map<String, dynamic> _pageQuery({
+  String? cursor,
+  String? visibility,
+  int limit = 20,
+}) {
   final query = <String, dynamic>{'limit': limit};
   if (cursor != null) query['cursor'] = cursor;
   if (visibility != null) query['visibility'] = visibility;
@@ -76,10 +80,8 @@ class StoryRepository {
   }) => _client.post(
     Endpoints.aiDraft,
     body: {'subject': subject, 'brief': brief},
-    parse: (data) => (
-      title: data['title'] as String,
-      body: data['body'] as String,
-    ),
+    parse: (data) =>
+        (title: data['title'] as String, body: data['body'] as String),
   );
 
   Future<Result<Story>> create({
@@ -101,7 +103,8 @@ class StoryRepository {
         'image_fit': imageFit,
       },
     },
-    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+    parse: (data) =>
+        Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
   Future<Result<Story>> update(
@@ -120,7 +123,8 @@ class StoryRepository {
       imageRatio: imageRatio,
       imageFit: imageFit,
     ),
-    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+    parse: (data) =>
+        Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
   Future<Result<PublishOutcome>> publish(
@@ -137,7 +141,8 @@ class StoryRepository {
 
   Future<Result<Story>> unpublish(String storyId) => _client.post(
     Endpoints.unpublishStory(storyId),
-    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+    parse: (data) =>
+        Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
   Future<Result<bool>> remove(String storyId) => _client.delete(
@@ -147,7 +152,8 @@ class StoryRepository {
 
   Future<Result<Story>> byId(String storyId) => _client.get(
     Endpoints.story(storyId),
-    parse: (data) => Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
+    parse: (data) =>
+        Story.fromJson(Map<String, dynamic>.from(data['story'] as Map)),
   );
 
   Future<Result<StoryPage>> feed({String? cursor}) => _client.get(
@@ -156,17 +162,19 @@ class StoryRepository {
     parse: StoryPage.fromJson,
   );
 
-  Future<Result<StoryPage>> mine({String? visibility, String? cursor}) => _client.get(
-    Endpoints.myStories,
-    query: _pageQuery(cursor: cursor, visibility: visibility),
-    parse: StoryPage.fromJson,
-  );
+  Future<Result<StoryPage>> mine({String? visibility, String? cursor}) =>
+      _client.get(
+        Endpoints.myStories,
+        query: _pageQuery(cursor: cursor, visibility: visibility),
+        parse: StoryPage.fromJson,
+      );
 
-  Future<Result<StoryPage>> byUser(String username, {String? cursor}) => _client.get(
-    Endpoints.userStories(username),
-    query: _pageQuery(cursor: cursor),
-    parse: StoryPage.fromJson,
-  );
+  Future<Result<StoryPage>> byUser(String username, {String? cursor}) =>
+      _client.get(
+        Endpoints.userStories(username),
+        query: _pageQuery(cursor: cursor),
+        parse: StoryPage.fromJson,
+      );
 
   static int _likes(Map<String, dynamic> data) => data['likes'] as int;
 
@@ -177,19 +185,25 @@ class StoryRepository {
         : _client.delete(path, parse: _likes);
   }
 
-  Future<Result<List<Comment>>> comments(String storyId, {String? cursor}) => _client.get(
-    Endpoints.storyComments(storyId),
-    query: _pageQuery(cursor: cursor, limit: 50),
-    parse: (data) => (data['items'] as List<dynamic>)
-        .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList(),
-  );
+  Future<Result<List<Comment>>> comments(String storyId, {String? cursor}) =>
+      _client.get(
+        Endpoints.storyComments(storyId),
+        query: _pageQuery(cursor: cursor, limit: 50),
+        parse: (data) => (data['items'] as List<dynamic>)
+            .map(
+              (item) =>
+                  Comment.fromJson(Map<String, dynamic>.from(item as Map)),
+            )
+            .toList(),
+      );
 
-  Future<Result<Comment>> editComment(String commentId, String body) => _client.patch(
-    Endpoints.comment(commentId),
-    body: {'body': body},
-    parse: (data) => Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
-  );
+  Future<Result<Comment>> editComment(String commentId, String body) =>
+      _client.patch(
+        Endpoints.comment(commentId),
+        body: {'body': body},
+        parse: (data) =>
+            Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
+      );
 
   Future<Result<Comment>> addComment(
     String storyId,
@@ -198,7 +212,8 @@ class StoryRepository {
   }) => _client.post(
     Endpoints.storyComments(storyId),
     body: _commentBody(body, parentId),
-    parse: (data) => Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
+    parse: (data) =>
+        Comment.fromJson(Map<String, dynamic>.from(data['comment'] as Map)),
   );
 
   Future<Result<List<Comment>>> replies(String commentId) => _client.get(

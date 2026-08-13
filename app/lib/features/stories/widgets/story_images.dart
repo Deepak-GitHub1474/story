@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/api/endpoints.dart';
+import '../../../components/skeleton.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../data/image_shape.dart';
 
-String storyImageUrl(String path) =>
-    path.startsWith('http') ? path : '${Endpoints.baseUrl.replaceAll('/v1', '')}$path';
+String storyImageUrl(String path) => path.startsWith('http')
+    ? path
+    : '${Endpoints.baseUrl.replaceAll('/v1', '')}$path';
 
 class StoryImages extends StatefulWidget {
   const StoryImages({
@@ -136,8 +138,15 @@ class _Frame extends StatelessWidget {
             color: colors.surfaceRaised,
             child: Icon(Icons.broken_image_outlined, color: colors.textMuted),
           ),
-          loadingBuilder: (context, child, progress) =>
-              progress == null ? child : Container(color: colors.surfaceRaised),
+          loadingBuilder: (context, child, progress) => progress == null
+              ? child
+              : const Shimmer(
+                  child: SkeletonBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    radius: 0,
+                  ),
+                ),
         ),
       ],
     );

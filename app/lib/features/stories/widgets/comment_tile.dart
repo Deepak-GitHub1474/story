@@ -151,7 +151,10 @@ class CommentTile extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.sm, top: AppSpacing.xs),
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.sm,
+                  top: AppSpacing.xs,
+                ),
                 child: LikeIcon(
                   isLiked: comment.isLiked,
                   onTap: onLike,
@@ -173,7 +176,10 @@ class CommentTile extends StatelessWidget {
           ),
         if (hidden > 0 && onExpandReplies != null)
           Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.xxl, bottom: AppSpacing.md),
+            padding: const EdgeInsets.only(
+              left: AppSpacing.xxl,
+              bottom: AppSpacing.md,
+            ),
             child: InkWell(
               onTap: onExpandReplies,
               child: Row(

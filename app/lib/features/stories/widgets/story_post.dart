@@ -88,7 +88,9 @@ class _StoryPostState extends State<StoryPost> {
                     Text(
                       story.shared != null
                           ? 'Shared ${story.shared!.author.handle}\'s story'
-                          : '${timeAgoLong(story.publishedAt ?? story.createdAt)} · ${story.readingMinutes} min read',
+                          : '${timeAgoLong(story.publishedAt ?? story.createdAt)}'
+                                '${story.wasEdited ? ' · Edited' : ''}'
+                                ' · ${story.readingMinutes} min read',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textMuted,
@@ -109,11 +111,12 @@ class _StoryPostState extends State<StoryPost> {
           ),
         ),
 
-        if (hasImages) StoryImages(
-                        images: story.images,
-                        ratio: story.imageRatio,
-                        fit: story.imageFit,
-                      ),
+        if (hasImages)
+          StoryImages(
+            images: story.images,
+            ratio: story.imageRatio,
+            fit: story.imageFit,
+          ),
 
         Padding(
           padding: EdgeInsets.fromLTRB(
@@ -137,8 +140,8 @@ class _StoryPostState extends State<StoryPost> {
                     onTap: widget.onComment ?? widget.onTap,
                     radius: 22,
                     child: Icon(
-                      Icons.mode_comment_outlined,
-                      size: AppSizes.iconMd,
+                      Icons.chat_bubble_outline,
+                      size: AppSizes.iconAction,
                       color: colors.textPrimary,
                     ),
                   ),
@@ -155,8 +158,8 @@ class _StoryPostState extends State<StoryPost> {
                       onTap: widget.onShare,
                       radius: 22,
                       child: Icon(
-                        Icons.ios_share,
-                        size: AppSizes.iconMd,
+                        Icons.near_me_outlined,
+                        size: AppSizes.iconAction,
                         color: colors.textPrimary,
                       ),
                     ),
@@ -171,7 +174,10 @@ class _StoryPostState extends State<StoryPost> {
               ),
               if (story.shared != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                SharedStoryCard(shared: story.shared!, onTap: widget.onSharedTap),
+                SharedStoryCard(
+                  shared: story.shared!,
+                  onTap: widget.onSharedTap,
+                ),
               ],
               const SizedBox(height: AppSpacing.lg),
             ],
@@ -252,7 +258,8 @@ class LikeIcon extends StatefulWidget {
   State<LikeIcon> createState() => _LikeIconState();
 }
 
-class _LikeIconState extends State<LikeIcon> with SingleTickerProviderStateMixin {
+class _LikeIconState extends State<LikeIcon>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 320),
@@ -286,7 +293,7 @@ class _LikeIconState extends State<LikeIcon> with SingleTickerProviderStateMixin
         scale: _scale,
         child: Icon(
           widget.isLiked ? Icons.favorite : Icons.favorite_border,
-          size: widget.size ?? AppSizes.iconMd,
+          size: widget.size ?? AppSizes.iconAction,
           color: widget.isLiked ? colors.danger : colors.textPrimary,
         ),
       ),

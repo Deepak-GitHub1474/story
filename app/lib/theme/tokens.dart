@@ -130,6 +130,7 @@ class AppSizes {
   static const double iconSm = 18;
   static const double iconMd = 22;
   static const double iconNav = 26;
+  static const double iconAction = 26;
   static const double hairline = 0.6;
   static const double maxContentWidth = 560;
 }

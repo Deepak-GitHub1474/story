@@ -63,6 +63,7 @@ class Story {
     required this.publishedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.editedAt,
     this.shared,
     this.images = const [],
     this.imageRatio,
@@ -73,7 +74,9 @@ class Story {
     final counts = Map<String, dynamic>.from(json['counts'] as Map? ?? {});
     return Story(
       storyId: json['story_id'] as String,
-      author: StoryAuthor.fromJson(Map<String, dynamic>.from(json['author'] as Map? ?? {})),
+      author: StoryAuthor.fromJson(
+        Map<String, dynamic>.from(json['author'] as Map? ?? {}),
+      ),
       title: json['title'] as String?,
       excerpt: json['excerpt'] as String? ?? '',
       body: json['body'] as String?,
@@ -86,6 +89,7 @@ class Story {
       publishedAt: json['published_at'] as String?,
       createdAt: json['created_at'] as String? ?? '',
       updatedAt: json['updated_at'] as String? ?? '',
+      editedAt: json['edited_at'] as String?,
       images: (json['images'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .toList(),
@@ -93,7 +97,9 @@ class Story {
       imageFit: json['image_fit'] as String? ?? 'cover',
       shared: json['shared'] == null
           ? null
-          : SharedStory.fromJson(Map<String, dynamic>.from(json['shared'] as Map)),
+          : SharedStory.fromJson(
+              Map<String, dynamic>.from(json['shared'] as Map),
+            ),
     );
   }
 
@@ -111,12 +117,15 @@ class Story {
   final String? publishedAt;
   final String createdAt;
   final String updatedAt;
+  final String? editedAt;
   final SharedStory? shared;
   final List<String> images;
   final double? imageRatio;
   final String imageFit;
 
   bool get isDraft => visibility == 'draft';
+
+  bool get wasEdited => editedAt != null && editedAt!.isNotEmpty;
 
   Map<String, dynamic> toJson() => {
     'story_id': storyId,
@@ -136,6 +145,7 @@ class Story {
     'published_at': publishedAt,
     'created_at': createdAt,
     'updated_at': updatedAt,
+    'edited_at': editedAt,
     'images': images,
     'image_ratio': imageRatio,
     'image_fit': imageFit,
@@ -156,9 +166,23 @@ class Story {
 
   bool get isPublic => visibility == 'public';
 
+  bool get isEditable {
+    if (isDraft) return true;
+    final stamp = publishedAt;
+    if (stamp == null) return true;
+    final posted = DateTime.tryParse(stamp);
+    if (posted == null) return true;
+    return DateTime.now().toUtc().difference(posted.toUtc()).inHours < 24;
+  }
+
   bool get isScheduled => visibility == 'scheduled';
 
-  Story copyWith({int? likes, int? comments, bool? isLiked, String? visibility}) => Story(
+  Story copyWith({
+    int? likes,
+    int? comments,
+    bool? isLiked,
+    String? visibility,
+  }) => Story(
     shared: shared,
     images: images,
     imageRatio: imageRatio,
@@ -177,11 +201,16 @@ class Story {
     publishedAt: publishedAt,
     createdAt: createdAt,
     updatedAt: updatedAt,
+    editedAt: editedAt,
   );
 }
 
 class StoryPage {
-  const StoryPage({required this.items, required this.nextCursor, required this.hasMore});
+  const StoryPage({
+    required this.items,
+    required this.nextCursor,
+    required this.hasMore,
+  });
 
   factory StoryPage.fromJson(Map<String, dynamic> json) => StoryPage(
     items: (json['items'] as List<dynamic>)
@@ -217,7 +246,9 @@ class Comment {
       commentId: json['comment_id'] as String,
       storyId: json['story_id'] as String,
       parentId: json['parent_id'] as String?,
-      author: StoryAuthor.fromJson(Map<String, dynamic>.from(json['author'] as Map? ?? {})),
+      author: StoryAuthor.fromJson(
+        Map<String, dynamic>.from(json['author'] as Map? ?? {}),
+      ),
       body: json['body'] as String,
       likes: counts['likes'] as int? ?? 0,
       replyCount: counts['replies'] as int? ?? 0,
@@ -225,7 +256,9 @@ class Comment {
       createdAt: json['created_at'] as String? ?? '',
       editedAt: json['edited_at'] as String?,
       replies: (json['replies'] as List<dynamic>? ?? [])
-          .map((item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) => Comment.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
     );
   }
@@ -244,18 +277,19 @@ class Comment {
 
   bool get hasMoreReplies => replyCount > replies.length;
 
-  Comment copyWith({int? likes, bool? isLiked, List<Comment>? replies}) => Comment(
-    commentId: commentId,
-    storyId: storyId,
-    parentId: parentId,
-    author: author,
-    body: body,
-    likes: likes ?? this.likes,
-    replyCount: replyCount,
-    isLiked: isLiked ?? this.isLiked,
-    createdAt: createdAt,
-    replies: replies ?? this.replies,
-  );
+  Comment copyWith({int? likes, bool? isLiked, List<Comment>? replies}) =>
+      Comment(
+        commentId: commentId,
+        storyId: storyId,
+        parentId: parentId,
+        author: author,
+        body: body,
+        likes: likes ?? this.likes,
+        replyCount: replyCount,
+        isLiked: isLiked ?? this.isLiked,
+        createdAt: createdAt,
+        replies: replies ?? this.replies,
+      );
 }
 
 class PublishOutcome {

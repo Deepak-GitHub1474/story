@@ -14,23 +14,6 @@ import '../../stories/widgets/story_list_view.dart';
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
 
-  Future<void> _like(WidgetRef ref, Story story) async {
-    final next = !story.isLiked;
-    final notifier = ref.read(feedProvider.notifier);
-    notifier.replace(
-      story.copyWith(isLiked: next, likes: story.likes + (next ? 1 : -1)),
-    );
-
-    final result = await ref
-        .read(storyRepositoryProvider)
-        .setLike(story.storyId, liked: next);
-    if (result.isSuccess) {
-      notifier.replace(story.copyWith(isLiked: next, likes: result.valueOrNull));
-    } else {
-      notifier.replace(story);
-    }
-  }
-
   Future<void> _share(BuildContext context, WidgetRef ref, Story story) async {
     final posted = await showShareSheet(context: context, ref: ref, story: story);
     if (posted) await ref.read(feedProvider.notifier).refresh();
@@ -83,7 +66,7 @@ class FeedScreen extends ConsumerWidget {
               onAuthorTap: (story) => context.push(
                 '${Routes.user}/${story.author.username}',
               ),
-              onLike: (story) => _like(ref, story),
+              onLike: (story) => toggleStoryLike(ref, story),
               onComment: (story) => showCommentsSheet(
                 context: context,
                 storyId: story.storyId,

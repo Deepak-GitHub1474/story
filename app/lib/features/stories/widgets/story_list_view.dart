@@ -87,7 +87,9 @@ class _StoryListViewState extends State<StoryListView> {
         padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
         itemCount: _itemCount(state),
         separatorBuilder: (context, index) {
-          if (widget.header != null && index == 0) return const SizedBox.shrink();
+          if (widget.header != null && index == 0) {
+            return const SizedBox.shrink();
+          }
           return Divider(height: 1, thickness: 1, color: colors.border);
         },
         itemBuilder: (context, index) {
@@ -107,7 +109,9 @@ class _StoryListViewState extends State<StoryListView> {
           final adjusted = index - offset;
 
           if (state.items.isEmpty) {
-            return state.isLoading ? const SkeletonList(count: 3) : _empty(context);
+            return state.isLoading
+                ? const SkeletonList(count: 3)
+                : _empty(context);
           }
 
           if (adjusted >= state.items.length) {
@@ -131,9 +135,12 @@ class _StoryListViewState extends State<StoryListView> {
       showVisibility: widget.showVisibility,
       onTap: () => widget.onOpen(story),
       onLike: widget.onLike == null ? null : () => widget.onLike!(story),
-      onComment: widget.onComment == null ? null : () => widget.onComment!(story),
-      onAuthorTap:
-          widget.onAuthorTap == null ? null : () => widget.onAuthorTap!(story),
+      onComment: widget.onComment == null
+          ? null
+          : () => widget.onComment!(story),
+      onAuthorTap: widget.onAuthorTap == null
+          ? null
+          : () => widget.onAuthorTap!(story),
       onShare: widget.onShare == null || !story.isPublic
           ? null
           : () => widget.onShare!(story),
@@ -189,4 +196,3 @@ class _StoryListViewState extends State<StoryListView> {
     );
   }
 }
-

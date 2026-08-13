@@ -21,6 +21,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../communities/providers/community_providers.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
+import '../widgets/draft_preview_sheet.dart';
 import '../widgets/polish_sheet.dart';
 import '../widgets/write_for_me_sheet.dart';
 import '../widgets/story_images.dart';
@@ -44,6 +45,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   String? _communitySlug;
   bool _isLoading = false;
   bool _isPublishing = false;
+  DateTime? _scheduledFor;
   bool _isDirty = false;
   String _savedLabel = '';
   final _images = <String>[];
@@ -167,6 +169,23 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
+  Future<void> _chooseVisibility(String next) async {
+    if (next != 'scheduled') {
+      setState(() {
+        _visibility = next;
+        _scheduledFor = null;
+      });
+      return;
+    }
+
+    final when = await _pickSchedule();
+    if (!mounted || when == null) return;
+    setState(() {
+      _visibility = 'scheduled';
+      _scheduledFor = when;
+    });
+  }
+
   Future<void> _addImage() async {
     final file = await FilePicking.pick();
     if (file == null || !mounted) return;
@@ -214,18 +233,21 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     final written = await showWriteForMeSheet(context: context, ref: ref);
     if (written == null || !mounted) return;
 
+    final accepted = await showDraftPreview(
+      context: context,
+      ref: ref,
+      title: written.title,
+      body: written.body,
+    );
+    if (accepted == null || !mounted) return;
+
     setState(() {
-      _title.text = written.title;
-      _body.text = written.body;
+      _title.text = accepted.title;
+      _body.text = accepted.body;
       _isDirty = true;
     });
     _onChanged();
-
-    if (written.visibility == 'draft') {
-      AppToast.show(context, 'Written. Read it before you publish.');
-      return;
-    }
-    await _publish(written.visibility);
+    AppToast.show(context, 'Dropped in. Publish when it reads right.');
   }
 
   Future<void> _polish() async {
@@ -244,8 +266,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   Future<void> _publish(String visibility, {bool exposureAck = false}) async {
     DateTime? scheduledFor;
     if (visibility == 'scheduled') {
-      scheduledFor = await _pickSchedule();
+      scheduledFor = _scheduledFor ?? await _pickSchedule();
       if (scheduledFor == null) return;
+      _scheduledFor = scheduledFor;
     }
 
     setState(() => _isPublishing = true);
@@ -337,60 +360,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     AppToast.show(context, failure.message, kind: AppToastKind.error);
   }
 
-  Future<void> _openPublishSheet() async {
-    final colors = context.colors;
-    final choice = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Who can read this?',
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: AppTypeScale.heading,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _VisibilityOption(
-                icon: Icons.public,
-                title: 'Public',
-                subtitle: _communitySlug == null
-                    ? 'Anyone on STORY can read it. Your real name is never attached.'
-                    : 'Posts into the community you picked.',
-                onTap: () => Navigator.of(sheetContext).pop('public'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _VisibilityOption(
-                icon: Icons.lock_outline,
-                title: 'Private',
-                subtitle:
-                    'Only you. Nobody else can open it, not even by link.',
-                onTap: () => Navigator.of(sheetContext).pop('private'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _VisibilityOption(
-                icon: Icons.schedule,
-                title: 'Schedule',
-                subtitle:
-                    'Pick a time. It publishes itself, even if you are offline.',
-                onTap: () => Navigator.of(sheetContext).pop('scheduled'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (choice != null) await _publish(choice);
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -407,11 +376,15 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           },
         ),
         titleSpacing: 0,
-        title: _VisibilityChip(
-          value: _visibility,
-          saved: _savedLabel,
-          onChanged: (next) => setState(() => _visibility = next),
-        ),
+        title: _savedLabel.isEmpty
+            ? null
+            : Text(
+                _savedLabel,
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: AppTypeScale.caption,
+                ),
+              ),
         actions: [
           IconButton(
             tooltip: 'Add a picture',
@@ -436,9 +409,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           ),
           TextButton(
             onPressed: canPublish && !_isPublishing
-                ? () => _visibility == 'scheduled'
-                      ? _openPublishSheet()
-                      : _publish(_visibility)
+                ? () => _publish(_visibility)
                 : null,
             child: Text(
               'Publish',
@@ -501,6 +472,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                     onPick: (slug) =>
                                         setState(() => _communitySlug = slug),
                                   ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                _VisibilityChip(
+                                  value: _visibility,
+                                  scheduledFor: _scheduledFor,
+                                  onChanged: _chooseVisibility,
                                 ),
                                 const Spacer(),
                                 if (_images.isNotEmpty)
@@ -609,68 +586,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 ],
               ),
             ),
-    );
-  }
-}
-
-class _VisibilityOption extends StatelessWidget {
-  const _VisibilityOption({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Material(
-      color: colors.surfaceRaised,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: colors.accent, size: AppSizes.iconMd),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: AppTypeScale.body,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: AppTypeScale.caption,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1083,12 +998,12 @@ class _FitToggle extends StatelessWidget {
 class _VisibilityChip extends StatelessWidget {
   const _VisibilityChip({
     required this.value,
-    required this.saved,
+    required this.scheduledFor,
     required this.onChanged,
   });
 
   final String value;
-  final String saved;
+  final DateTime? scheduledFor;
   final ValueChanged<String> onChanged;
 
   static const _labels = {
@@ -1178,7 +1093,9 @@ class _VisibilityChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _labels[value] ?? 'Draft',
+                  value == 'scheduled' && scheduledFor != null
+                      ? _whenLabel(scheduledFor!)
+                      : (_labels[value] ?? 'Draft'),
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: AppTypeScale.label,
@@ -1190,17 +1107,14 @@ class _VisibilityChip extends StatelessWidget {
             ),
           ),
         ),
-        if (saved.isNotEmpty) ...[
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            saved,
-            style: TextStyle(
-              color: colors.textMuted,
-              fontSize: AppTypeScale.caption,
-            ),
-          ),
-        ],
       ],
     );
+  }
+
+  static String _whenLabel(DateTime when) {
+    final hour = when.hour % 12 == 0 ? 12 : when.hour % 12;
+    final minute = when.minute.toString().padLeft(2, '0');
+    final suffix = when.hour < 12 ? 'AM' : 'PM';
+    return '${when.day}/${when.month} $hour:$minute $suffix';
   }
 }

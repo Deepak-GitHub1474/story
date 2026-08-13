@@ -62,7 +62,9 @@ abstract class StoryListNotifier extends Notifier<StoryListState> {
   }
 
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore || state.nextCursor == null) return;
+    if (state.isLoadingMore || !state.hasMore || state.nextCursor == null) {
+      return;
+    }
     state = state.copyWith(isLoadingMore: true);
     await fetch(cursor: state.nextCursor);
   }
@@ -76,7 +78,11 @@ abstract class StoryListNotifier extends Notifier<StoryListState> {
   }
 
   void fail(String message) {
-    state = state.copyWith(isLoading: false, isLoadingMore: false, error: message);
+    state = state.copyWith(
+      isLoading: false,
+      isLoadingMore: false,
+      error: message,
+    );
   }
 
   void replace(Story story) {
@@ -95,7 +101,9 @@ abstract class StoryListNotifier extends Notifier<StoryListState> {
   }
 }
 
-final feedProvider = NotifierProvider<FeedNotifier, StoryListState>(FeedNotifier.new);
+final feedProvider = NotifierProvider<FeedNotifier, StoryListState>(
+  FeedNotifier.new,
+);
 
 class FeedNotifier extends StoryListNotifier {
   @override
@@ -139,7 +147,9 @@ class FeedNotifier extends StoryListNotifier {
           unawaited(
             ref
                 .read(feedCacheProvider)
-                .write(success.value.items.map((item) => item.toJson()).toList()),
+                .write(
+                  success.value.items.map((item) => item.toJson()).toList(),
+                ),
           );
         }
       },
@@ -152,6 +162,31 @@ class FeedNotifier extends StoryListNotifier {
       },
     );
   }
+}
+
+void _echoEverywhere(WidgetRef ref, Story story) {
+  ref.read(feedProvider.notifier).replace(story);
+  ref.read(myStoriesProvider.notifier).replace(story);
+}
+
+Future<void> toggleStoryLike(WidgetRef ref, Story story) async {
+  final next = !story.isLiked;
+
+  _echoEverywhere(
+    ref,
+    story.copyWith(isLiked: next, likes: story.likes + (next ? 1 : -1)),
+  );
+
+  final result = await ref
+      .read(storyRepositoryProvider)
+      .setLike(story.storyId, liked: next);
+
+  _echoEverywhere(
+    ref,
+    result.isSuccess
+        ? story.copyWith(isLiked: next, likes: result.valueOrNull)
+        : story,
+  );
 }
 
 final myStoriesProvider = NotifierProvider<MyStoriesNotifier, StoryListState>(
@@ -180,10 +215,15 @@ class MyStoriesNotifier extends StoryListNotifier {
   String? get visibility => _visibility;
 }
 
-final storyDetailProvider = FutureProvider.family<Story, String>((ref, storyId) async {
+final storyDetailProvider = FutureProvider.family<Story, String>((
+  ref,
+  storyId,
+) async {
   final result = await ref.watch(storyRepositoryProvider).byId(storyId);
   final story = result.valueOrNull;
-  if (story == null) throw Exception(result.failureOrNull?.message ?? 'Not found');
+  if (story == null) {
+    throw Exception(result.failureOrNull?.message ?? 'Not found');
+  }
   return story;
 });
 
@@ -225,7 +265,9 @@ class CommentsNotifier extends FamilyAsyncNotifier<List<Comment>, String> {
         .addComment(arg, text, parentId: parentId);
 
     if (result.isFailure) {
-      state = AsyncData(_remove(state.valueOrNull ?? const [], pending.commentId));
+      state = AsyncData(
+        _remove(state.valueOrNull ?? const [], pending.commentId),
+      );
       return false;
     }
 

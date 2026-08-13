@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ import '../../auth/providers/auth_provider.dart';
 
 import '../../stories/models/story_models.dart';
 import '../../stories/providers/story_providers.dart';
+import '../../stories/widgets/share_sheet.dart';
 import '../../stories/widgets/comments_sheet.dart';
 import '../../stories/widgets/story_list_view.dart';
 
@@ -80,7 +83,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     _tabController.animateTo(next);
   }
 
-  List<({IconData icon, String label, SwipeAction action})> _moves(Story story) {
+  List<({IconData icon, String label, SwipeAction action})> _moves(
+    Story story,
+  ) {
     final current = story.isDraft ? 'draft' : story.visibility;
 
     return [
@@ -105,6 +110,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     ];
   }
 
+  Future<void> _share(Story story) async {
+    final posted = await showShareSheet(context: context, ref: ref, story: story);
+    if (!posted || !mounted) return;
+    unawaited(ref.read(feedProvider.notifier).refresh());
+    unawaited(ref.read(myStoriesProvider.notifier).refresh());
+  }
+
   Future<void> _openStoryActions(Story story) async {
     final colors = context.colors;
 
@@ -116,6 +128,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (story.isEditable)
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+                title: Text(
+                  'Edit',
+                  style: TextStyle(color: colors.textPrimary),
+                ),
+                subtitle: story.isDraft
+                    ? null
+                    : Text(
+                        'For 24 hours after publishing.',
+                        style: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: AppTypeScale.caption,
+                        ),
+                      ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('${Routes.compose}?id=${story.storyId}');
+                },
+              ),
             for (final option in _moves(story))
               ListTile(
                 leading: Icon(option.icon, color: colors.textPrimary),
@@ -179,7 +212,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         await notifier.refresh();
         await ref.read(authProvider.notifier).refreshUser();
         if (mounted) {
-          AppToast.show(context, 'Your story is live.', kind: AppToastKind.success);
+          AppToast.show(
+            context,
+            'Your story is live.',
+            kind: AppToastKind.success,
+          );
         }
         return false;
     }
@@ -201,145 +238,151 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         onHorizontalDragEnd: _onTabSwipe,
         child: Column(
           children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.sm,
-              0,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '@${user.username}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: AppTypeScale.heading,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.edit_outlined, color: colors.textMuted),
-                  onPressed: () => context.push(Routes.editProfile),
-                ),
-                IconButton(
-                  icon: Icon(Icons.settings_outlined, color: colors.textMuted),
-                  onPressed: () => context.push(Routes.settings),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StoryListView(
-              state: stories,
-              showVisibility: true,
-              onLongPress: _openStoryActions,
-              onComment: (story) => showCommentsSheet(
-                context: context,
-                storyId: story.storyId,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.sm,
+                0,
               ),
-              onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
-              onLoadMore: () => ref.read(myStoriesProvider.notifier).loadMore(),
-              onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),
-              onOpen: (story) => story.isDraft
-                  ? context.push('${Routes.compose}?id=${story.storyId}')
-                  : context.push('${Routes.story}/${story.storyId}'),
-              emptyTitle: _filter == 'draft' ? 'No drafts' : 'No stories yet',
-              emptyBody: 'Everything you write lands here, drafts included.',
-              header: Column(
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.push(Routes.avatar),
-                        child: AppAvatar(
-                          seed: user.avatarSeed,
-                          size: 72,
-                          displayName: user.displayName,
-                          username: user.username,
-                        ),
+                  Expanded(
+                    child: Text(
+                      '@${user.username}',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: AppTypeScale.heading,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(width: AppSpacing.xl),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: AppTypeScale.body,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _Stat(
-                                  value: '${user.counts['stories'] ?? 0}',
-                                  label: 'Stories',
-                                ),
-                                _Stat(
-                                  value: '${user.counts['followers'] ?? 0}',
-                                  label: 'Followers',
-                                  onTap: () => context.push(Routes.followers),
-                                ),
-                                _Stat(
-                                  value: '${user.counts['connections'] ?? 0}',
-                                  label: 'Following',
-                                  onTap: () => context.push(Routes.following),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        user.bio!,
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: AppTypeScale.label,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                  TabBar(
-                    controller: _tabController,
-                    isScrollable: false,
-                    labelColor: colors.textPrimary,
-                    unselectedLabelColor: colors.textMuted,
-                    indicatorColor: colors.accent,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    labelStyle: const TextStyle(
-                      fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: AppTypeScale.label,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    tabs: [for (final tab in _tabs) Tab(text: tab.$2)],
+                  IconButton(
+                    icon: Icon(Icons.edit_outlined, color: colors.textMuted),
+                    onPressed: () => context.push(Routes.editProfile),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
+                  IconButton(
+                    icon: Icon(
+                      Icons.settings_outlined,
+                      color: colors.textMuted,
+                    ),
+                    onPressed: () => context.push(Routes.settings),
+                  ),
                 ],
               ),
             ),
-          ),
+            Expanded(
+              child: StoryListView(
+                state: stories,
+                showVisibility: true,
+                onLongPress: _openStoryActions,
+                onLike: (story) => toggleStoryLike(ref, story),
+                onShare: (story) => _share(story),
+                onComment: (story) =>
+                    showCommentsSheet(context: context, storyId: story.storyId),
+                onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
+                onLoadMore: () =>
+                    ref.read(myStoriesProvider.notifier).loadMore(),
+                onOpenShared: (storyId) =>
+                    context.push('${Routes.story}/$storyId'),
+                onOpen: (story) => story.isDraft
+                    ? context.push('${Routes.compose}?id=${story.storyId}')
+                    : context.push('${Routes.story}/${story.storyId}'),
+                emptyTitle: _filter == 'draft' ? 'No drafts' : 'No stories yet',
+                emptyBody: 'Everything you write lands here, drafts included.',
+                header: Column(
+                  children: [
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.push(Routes.avatar),
+                          child: AppAvatar(
+                            seed: user.avatarSeed,
+                            size: 72,
+                            displayName: user.displayName,
+                            username: user.username,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xl),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: AppTypeScale.body,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _Stat(
+                                    value: '${user.counts['stories'] ?? 0}',
+                                    label: 'Stories',
+                                  ),
+                                  _Stat(
+                                    value: '${user.counts['followers'] ?? 0}',
+                                    label: 'Followers',
+                                    onTap: () => context.push(Routes.followers),
+                                  ),
+                                  _Stat(
+                                    value: '${user.counts['connections'] ?? 0}',
+                                    label: 'Following',
+                                    onTap: () => context.push(Routes.following),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (user.bio != null && user.bio!.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          user.bio!,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: AppTypeScale.label,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    TabBar(
+                      controller: _tabController,
+                      isScrollable: false,
+                      labelColor: colors.textPrimary,
+                      unselectedLabelColor: colors.textMuted,
+                      indicatorColor: colors.accent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelStyle: const TextStyle(
+                        fontSize: AppTypeScale.label,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: AppTypeScale.label,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      tabs: [for (final tab in _tabs) Tab(text: tab.$2)],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -362,21 +405,24 @@ class _Stat extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: AppTypeScale.heading,
-            fontWeight: FontWeight.w500,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: AppTypeScale.heading,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          label,
-          style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
-        ),
-      ],
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: AppTypeScale.caption,
+            ),
+          ),
+        ],
       ),
     );
   }

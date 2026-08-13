@@ -7,8 +7,20 @@ from app.core.time import to_wire
 WHITESPACE = re.compile(r"\s+")
 
 
+# A drafted story may carry light markdown - **a turn in the story**, a "- "
+# list, *a remembered line*. The card shows a plain excerpt, so the marks come
+# off here rather than being shown as asterisks to the reader.
+MARKUP = re.compile(r"\*\*(.+?)\*\*|\*(.+?)\*|_(.+?)_", re.DOTALL)
+BULLET = re.compile(r"^\s*[-*\u2022]\s+", re.MULTILINE)
+
+
+def strip_markup(body: str) -> str:
+    without_bullets = BULLET.sub("", body)
+    return MARKUP.sub(lambda m: m.group(1) or m.group(2) or m.group(3) or "", without_bullets)
+
+
 def build_excerpt(body: str) -> str:
-    flattened = WHITESPACE.sub(" ", body).strip()
+    flattened = WHITESPACE.sub(" ", strip_markup(body)).strip()
     if len(flattened) <= EXCERPT_LENGTH:
         return flattened
     return flattened[: EXCERPT_LENGTH - 1].rstrip() + "…"

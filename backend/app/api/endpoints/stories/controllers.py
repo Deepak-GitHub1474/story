@@ -187,11 +187,9 @@ async def update_story(
 ) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
 
-    if story["visibility"] != "draft" and story.get("published_at"):
-        deadline = story["published_at"] + timedelta(hours=c.EDIT_WINDOW_HOURS)
-        if utc_now() > deadline:
-            raise api_error(ErrorCode.STORY_NOT_EDITABLE)
-
+    # A writer owns their story for as long as it stands. An edit after
+    # publishing is marked with ``edited_at`` and shown as "Edited" on the
+    # story, the way every other place a person can revise in public does it.
     update: dict[str, Any] = {"updated_at": utc_now()}
     if body.title is not None:
         update["title"] = body.title or None
