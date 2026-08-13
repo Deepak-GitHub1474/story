@@ -8,8 +8,11 @@ Future<T?> showAppSheet<T>({
   required WidgetBuilder builder,
   String? title,
   bool isScrollControlled = true,
-  EdgeInsets contentPadding = const EdgeInsets.symmetric(
-    horizontal: AppSpacing.xl,
+  EdgeInsets contentPadding = const EdgeInsets.fromLTRB(
+    AppSpacing.lg,
+    AppSpacing.md,
+    AppSpacing.lg,
+    0,
   ),
   Widget? footer,
   bool isResizable = false,
@@ -83,7 +86,10 @@ class AppSheet extends StatelessWidget {
         mainAxisSize: isResizable ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+            padding: const EdgeInsets.only(
+              top: AppSpacing.sm,
+              bottom: AppSpacing.xs,
+            ),
             child: Container(
               width: 38,
               height: 4,
@@ -93,13 +99,13 @@ class AppSheet extends StatelessWidget {
               ),
             ),
           ),
-          if (title != null)
+          if (title != null) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+                AppSpacing.lg,
                 AppSpacing.sm,
-                AppSpacing.xl,
-                AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.sm,
               ),
               child: Text(
                 title!,
@@ -110,6 +116,12 @@ class AppSheet extends StatelessWidget {
                 ),
               ),
             ),
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: colors.border.withValues(alpha: 0.45),
+            ),
+          ],
           Flexible(
             child: SingleChildScrollView(
               controller: scrollController,
@@ -129,11 +141,13 @@ class AppSheet extends StatelessWidget {
           if (footer != null)
             Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.xl,
-                right: AppSpacing.xl,
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
                 top: AppSpacing.sm,
                 bottom:
-                    media.viewInsets.bottom + media.padding.bottom + AppSpacing.lg,
+                    media.viewInsets.bottom +
+                    media.padding.bottom +
+                    AppSpacing.lg,
               ),
               child: footer,
             ),

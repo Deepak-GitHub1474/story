@@ -67,8 +67,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final before = tester.getTopLeft(find.byType(DraggableScrollableSheet)).dy;
-    final sheetHeightBefore =
-        tester.getSize(find.byType(DraggableScrollableSheet)).height;
+    final sheetHeightBefore = tester
+        .getSize(find.byType(DraggableScrollableSheet))
+        .height;
 
     await tester.drag(find.text('You stay anonymous'), const Offset(0, -120));
     await tester.pumpAndSettle();
@@ -107,6 +108,52 @@ void main() {
       find.text('Your vault opens with its passcode alone'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a titled sheet rules a line under its title', (tester) async {
+    await tester.pumpWidget(_host(showTermsSheet));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final rule = tester.widget<Divider>(find.byType(Divider).first);
+    expect(rule.thickness, 0.5);
+    expect(
+      rule.color!.a,
+      lessThan(1),
+      reason: 'the rule should be lighter than the border it comes from',
+    );
+
+    final titleBottom = tester
+        .getBottomLeft(find.text('Terms & Conditions'))
+        .dy;
+    expect(
+      tester.getTopLeft(find.byType(Divider).first).dy,
+      greaterThan(titleBottom),
+    );
+  });
+
+  testWidgets('every sheet indents its content the same way', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        (context) => showAppSheet<void>(
+          context: context,
+          title: 'Pick one',
+          builder: (_) => const Text('an option'),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final scroll = tester.widget<SingleChildScrollView>(
+      find.byType(SingleChildScrollView).first,
+    );
+    final padding = scroll.padding as EdgeInsets;
+    expect(padding.left, 16);
+    expect(padding.right, 16);
+    expect(padding.top, 12);
   });
 
   testWidgets('an ordinary menu sheet is not draggable', (tester) async {

@@ -64,7 +64,9 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   }
 
   Future<void> _delete(Comment comment) async {
-    ref.read(commentsProvider(widget.storyId).notifier).removeLocally(comment.commentId);
+    ref
+        .read(commentsProvider(widget.storyId).notifier)
+        .removeLocally(comment.commentId);
     await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
     if (!mounted) return;
     await ref.read(commentsProvider(widget.storyId).notifier).refresh();
@@ -94,117 +96,132 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
       maxChildSize: 1,
       expand: false,
       builder: (context, scrollController) => Container(
-      decoration: BoxDecoration(
-        color: colors.bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
-            child: Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.border,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-            ),
+        decoration: BoxDecoration(
+          color: colors.bg,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Text(
-              'Comments',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: AppTypeScale.body,
-                fontWeight: FontWeight.w500,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                top: AppSpacing.sm,
+                bottom: AppSpacing.xs,
               ),
-            ),
-          ),
-          Divider(height: 1, thickness: 0.5, color: colors.border),
-          Expanded(
-            child: comments.when(
-              loading: () => const SkeletonList(count: 4),
-              error: (error, _) => Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'Could not load the comments.',
-                  style: TextStyle(color: colors.textSecondary),
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.border,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
               ),
-              data: (items) => items.isEmpty
-                  ? ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
-                      children: [
-                        Column(
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Text(
+                'Comments',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: AppTypeScale.body,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: colors.border.withValues(alpha: 0.45),
+            ),
+            Expanded(
+              child: comments.when(
+                loading: () => const SkeletonList(count: 4),
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Text(
+                    'Could not load the comments.',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ),
+                data: (items) => items.isEmpty
+                    ? ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(AppSpacing.xxl),
                         children: [
-                          Text(
-                            'No comments yet',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: AppTypeScale.body,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Say something kind.',
-                            style: TextStyle(color: colors.textMuted),
+                          Column(
+                            children: [
+                              Text(
+                                'No comments yet',
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: AppTypeScale.body,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Say something kind.',
+                                style: TextStyle(color: colors.textMuted),
+                              ),
+                            ],
                           ),
                         ],
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.md,
+                          AppSpacing.lg,
+                          AppSpacing.sm,
                         ),
-                      ],
-                    )
-                  : ListView.separated(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.md,
-                        AppSpacing.lg,
-                        AppSpacing.sm,
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 2),
+                        itemBuilder: (context, index) {
+                          final comment = items[index];
+
+                          final shown = _liked.containsKey(comment.commentId)
+                              ? comment.copyWith(
+                                  isLiked: _liked[comment.commentId],
+                                  likes:
+                                      comment.likes +
+                                      (_liked[comment.commentId]! ==
+                                              comment.isLiked
+                                          ? 0
+                                          : (_liked[comment.commentId]!
+                                                ? 1
+                                                : -1)),
+                                )
+                              : comment;
+
+                          return CommentTile(
+                            comment: shown,
+                            canDelete: comment.author.userId == me,
+                            canEdit: comment.author.userId == me,
+                            onDelete: () => _delete(comment),
+                            onLike: () => _like(comment),
+                            onReply: () =>
+                                setState(() => _replyingTo = comment),
+                          );
+                        },
                       ),
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 2),
-                      itemBuilder: (context, index) {
-                        final comment = items[index];
-
-                        final shown = _liked.containsKey(comment.commentId)
-                            ? comment.copyWith(
-                                isLiked: _liked[comment.commentId],
-                                likes: comment.likes +
-                                    (_liked[comment.commentId]! == comment.isLiked
-                                        ? 0
-                                        : (_liked[comment.commentId]! ? 1 : -1)),
-                              )
-                            : comment;
-
-                        return CommentTile(
-                          comment: shown,
-                          canDelete: comment.author.userId == me,
-                          canEdit: comment.author.userId == me,
-                          onDelete: () => _delete(comment),
-                          onLike: () => _like(comment),
-                          onReply: () => setState(() => _replyingTo = comment),
-                        );
-                      },
-                    ),
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-            child: CommentComposer(
-              controller: _composer,
-              isSending: _isSending,
-              onSend: _send,
-              replyingTo: _replyingTo?.author.handle,
-              onCancelReply: () => setState(() => _replyingTo = null),
+            Padding(
+              padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+              child: CommentComposer(
+                controller: _composer,
+                isSending: _isSending,
+                onSend: _send,
+                replyingTo: _replyingTo?.author.handle,
+                onCancelReply: () => setState(() => _replyingTo = null),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
