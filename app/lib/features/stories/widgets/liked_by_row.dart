@@ -30,57 +30,61 @@ class LikedByRow extends StatelessWidget {
     final shown = people.take(likedByPreview).toList();
     final rest = likes - 1;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          SizedBox(
-            width: _face + _step * (shown.length - 1),
-            height: _face + 2,
-            child: Stack(
-              children: [
-                for (var index = shown.length - 1; index >= 0; index--)
-                  Positioned(
-                    left: index * _step,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.bg, width: 1.5),
-                      ),
-                      child: AppAvatar(
-                        seed: shown[index].avatarSeed,
-                        size: _face,
-                        displayName: shown[index].displayName,
-                        username: shown[index].username,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: _face + _step * (shown.length - 1),
+              height: _face + 2,
+              child: Stack(
+                children: [
+                  for (var index = shown.length - 1; index >= 0; index--)
+                    Positioned(
+                      left: index * _step,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.bg, width: 1.5),
+                        ),
+                        child: AppAvatar(
+                          seed: shown[index].avatarSeed,
+                          size: _face,
+                          displayName: shown[index].displayName,
+                          username: shown[index].username,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Flexible(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: 'Liked by '),
-                  TextSpan(
-                    text: shown.first.handle,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  if (rest > 0)
-                    TextSpan(text: rest == 1 ? ' and 1 other' : ' and others'),
                 ],
               ),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: AppTypeScale.label,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: 'Liked by '),
+                    TextSpan(
+                      text: shown.first.handle,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    if (rest > 0)
+                      TextSpan(text: rest == 1 ? ' and 1 other' : ' and others'),
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: AppTypeScale.label,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

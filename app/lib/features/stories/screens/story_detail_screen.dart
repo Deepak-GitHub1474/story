@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
+import '../../../components/double_tap_like.dart';
 
 import '../../../components/app_sheet.dart';
 import '../../../components/story_glyphs.dart';
@@ -454,10 +455,14 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
                     if (story.images.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.lg),
-                      StoryImages(
-                        images: story.images,
-                        ratio: story.imageRatio,
-                        fit: story.imageFit,
+                      DoubleTapLike(
+                        isLiked: story.isLiked,
+                        onLike: () => _toggleStoryLike(story),
+                        child: StoryImages(
+                          images: story.images,
+                          ratio: story.imageRatio,
+                          fit: story.imageFit,
+                        ),
                       ),
                     ],
                     if (story.shared != null) ...[
@@ -488,7 +493,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             '${story.likes}',
                             style: TextStyle(
                               color: story.isLiked
-                                  ? AppInk.like
+                                  ? colors.like
                                   : colors.textMuted,
                               fontSize: AppTypeScale.label,
                             ),

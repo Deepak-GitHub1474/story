@@ -78,22 +78,37 @@ void main() {
     );
   });
 
-  testWidgets('a liked heart is red in every theme', (tester) async {
-    for (final theme in [midnightTheme, paperTheme, blushTheme, maroonTheme]) {
+  testWidgets('a liked heart wears the colour of its theme', (tester) async {
+    final looks = {
+      midnightTheme: AppColors.midnight,
+      paperTheme: AppColors.paper,
+      blushTheme: AppColors.blush,
+      maroonTheme: AppColors.maroon,
+    };
+    final worn = <Color?>[];
+
+    for (final look in looks.entries) {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
-            theme: theme,
+            theme: look.key,
             home: Scaffold(
               body: LikeIcon(isLiked: true, onTap: () {}),
             ),
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       final heart = tester.widget<Icon>(find.byIcon(Icons.favorite));
-      expect(heart.color, AppInk.like, reason: 'the heart is red, always');
+      expect(heart.color, look.value.like, reason: '${look.value.like}');
+      worn.add(heart.color);
     }
+
+    expect(
+      worn.toSet(),
+      hasLength(looks.length),
+      reason: 'every theme brings its own heart, none of them borrowed',
+    );
   });
 }

@@ -14,6 +14,7 @@ class AppColors {
     required this.accentText,
     required this.danger,
     required this.success,
+    this.like = const Color(0xFFED4956),
   });
 
   final Color bg;
@@ -28,6 +29,7 @@ class AppColors {
   final Color accentText;
   final Color danger;
   final Color success;
+  final Color like;
 
   static const midnight = AppColors(
     bg: Color(0xFF0B0D12),
@@ -42,6 +44,7 @@ class AppColors {
     accentText: Color(0xFF0B0D12),
     danger: Color(0xFFFF8A8A),
     success: Color(0xFF7BD88F),
+    like: Color(0xFFFF5C7A),
   );
 
   static const paper = AppColors(
@@ -57,6 +60,7 @@ class AppColors {
     accentText: Color(0xFFFFFFFF),
     danger: Color(0xFFB3261E),
     success: Color(0xFF2E7D45),
+    like: Color(0xFFE23A57),
   );
 
   static const blush = AppColors(
@@ -72,6 +76,7 @@ class AppColors {
     accentText: Color(0xFF2A0F1A),
     danger: Color(0xFFB3261E),
     success: Color(0xFF2E7D45),
+    like: Color(0xFFD6416F),
   );
 
   static const maroon = AppColors(
@@ -87,6 +92,7 @@ class AppColors {
     accentText: Color(0xFFF1E2E5),
     danger: Color(0xFFFF8A8A),
     success: Color(0xFF7BD88F),
+    like: Color(0xFFE0708D),
   );
 }
 

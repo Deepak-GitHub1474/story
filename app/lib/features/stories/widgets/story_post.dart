@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../components/app_avatar.dart';
+import '../../../components/double_tap_like.dart';
 import '../../../components/expandable_text.dart';
 import '../../../components/story_glyphs.dart';
 import '../../../components/story_text.dart';
@@ -118,10 +119,14 @@ class _StoryPostState extends State<StoryPost> {
         ),
 
         if (hasImages)
-          StoryImages(
-            images: story.images,
-            ratio: story.imageRatio,
-            fit: story.imageFit,
+          DoubleTapLike(
+            isLiked: story.isLiked,
+            onLike: widget.onLike,
+            child: StoryImages(
+              images: story.images,
+              ratio: story.imageRatio,
+              fit: story.imageFit,
+            ),
           ),
 
         Padding(
@@ -368,7 +373,7 @@ class _LikeIconState extends State<LikeIcon>
         child: Icon(
           widget.isLiked ? Icons.favorite : Icons.favorite_border,
           size: widget.size ?? AppSizes.iconAction,
-          color: widget.isLiked ? AppInk.like : colors.textPrimary,
+          color: widget.isLiked ? colors.like : colors.textPrimary,
         ),
       ),
     );

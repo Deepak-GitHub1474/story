@@ -86,6 +86,47 @@ void main() {
     expect(opened, 1);
   });
 
+  testWidgets('the empty space beside the names is not a button', (
+    tester,
+  ) async {
+    var opened = 0;
+    await showRow(tester, shown: 1, likes: 1, onTap: () => opened++);
+
+    final row = tester.getRect(find.byType(LikedByRow));
+    final words = tester.getRect(find.byType(Text).first);
+
+    expect(
+      words.right,
+      lessThan(row.right - 40),
+      reason: 'the test needs blank space to the right to be worth anything',
+    );
+
+    await tester.tapAt(Offset(row.right - 12, words.center.dy));
+    await tester.pump();
+
+    expect(opened, 0, reason: 'that is empty card, not the liked-by line');
+  });
+
+  testWidgets('the names themselves still open the drawer', (tester) async {
+    var opened = 0;
+    await showRow(tester, shown: 1, likes: 1, onTap: () => opened++);
+
+    await tester.tap(find.textContaining('Liked by'));
+    await tester.pump();
+
+    expect(opened, 1);
+  });
+
+  testWidgets('a face opens the drawer too', (tester) async {
+    var opened = 0;
+    await showRow(tester, shown: 2, likes: 2, onTap: () => opened++);
+
+    await tester.tap(find.byType(AppAvatar).first);
+    await tester.pump();
+
+    expect(opened, 1);
+  });
+
   testWidgets('the faces overlap instead of running off the card', (
     tester,
   ) async {
