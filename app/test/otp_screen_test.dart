@@ -76,7 +76,7 @@ void main() {
   });
 
   group('the drawn touches', () {
-    testWidgets('the first step shows an envelope on its way', (tester) async {
+    testWidgets('asking for a code is kept plain', (tester) async {
       await show(
         tester,
         const ForgotPasswordScreen(),
@@ -84,7 +84,8 @@ void main() {
         textScale: 1,
       );
 
-      expect(find.byType(EnvelopeGlyph), findsOneWidget);
+      expect(find.byType(EnvelopeGlyph), findsNothing);
+      expect(find.byType(KeyholeGlyph), findsNothing);
     });
 
     testWidgets('the glyphs are drawn, not fetched', (tester) async {

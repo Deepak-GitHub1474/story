@@ -104,11 +104,11 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
     await showAppSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
+      title: '@${profile.username}',
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
               leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
               title: Text(
                 'Report',
@@ -156,8 +156,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                 }
               },
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

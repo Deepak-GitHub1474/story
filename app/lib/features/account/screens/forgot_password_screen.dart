@@ -9,7 +9,6 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/otp_field.dart';
-import '../../../components/recovery_glyphs.dart';
 import '../../../core/utils/otp_wait.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -177,7 +176,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_step == _Step.username) ...[
-              _Doodle(child: EnvelopeGlyph(size: 64, color: colors.accent)),
               Text(
                 'If an email is on your account, we will send a code to it.',
                 style: TextStyle(
@@ -200,7 +198,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 onPressed: _username.text.trim().isEmpty ? null : _request,
               ),
             ] else if (_step == _Step.code) ...[
-              _Doodle(child: KeyholeGlyph(size: 64, color: colors.accent)),
               Text(
                 'Enter the code we sent. If no email is on the account, no code '
                 'was sent and nothing here will work.',
@@ -361,16 +358,4 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       ),
     );
   }
-}
-
-class _Doodle extends StatelessWidget {
-  const _Doodle({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-    child: Align(alignment: Alignment.centerLeft, child: child),
-  );
 }

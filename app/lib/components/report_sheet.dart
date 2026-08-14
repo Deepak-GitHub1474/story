@@ -36,60 +36,37 @@ Future<void> showReportSheet(
   final colors = context.colors;
 
   final reason = await showAppSheet<ReportReason>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Report',
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: AppTypeScale.heading,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'A person reads every report. The author is never told who '
-                  'sent it.',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: AppTypeScale.caption,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
+    context: context,
+    title: 'Report',
+    builder: (sheetContext) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'A person reads every report. The author is never told who sent it.',
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: AppTypeScale.caption,
+            height: 1.5,
           ),
-          for (final option in reportReasons)
-            ListTile(
-              title: Text(
-                option.label,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final option in reportReasons)
+          ListTile(
+            title: Text(
+              option.label,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w500,
               ),
-              subtitle: Text(
-                option.detail,
-                style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
-              ),
-              onTap: () => Navigator.of(sheetContext).pop(option),
             ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-      ),
+            subtitle: Text(
+              option.detail,
+              style: TextStyle(color: colors.textMuted, fontSize: AppTypeScale.caption),
+            ),
+            onTap: () => Navigator.of(sheetContext).pop(option),
+          ),
+      ],
     ),
   );
 
