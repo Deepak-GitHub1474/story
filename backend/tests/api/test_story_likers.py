@@ -109,6 +109,23 @@ async def test_the_list_says_who_you_already_follow(client, signup_payload):
     assert by_name["an_old_friend"]["is_me"] is False
 
 
+async def test_the_list_says_who_is_waiting_to_be_followed_back(client, signup_payload):
+    mine = await headers_for(client, signup_payload, "the_writer")
+    story_id = await a_public_story(client, mine)
+
+    admirer = await headers_for(client, signup_payload, "an_admirer")
+    await client.post(f"/v1/stories/{story_id}/like", headers=admirer)
+    await client.post("/v1/connections/the_writer", headers=admirer)
+
+    items = (await client.get(f"/v1/stories/{story_id}/likes", headers=mine)).json()["data"][
+        "items"
+    ]
+    person = next(row for row in items if row["username"] == "an_admirer")
+
+    assert person["follows_me"] is True, "they followed first, so it reads Follow back"
+    assert person["is_following"] is False
+
+
 async def test_everyone_who_liked_it_can_be_listed(client, signup_payload):
     mine = await headers_for(client, signup_payload, "the_writer")
     story_id = await a_public_story(client, mine)

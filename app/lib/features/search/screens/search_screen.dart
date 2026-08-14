@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
+import '../../../components/app_search_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,41 +51,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(right: AppSpacing.xs),
-          child: TextField(
+          child: AppSearchField(
             controller: _controller,
             autofocus: true,
-            textInputAction: TextInputAction.search,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: AppTypeScale.body,
-            ),
-            onChanged: (value) =>
-                ref.read(searchProvider.notifier).query(value),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: widget.peopleOnly
-                  ? 'Search people'
-                  : 'People, communities, stories',
-              hintStyle: TextStyle(color: colors.textMuted),
-              filled: true,
-              fillColor: colors.surfaceRaised,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                borderSide: BorderSide.none,
-              ),
-            ),
+            hint: widget.peopleOnly
+                ? 'Search people'
+                : 'People, communities, stories',
+            onChanged: (value) => ref.read(searchProvider.notifier).query(value),
           ),
         ),
         actions: [

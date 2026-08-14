@@ -90,6 +90,8 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       );
     } else {
       ref.invalidate(feedProvider);
+      await afterFollowChanged(ref, profile.username);
+      if (mounted) setState(() => _override = null);
     }
   }
 

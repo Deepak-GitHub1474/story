@@ -250,21 +250,25 @@ class Liker {
     required this.person,
     required this.isFollowing,
     required this.isMe,
+    this.followsMe = false,
   });
 
   factory Liker.fromJson(Map<String, dynamic> json) => Liker(
     person: StoryAuthor.fromJson(json),
     isFollowing: json['is_following'] as bool? ?? false,
+    followsMe: json['follows_me'] as bool? ?? false,
     isMe: json['is_me'] as bool? ?? false,
   );
 
   final StoryAuthor person;
   final bool isFollowing;
+  final bool followsMe;
   final bool isMe;
 
   Liker copyWith({bool? isFollowing}) => Liker(
     person: person,
     isFollowing: isFollowing ?? this.isFollowing,
+    followsMe: followsMe,
     isMe: isMe,
   );
 }

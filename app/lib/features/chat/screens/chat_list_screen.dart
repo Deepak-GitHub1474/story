@@ -536,6 +536,7 @@ class _FollowSuggestionsState extends ConsumerState<_FollowSuggestions> {
                   .read(communityRepositoryProvider)
                   .setFollow(person.username ?? '', follow: true);
               ref.invalidate(chatPeopleProvider);
+              await afterFollowChanged(ref, person.username ?? '');
             },
             onDismiss: () => setState(() => _dismissed.add(person.userId)),
           ),

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/app_sheet.dart';
-import '../../../components/app_text_field.dart';
+import '../../../components/app_search_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -29,7 +29,7 @@ Future<void> showLikesSheet({
       LikesSheet(storyId: storyId, scrollController: scrollController),
 );
 
-enum LikerAction { none, follow, message }
+enum LikerAction { none, follow, followBack, message }
 
 bool isSelf({
   required Liker liker,
@@ -43,7 +43,8 @@ bool isSelf({
 
 LikerAction actionFor({required Liker liker, required bool isMe}) {
   if (isMe) return LikerAction.none;
-  return liker.isFollowing ? LikerAction.message : LikerAction.follow;
+  if (liker.isFollowing) return LikerAction.message;
+  return liker.followsMe ? LikerAction.followBack : LikerAction.follow;
 }
 
 List<Liker> likersMatching(List<Liker> people, String query) {
@@ -126,7 +127,12 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
         .read(communityRepositoryProvider)
         .setFollow(liker.person.handle, follow: next);
 
-    if (!mounted || result.isSuccess) return;
+    if (!mounted) return;
+    if (result.isSuccess) {
+      await afterFollowChanged(ref, liker.person.handle);
+      return;
+    }
+
     setState(() {
       final at = _people.indexWhere(
         (other) => other.person.userId == liker.person.userId,
@@ -191,11 +197,10 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
               controller: widget.scrollController,
               padding: AppSheet.insets,
               children: [
-                AppTextField(
+                AppSearchField(
                   controller: _search,
-                  label: 'Search',
-                  hint: 'Find someone who liked this',
-                  prefixIcon: Icons.search,
+                  hint: 'Search',
+                  showIcon: true,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 if (_shown.isEmpty)
@@ -337,6 +342,14 @@ class _LikerRow extends StatelessWidget {
               padding: const EdgeInsets.only(left: AppSpacing.md),
               child: _RowButton(
                 label: 'Follow',
+                isFilled: true,
+                onTap: onFollow,
+              ),
+            ),
+            LikerAction.followBack => Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.md),
+              child: _RowButton(
+                label: 'Follow back',
                 isFilled: true,
                 onTap: onFollow,
               ),

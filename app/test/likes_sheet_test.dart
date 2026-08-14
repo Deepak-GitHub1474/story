@@ -6,6 +6,7 @@ Map<String, dynamic> wire({
   required String username,
   String? displayName,
   bool isFollowing = false,
+  bool followsMe = false,
   bool isMe = false,
 }) => {
   'user_id': 'us_$username',
@@ -13,6 +14,7 @@ Map<String, dynamic> wire({
   'display_name': displayName ?? username,
   'avatar_seed': 'seed',
   'is_following': isFollowing,
+  'follows_me': followsMe,
   'is_me': isMe,
   'liked_at': '2026-08-14T04:00:00.000Z',
 };
@@ -53,6 +55,37 @@ void main() {
     test('a stranger gets Follow', () {
       final stranger = Liker.fromJson(wire(username: 'loud_bear'));
       expect(actionFor(liker: stranger, isMe: false), LikerAction.follow);
+    });
+
+    test('someone who follows you first gets Follow back', () {
+      final admirer = Liker.fromJson(
+        wire(username: 'loud_bear', followsMe: true),
+      );
+      expect(actionFor(liker: admirer, isMe: false), LikerAction.followBack);
+    });
+
+    test('following them back settles into Message', () {
+      final mutual = Liker.fromJson(
+        wire(username: 'loud_bear', followsMe: true, isFollowing: true),
+      );
+      expect(actionFor(liker: mutual, isMe: false), LikerAction.message);
+    });
+
+    test('an older payload leaves nobody waiting to be followed back', () {
+      final page = LikersPage.fromJson({
+        'items': [
+          {
+            'user_id': 'us_1',
+            'username': 'quiet_fox',
+            'display_name': 'Quiet Fox',
+            'avatar_seed': 'seed',
+          },
+        ],
+        'next_cursor': null,
+        'has_more': false,
+      });
+
+      expect(page.items.single.followsMe, isFalse);
     });
   });
 

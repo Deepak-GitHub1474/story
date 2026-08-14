@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/auth_provider.dart';
+import '../../people/screens/people_list_screen.dart';
 import '../data/community_repository.dart';
 import '../models/community_models.dart';
 
@@ -97,6 +98,15 @@ class CommunityBrowseNotifier extends Notifier<AsyncValue<List<Community>>> {
     ref.invalidate(suggestionsProvider);
     ref.invalidate(communityDetailProvider(community.slug));
   }
+}
+
+Future<void> afterFollowChanged(WidgetRef ref, String username) async {
+  ref.invalidate(publicProfileProvider(username));
+  ref.invalidate(suggestionsProvider);
+  for (final kind in PeopleKind.values) {
+    ref.invalidate(peopleProvider(kind));
+  }
+  await ref.read(authProvider.notifier).refreshUser();
 }
 
 final publicProfileProvider = FutureProvider.family<PublicProfile, String>((
