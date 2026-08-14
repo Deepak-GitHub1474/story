@@ -308,6 +308,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     if (result.isSuccess) {
       final outcome = result.valueOrNull!;
       _standing = visibility;
+      await refreshStoryEverywhere(ref, storyId);
       unawaited(ref.read(feedProvider.notifier).refresh());
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
       await ref.read(authProvider.notifier).refreshUser();
@@ -404,7 +405,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         leading: AppCloseButton(
           tooltip: 'Close the composer',
           onPressed: () async {
-            if (_isDirty) await _save();
+            final saved = _isDirty ? await _save() : null;
+            if (saved != null) await refreshStoryEverywhere(ref, saved.storyId);
             if (context.mounted) context.pop();
           },
         ),

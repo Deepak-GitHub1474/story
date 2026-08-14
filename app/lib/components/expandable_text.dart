@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'text_measure.dart';
 
 class ExpandableText extends StatefulWidget {
   const ExpandableText({
@@ -12,14 +13,18 @@ class ExpandableText extends StatefulWidget {
     this.maxExpandedHeight,
     this.collapsedLines = 3,
     this.onTapWhenShort,
+    this.onTooLong,
+    this.inlineLines = 10,
   });
 
   final TextSpan text;
   final TextSpan? expandedText;
-  final Future<void> Function()? onExpand;
+  final Future<TextSpan?> Function()? onExpand;
   final double? maxExpandedHeight;
   final int collapsedLines;
   final VoidCallback? onTapWhenShort;
+  final ValueChanged<TextSpan>? onTooLong;
+  final int inlineLines;
 
   @override
   State<ExpandableText> createState() => _ExpandableTextState();
@@ -28,6 +33,7 @@ class ExpandableText extends StatefulWidget {
 class _ExpandableTextState extends State<ExpandableText> {
   bool _isExpanded = false;
   bool _isLoading = false;
+  double _width = 0;
 
   Future<void> _toggle() async {
     if (_isExpanded) {
@@ -36,14 +42,31 @@ class _ExpandableTextState extends State<ExpandableText> {
     }
 
     final load = widget.onExpand;
+    TextSpan? loaded;
     if (load != null && !_isLoading) {
       setState(() => _isLoading = true);
-      await load();
+      loaded = await load();
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
 
     if (!mounted) return;
+
+    final whole = loaded ?? widget.expandedText ?? widget.text;
+    final roomNeeded = widget.onTooLong;
+
+    if (roomNeeded != null &&
+        longerThanLines(
+          span: whole,
+          width: _width,
+          lines: widget.inlineLines,
+          direction: Directionality.of(context),
+          scaler: MediaQuery.textScalerOf(context),
+        )) {
+      roomNeeded(whole);
+      return;
+    }
+
     setState(() => _isExpanded = true);
   }
 
@@ -54,6 +77,8 @@ class _ExpandableTextState extends State<ExpandableText> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        _width = constraints.maxWidth;
+
         final painter = TextPainter(
           text: widget.text,
           maxLines: widget.collapsedLines,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:story_app/components/app_sheet.dart';
 import 'package:story_app/features/stories/models/story_models.dart';
 import 'package:story_app/features/stories/providers/story_providers.dart';
 import 'package:story_app/features/stories/widgets/story_post.dart';
@@ -81,10 +82,8 @@ void main() {
     await showCard(tester, served: _card(body: _whole));
 
     await tester.tap(find.text('more'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.text('less'), findsOneWidget);
     expect(
       richTextWith('borrowed desk'),
       findsOneWidget,
@@ -93,38 +92,46 @@ void main() {
     expect(
       richTextWith('the whole secret'),
       findsOneWidget,
-      reason: 'the tail of a long story must survive the expansion',
+      reason: 'the tail of a long story must survive',
     );
   });
 
-  testWidgets('the markup never reaches the card as asterisks', (tester) async {
+  testWidgets('the markup never reaches the reader as asterisks', (
+    tester,
+  ) async {
     await showCard(tester, served: _card(body: _whole));
 
     await tester.tap(find.text('more'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(richTextWith('The turn came quietly.'), findsOneWidget);
     expect(richTextWith('**'), findsNothing);
   });
 
-  testWidgets('a long story is capped and scrolls inside the card', (
-    tester,
-  ) async {
+  testWidgets('a long story is given a room of its own', (tester) async {
     await showCard(tester, served: _card(body: _whole));
-    final screen = tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
     await tester.tap(find.text('more'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    final box = tester.getSize(find.byType(SingleChildScrollView));
-    expect(box.height, lessThanOrEqualTo(screen * 0.5));
-
-    final scrollable = tester.widget<SingleChildScrollView>(
-      find.byType(SingleChildScrollView),
+    expect(find.byType(AppSheet), findsOneWidget);
+    expect(find.text('Quiet Steps on Ordinary Ground'), findsWidgets);
+    expect(
+      find.text('less'),
+      findsNothing,
+      reason: 'it never grew inside the card, so there is nothing to collapse',
     );
-    expect(scrollable.physics, isA<ClampingScrollPhysics>());
+  });
+
+  testWidgets('a middling story still opens where it stands', (tester) async {
+    await showCard(tester, served: _card(body: _opening));
+
+    await tester.tap(find.text('more'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppSheet), findsNothing);
+    expect(find.text('less'), findsOneWidget);
+    expect(richTextWith('vast empire'), findsOneWidget);
   });
 
   testWidgets('a story the card already holds needs no second trip', (
@@ -133,7 +140,7 @@ void main() {
     await showCard(tester, story: _card(body: _whole));
 
     await tester.tap(find.text('more'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(richTextWith('borrowed desk'), findsOneWidget);
   });
@@ -147,11 +154,10 @@ void main() {
   });
 
   testWidgets('collapsing puts the excerpt back', (tester) async {
-    await showCard(tester, served: _card(body: _whole));
+    await showCard(tester, served: _card(body: _opening));
 
     await tester.tap(find.text('more'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('less'));
     await tester.pump();
 

@@ -291,9 +291,12 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                   'Edit',
                   style: TextStyle(color: colors.textPrimary),
                 ),
-                onTap: () {
+                onTap: () async {
                   Navigator.of(sheetContext).pop();
-                  context.push('${Routes.compose}?id=${story.storyId}');
+                  await context.push('${Routes.compose}?id=${story.storyId}');
+                  if (!mounted) return;
+                  setState(() => _story = null);
+                  ref.invalidate(storyDetailProvider(story.storyId));
                 },
               ),
               if (story.isPublic)

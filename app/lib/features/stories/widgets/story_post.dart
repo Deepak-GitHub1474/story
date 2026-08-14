@@ -14,6 +14,7 @@ import 'liked_by_row.dart';
 import 'likes_sheet.dart';
 import 'shared_story_card.dart';
 import 'story_images.dart';
+import 'story_text_sheet.dart';
 
 class StoryPost extends StatefulWidget {
   const StoryPost({
@@ -228,25 +229,28 @@ class _CaptionState extends ConsumerState<_Caption> {
 
   bool get _isTrimmed => story.excerpt.endsWith('…');
 
-  Future<void> _readTheRest() async {
-    if (_whole != null || !_isTrimmed) return;
+  Future<TextSpan?> _readTheRest() async {
+    if (_whole != null) return _span(_whole!, context.colors);
+    if (!_isTrimmed) return null;
 
     final inHand = story.body;
     if (inHand != null && inHand.isNotEmpty) {
       setState(() => _whole = plainStoryText(inHand));
-      return;
+      return _span(_whole!, context.colors);
     }
 
     try {
       final detail = await ref.read(storyDetailProvider(story.storyId).future);
-      if (!mounted) return;
+      if (!mounted) return null;
       final body = detail.body;
       if (body != null && body.isNotEmpty) {
         setState(() => _whole = plainStoryText(body));
+        return _span(_whole!, context.colors);
       }
     } catch (_) {
-      return;
+      return null;
     }
+    return null;
   }
 
   TextSpan _span(String body, AppColors colors) => TextSpan(
@@ -281,6 +285,15 @@ class _CaptionState extends ConsumerState<_Caption> {
     ],
   );
 
+  TextSpan _readingSpan(AppColors colors) => TextSpan(
+    text: _whole ?? story.excerpt,
+    style: TextStyle(
+      color: colors.textSecondary,
+      fontSize: AppTypeScale.body,
+      height: 1.6,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -295,6 +308,13 @@ class _CaptionState extends ConsumerState<_Caption> {
       onTapWhenShort: widget.onOpen,
       onExpand: _isTrimmed ? _readTheRest : null,
       maxExpandedHeight: MediaQuery.sizeOf(context).height * 0.5,
+      onTooLong: (whole) => showStoryTextSheet(
+        context,
+        title: title != null && title.isNotEmpty
+            ? title
+            : story.author.handle,
+        text: _readingSpan(colors),
+      ),
       text: _span(story.excerpt, colors),
       expandedText: _whole == null ? null : _span(_whole!, colors),
     );
