@@ -150,7 +150,6 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
     final colors = context.colors;
     final comments = ref.watch(commentsProvider(widget.storyId));
     final me = ref.watch(authProvider).user?.userId;
-    final isMyStory = me != null && me == widget.storyAuthorId;
 
     return AppSheet(
       title: 'Comments',
@@ -205,7 +204,11 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                   return CommentTile(
                     comment: _withLocalLike(comment),
                     storyAuthorId: widget.storyAuthorId,
-                    canDelete: comment.author.userId == me || isMyStory,
+                    canDelete: mayDelete(
+                      comment: comment,
+                      viewerId: me,
+                      storyAuthorId: widget.storyAuthorId,
+                    ),
                     canEdit: comment.author.userId == me,
                     isThreadOpen: _openThreads.contains(comment.commentId),
                     onDelete: () => _delete(comment),

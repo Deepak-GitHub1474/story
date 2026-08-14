@@ -947,13 +947,14 @@ async def create_comment(
             redis=redis,
 )
 
-    return {"comment": serialize_comment(comment)}
+    return {"comment": serialize_comment(comment, can_delete=True)}
 
 
 async def list_comments(
     story_id: str, *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
 ) -> dict[str, Any]:
-    await _readable_story(story_id, claims.user_id, mongo)
+    story = await _readable_story(story_id, claims.user_id, mongo)
+    owns_story = story["author_id"] == claims.user_id
 
     limit = max(1, min(limit, c.FEED_MAX_LIMIT))
     query: dict[str, Any] = {"story_id": story_id, "parent_id": None, "deleted_at": None}
@@ -991,9 +992,17 @@ async def list_comments(
     items = []
     for doc in page:
         replies = replies_by_parent.get(doc["_id"], [])
-        payload = serialize_comment(doc, is_liked=doc["_id"] in liked_ids)
+        payload = serialize_comment(
+            doc,
+            is_liked=doc["_id"] in liked_ids,
+            can_delete=owns_story or doc["author_id"] == claims.user_id,
+        )
         payload["replies"] = [
-            serialize_comment(reply, is_liked=reply["_id"] in liked_ids)
+            serialize_comment(
+                reply,
+                is_liked=reply["_id"] in liked_ids,
+                can_delete=owns_story or reply["author_id"] == claims.user_id,
+            )
             for reply in replies[: c.INLINE_REPLIES]
         ]
         payload["counts"] = {**payload.get("counts", {}), "replies": len(replies)}
@@ -1032,7 +1041,8 @@ async def list_replies(
     parent = await mongo[c.COMMENTS].find_one({"_id": comment_id, "deleted_at": None})
     if parent is None:
         raise api_error(ErrorCode.COMMENT_NOT_FOUND)
-    await _readable_story(parent["story_id"], claims.user_id, mongo)
+    story = await _readable_story(parent["story_id"], claims.user_id, mongo)
+    owns_story = story["author_id"] == claims.user_id
 
     limit = max(1, min(limit, c.FEED_MAX_LIMIT))
     query: dict[str, Any] = {"parent_id": comment_id, "deleted_at": None}
@@ -1051,7 +1061,14 @@ async def list_replies(
     liked_ids = await _liked_comment_ids(claims.user_id, [doc["_id"] for doc in page], mongo)
 
     return {
-        "items": [serialize_comment(doc, is_liked=doc["_id"] in liked_ids) for doc in page],
+        "items": [
+            serialize_comment(
+                doc,
+                is_liked=doc["_id"] in liked_ids,
+                can_delete=owns_story or doc["author_id"] == claims.user_id,
+            )
+            for doc in page
+        ],
         "next_cursor": page[-1]["_id"] if page and has_more else None,
         "has_more": has_more,
     }
@@ -1076,7 +1093,7 @@ async def update_comment(
         {"$set": {"body": body.body, "edited_at": now, "updated_at": now}},
     )
     comment.update({"body": body.body, "edited_at": now})
-    return {"comment": serialize_comment(comment)}
+    return {"comment": serialize_comment(comment, can_delete=True)}
 
 
 async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:

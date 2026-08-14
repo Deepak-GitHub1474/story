@@ -567,9 +567,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                     child: CommentTile(
                                       comment: _withThread(_resolve(raw)),
                                       storyAuthorId: story.author.userId,
-                                      canDelete:
-                                          raw.author.userId == currentUserId ||
-                                          isMine,
+                                      canDelete: mayDelete(
+                                        comment: raw,
+                                        viewerId: currentUserId,
+                                        storyAuthorId: story.author.userId,
+                                      ),
                                       isThreadOpen: _expanded.containsKey(
                                         raw.commentId,
                                       ),

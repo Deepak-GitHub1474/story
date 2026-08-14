@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,9 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_avatar.dart';
 import '../../../components/app_sheet.dart';
 import '../../../components/app_text_field.dart';
+import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../../communities/providers/community_providers.dart';
 import '../models/story_models.dart';
 import '../providers/story_providers.dart';
@@ -23,6 +28,23 @@ Future<void> showLikesSheet({
   shell: (sheetContext, scrollController) =>
       LikesSheet(storyId: storyId, scrollController: scrollController),
 );
+
+enum LikerAction { none, follow, message }
+
+bool isSelf({
+  required Liker liker,
+  required String? viewerId,
+  required String? viewerUsername,
+}) {
+  if (liker.isMe) return true;
+  if (viewerId != null && liker.person.userId == viewerId) return true;
+  return viewerUsername != null && liker.person.username == viewerUsername;
+}
+
+LikerAction actionFor({required Liker liker, required bool isMe}) {
+  if (isMe) return LikerAction.none;
+  return liker.isFollowing ? LikerAction.message : LikerAction.follow;
+}
 
 List<Liker> likersMatching(List<Liker> people, String query) {
   final needle = query.trim().toLowerCase();
@@ -51,6 +73,7 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
   final _people = <Liker>[];
   final _search = TextEditingController();
   String? _cursor;
+  String? _openingChatWith;
   bool _hasMore = true;
   bool _isLoading = true;
   bool _isFetchingMore = false;
@@ -120,6 +143,38 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
     context.push('${Routes.user}/${person.username}');
   }
 
+  bool _isMe(Liker liker) {
+    final me = ref.read(authProvider).user;
+    return isSelf(
+      liker: liker,
+      viewerId: me?.userId,
+      viewerUsername: me?.username,
+    );
+  }
+
+  Future<void> _openChat(Liker liker) async {
+    final username = liker.person.username;
+    if (username == null) return;
+
+    setState(() => _openingChatWith = liker.person.userId);
+    final id = await ref.read(chatStarterProvider).open(username);
+    if (!mounted) return;
+    setState(() => _openingChatWith = null);
+
+    if (id == null) {
+      AppToast.show(
+        context,
+        'They have no key on this device yet, so a message has nothing to '
+        'lock itself to.',
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
+    Navigator.of(context).pop();
+    unawaited(context.push('${Routes.chat}/$id'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -136,15 +191,13 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
               controller: widget.scrollController,
               padding: AppSheet.insets,
               children: [
-                if (_people.length > 4 || _search.text.isNotEmpty) ...[
-                  AppTextField(
-                    controller: _search,
-                    label: 'Search',
-                    hint: 'Find someone who liked this',
-                    prefixIcon: Icons.search,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
+                AppTextField(
+                  controller: _search,
+                  label: 'Search',
+                  hint: 'Find someone who liked this',
+                  prefixIcon: Icons.search,
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 if (_shown.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -167,8 +220,11 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
                 for (final liker in _shown)
                   _LikerRow(
                     liker: liker,
+                    isMe: _isMe(liker),
+                    isOpeningChat: _openingChatWith == liker.person.userId,
                     onTap: () => _openProfile(liker.person),
                     onFollow: () => _toggleFollow(liker),
+                    onMessage: () => _openChat(liker),
                   ),
                 if (_hasMore && _search.text.isEmpty)
                   Padding(
@@ -208,13 +264,19 @@ class _LikesSheetState extends ConsumerState<LikesSheet> {
 class _LikerRow extends StatelessWidget {
   const _LikerRow({
     required this.liker,
+    required this.isMe,
+    required this.isOpeningChat,
     required this.onTap,
     required this.onFollow,
+    required this.onMessage,
   });
 
   final Liker liker;
+  final bool isMe;
+  final bool isOpeningChat;
   final VoidCallback onTap;
   final VoidCallback onFollow;
+  final VoidCallback onMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -261,47 +323,70 @@ class _LikerRow extends StatelessWidget {
               ),
             ),
           ),
-          if (!liker.isMe) ...[
-            const SizedBox(width: AppSpacing.md),
-            _FollowButton(isFollowing: liker.isFollowing, onTap: onFollow),
-          ],
+          switch (actionFor(liker: liker, isMe: isMe)) {
+            LikerAction.none => const SizedBox.shrink(),
+            LikerAction.message => Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.md),
+              child: _RowButton(
+                label: isOpeningChat ? 'Opening' : 'Message',
+                isFilled: false,
+                onTap: isOpeningChat ? null : onMessage,
+              ),
+            ),
+            LikerAction.follow => Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.md),
+              child: _RowButton(
+                label: 'Follow',
+                isFilled: true,
+                onTap: onFollow,
+              ),
+            ),
+          },
         ],
       ),
     );
   }
 }
 
-class _FollowButton extends StatelessWidget {
-  const _FollowButton({required this.isFollowing, required this.onTap});
+class _RowButton extends StatelessWidget {
+  const _RowButton({
+    required this.label,
+    required this.isFilled,
+    required this.onTap,
+  });
 
-  final bool isFollowing;
-  final VoidCallback onTap;
+  final String label;
+  final bool isFilled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isFollowing ? Colors.transparent : colors.accent,
-          border: Border.all(
-            color: isFollowing ? colors.border : colors.accent,
-            width: AppSizes.hairline,
+    return Material(
+      color: isFilled ? colors.accentStrong : Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
           ),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Text(
-          isFollowing ? 'Following' : 'Follow',
-          style: TextStyle(
-            color: isFollowing ? colors.textPrimary : colors.accentText,
-            fontSize: AppTypeScale.caption,
-            fontWeight: FontWeight.w600,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isFilled ? colors.accentStrong : colors.border,
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isFilled ? colors.accentText : colors.textSecondary,
+              fontSize: AppTypeScale.label,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),

@@ -300,6 +300,7 @@ class Comment {
     required this.replyCount,
     required this.isLiked,
     required this.createdAt,
+    this.canDelete = false,
     this.editedAt,
     this.replies = const [],
   });
@@ -317,6 +318,7 @@ class Comment {
       likes: counts['likes'] as int? ?? 0,
       replyCount: counts['replies'] as int? ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
+      canDelete: json['can_delete'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? '',
       editedAt: json['edited_at'] as String?,
       replies: (json['replies'] as List<dynamic>? ?? [])
@@ -336,6 +338,7 @@ class Comment {
   final int likes;
   final int replyCount;
   final bool isLiked;
+  final bool canDelete;
   final String createdAt;
   final List<Comment> replies;
 
@@ -351,7 +354,9 @@ class Comment {
         likes: likes ?? this.likes,
         replyCount: replyCount,
         isLiked: isLiked ?? this.isLiked,
+        canDelete: canDelete,
         createdAt: createdAt,
+        editedAt: editedAt,
         replies: replies ?? this.replies,
       );
 }

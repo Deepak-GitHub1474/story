@@ -68,7 +68,7 @@ def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) ->
     return payload
 
 
-def serialize_comment(doc: dict, *, is_liked: bool = False) -> dict:
+def serialize_comment(doc: dict, *, is_liked: bool = False, can_delete: bool = False) -> dict:
     snapshot = doc.get("author_snapshot") or {}
     return {
         "comment_id": doc["_id"],
@@ -83,6 +83,7 @@ def serialize_comment(doc: dict, *, is_liked: bool = False) -> dict:
         "body": doc["body"],
         "counts": doc.get("counts", {}),
         "is_liked": is_liked,
+        "can_delete": can_delete,
         "is_tombstone": doc.get("is_tombstone", False),
         "edited_at": to_wire(doc.get("edited_at")),
         "created_at": to_wire(doc.get("created_at")),

@@ -18,6 +18,44 @@ Map<String, dynamic> wire({
 };
 
 void main() {
+  group('who gets which button', () {
+    test('no button against yourself, however the server labelled it', () {
+      final me = Liker.fromJson(wire(username: 'deepak', isMe: true));
+      expect(actionFor(liker: me, isMe: true), LikerAction.none);
+    });
+
+    test('the app spots itself even when the flag has not shipped yet', () {
+      final me = Liker.fromJson(wire(username: 'deepak'));
+
+      expect(
+        isSelf(liker: me, viewerId: 'us_deepak', viewerUsername: 'someone'),
+        isTrue,
+        reason: 'the id matches',
+      );
+      expect(
+        isSelf(liker: me, viewerId: 'other', viewerUsername: 'deepak'),
+        isTrue,
+        reason: 'the handle matches, which is what saved this on the phone',
+      );
+      expect(
+        isSelf(liker: me, viewerId: 'other', viewerUsername: 'someone'),
+        isFalse,
+      );
+    });
+
+    test('someone you follow gets Message, not Following', () {
+      final friend = Liker.fromJson(
+        wire(username: 'quiet_fox', isFollowing: true),
+      );
+      expect(actionFor(liker: friend, isMe: false), LikerAction.message);
+    });
+
+    test('a stranger gets Follow', () {
+      final stranger = Liker.fromJson(wire(username: 'loud_bear'));
+      expect(actionFor(liker: stranger, isMe: false), LikerAction.follow);
+    });
+  });
+
   test('a liker knows whether you already follow them', () {
     final page = LikersPage.fromJson({
       'items': [
@@ -83,7 +121,10 @@ void main() {
     });
 
     test('case does not matter', () {
-      expect(likersMatching(people, 'LOUD').single.person.username, 'loud_bear');
+      expect(
+        likersMatching(people, 'LOUD').single.person.username,
+        'loud_bear',
+      );
     });
 
     test('a name nobody has finds nobody', () {

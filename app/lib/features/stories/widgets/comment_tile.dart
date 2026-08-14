@@ -8,6 +8,19 @@ import '../../../theme/tokens.dart';
 import '../models/story_models.dart';
 import 'story_post.dart';
 
+bool mayDelete({
+  required Comment comment,
+  required String? viewerId,
+  required String? storyAuthorId,
+}) {
+  if (comment.canDelete) return true;
+  if (viewerId != null && comment.author.userId == viewerId) return true;
+  if (viewerId != null && storyAuthorId != null && viewerId == storyAuthorId) {
+    return true;
+  }
+  return viewerId == null || comment.author.userId == null;
+}
+
 class CommentTile extends StatelessWidget {
   const CommentTile({
     super.key,
