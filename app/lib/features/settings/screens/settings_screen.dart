@@ -246,6 +246,7 @@ class SettingsScreen extends ConsumerWidget {
     final choice = await showAppSheet<String>(
       context: context,
       title: 'Themes',
+      contentPadding: const EdgeInsets.only(top: AppSpacing.md),
       builder: (sheetContext) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -10,6 +10,23 @@ String clockLabel(Duration left) {
 String resendLabel(Duration left) =>
     left <= Duration.zero ? 'Send it again' : 'Send again in ${left.inSeconds}s';
 
+Duration? lockedWait(Failure<Object?> failure) {
+  if (failure.code != 'OTP_LOCKED' && failure.code != 'RATE_LIMITED') {
+    return null;
+  }
+  final wait = failure.details['retry_after_seconds'] as int?;
+  return wait == null ? null : Duration(seconds: wait);
+}
+
+String lockedLabel(Duration left) =>
+    'Too many tries. Try again in ${clockLabel(left)}';
+
+String? expiryLabel(Duration left) {
+  if (left <= Duration.zero) return 'That code has run out';
+  if (left > const Duration(minutes: 2)) return null;
+  return 'Expires in ${clockLabel(left)}';
+}
+
 String waitLabel(Duration left) {
   if (left.inMinutes >= 2) return 'about ${left.inMinutes} minutes';
   if (left.inMinutes == 1) return 'about a minute';

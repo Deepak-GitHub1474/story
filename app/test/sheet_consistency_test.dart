@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:story_app/components/app_card.dart';
 import 'package:story_app/components/app_sheet.dart';
 import 'package:story_app/theme/app_theme.dart';
 import 'package:story_app/theme/tokens.dart';
@@ -82,6 +83,45 @@ void main() {
       tester.getTopLeft(find.byKey(const Key('option'))).dx,
       tester.getTopLeft(find.byType(ListTile)).dx,
       reason: 'a ListTile must not add its own 16 on top of the sheet inset',
+    );
+  });
+
+  testWidgets('a row that carries its own inset is not inset twice', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: midnightTheme,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showAppSheet<void>(
+                context: context,
+                title: 'Themes',
+                contentPadding: const EdgeInsets.only(top: AppSpacing.md),
+                builder: (_) => const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [AppListRow(label: 'System')],
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final fromSheetEdge =
+        tester.getTopLeft(find.text('System')).dx -
+        tester.getTopLeft(find.byType(AppSheet)).dx;
+
+    expect(
+      fromSheetEdge,
+      AppSpacing.lg,
+      reason: 'AppListRow already pads itself, so the sheet must not pad again',
     );
   });
 

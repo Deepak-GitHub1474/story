@@ -34,8 +34,21 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   String? _error;
 
   Timer? _tick;
-  Duration _codeLife = Duration.zero;
-  Duration _resendIn = Duration.zero;
+  DateTime? _codeDies;
+  DateTime? _canAskAgain;
+  DateTime? _lockedUntil;
+
+  Duration get _codeLife => _leftUntil(_codeDies);
+
+  Duration get _resendIn => _leftUntil(_canAskAgain);
+
+  Duration get _lockedFor => _leftUntil(_lockedUntil);
+
+  Duration _leftUntil(DateTime? moment) {
+    if (moment == null) return Duration.zero;
+    final left = moment.difference(DateTime.now());
+    return left > Duration.zero ? left : Duration.zero;
+  }
 
   @override
   void dispose() {
@@ -46,27 +59,38 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     super.dispose();
   }
 
-  void _startClocks(EmailState state) {
+  void _keepTicking() {
     _tick?.cancel();
-    setState(() {
-      _codeLife = state.expiresIn;
-      _resendIn = state.resendAfter;
-    });
-
     _tick = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      setState(() {
-        if (_codeLife > Duration.zero) {
-          _codeLife -= const Duration(seconds: 1);
-        }
-        if (_resendIn > Duration.zero) {
-          _resendIn -= const Duration(seconds: 1);
-        }
-      });
-      if (_codeLife <= Duration.zero && _resendIn <= Duration.zero) {
+      setState(() {});
+      if (_codeLife <= Duration.zero &&
+          _resendIn <= Duration.zero &&
+          _lockedFor <= Duration.zero) {
         timer.cancel();
       }
     });
+  }
+
+  void _startClocks(EmailState state) {
+    final now = DateTime.now();
+    setState(() {
+      _codeDies = now.add(state.expiresIn);
+      _canAskAgain = now.add(state.resendAfter);
+      _lockedUntil = null;
+    });
+    _keepTicking();
+  }
+
+  void _lockOut(Duration wait) {
+    setState(() {
+      _lockedUntil = DateTime.now().add(wait);
+      _codeDies = null;
+      _canAskAgain = null;
+      _error = null;
+      _otp.clear();
+    });
+    _keepTicking();
   }
 
   Future<void> _send() async {
@@ -92,7 +116,9 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   }
 
   Future<void> _resend() async {
-    if (_resendIn > Duration.zero || _isBusy) return;
+    if (_resendIn > Duration.zero || _lockedFor > Duration.zero || _isBusy) {
+      return;
+    }
 
     setState(() => _isBusy = true);
     final result = await ref.read(accountRepositoryProvider).resendOtp();
@@ -107,16 +133,21 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     if (sent != null) {
       setState(() => _error = null);
       _startClocks(sent);
-    } else {
-      setState(() => _error = otpTrouble(result.failureOrNull!));
+      if (!mounted) return;
+      AppToast.show(context, 'Another code sent.');
+      return;
     }
 
+    final failure = result.failureOrNull!;
+    final wait = lockedWait(failure);
+    if (wait != null) {
+      _lockOut(wait);
+      return;
+    }
+
+    setState(() => _error = otpTrouble(failure));
     if (!mounted) return;
-    AppToast.show(
-      context,
-      sent != null ? 'Another code sent.' : _error!,
-      kind: sent != null ? AppToastKind.info : AppToastKind.error,
-    );
+    AppToast.show(context, _error!, kind: AppToastKind.error);
   }
 
   Future<void> _verify(String otp) async {
@@ -136,10 +167,16 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
       AppToast.show(context, 'Email verified.', kind: AppToastKind.success);
       context.pop();
     } else {
-      setState(() {
-        _error = otpTrouble(result.failureOrNull!);
-        _otp.clear();
-      });
+      final failure = result.failureOrNull!;
+      final wait = lockedWait(failure);
+      if (wait != null) {
+        _lockOut(wait);
+      } else {
+        setState(() {
+          _error = otpTrouble(failure);
+          _otp.clear();
+        });
+      }
     }
   }
 
@@ -286,47 +323,57 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
               OtpField(
                 controller: _otp,
                 hasError: _error != null,
+                enabled: _lockedFor <= Duration.zero,
                 onCompleted: _verify,
               ),
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.sm),
+              if (_lockedFor > Duration.zero) ...[
+                const SizedBox(height: AppSpacing.md),
                 Text(
-                  _error!,
+                  lockedLabel(_lockedFor),
                   style: TextStyle(
                     color: colors.danger,
                     fontSize: AppTypeScale.caption,
                   ),
                 ),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+              ] else ...[
+                if (_error != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
-                    _codeLife > Duration.zero
-                        ? 'Good for ${clockLabel(_codeLife)}'
-                        : 'That code has run out',
+                    _error!,
                     style: TextStyle(
-                      color: colors.textMuted,
+                      color: colors.danger,
                       fontSize: AppTypeScale.caption,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _resend,
-                    behavior: HitTestBehavior.opaque,
-                    child: Text(
-                      resendLabel(_resendIn),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      expiryLabel(_codeLife) ?? '',
                       style: TextStyle(
-                        color: _resendIn > Duration.zero
-                            ? colors.textMuted
-                            : colors.accent,
+                        color: colors.textMuted,
                         fontSize: AppTypeScale.caption,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    GestureDetector(
+                      onTap: _resend,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
+                        resendLabel(_resendIn),
+                        style: TextStyle(
+                          color: _resendIn > Duration.zero
+                              ? colors.textMuted
+                              : colors.accent,
+                          fontSize: AppTypeScale.caption,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ] else ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xl),

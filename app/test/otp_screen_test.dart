@@ -41,6 +41,58 @@ void main() {
     });
   });
 
+  group('being shut out', () {
+    test('a lock is recognised by how long it has to run', () {
+      expect(
+        lockedWait(refused('OTP_LOCKED', {'retry_after_seconds': 900})),
+        const Duration(minutes: 15),
+      );
+    });
+
+    test('a wrong code is not a lock', () {
+      expect(
+        lockedWait(refused('OTP_INVALID', {'attempts_remaining': 2})),
+        isNull,
+      );
+    });
+
+    test('a lock with no time on it falls back to plain words', () {
+      expect(lockedWait(refused('OTP_LOCKED', {})), isNull);
+      expect(
+        otpTrouble(refused('OTP_LOCKED', {})),
+        'Too many tries. Come back a little later.',
+      );
+    });
+
+    test('the shut-out line counts itself down', () {
+      expect(
+        lockedLabel(const Duration(minutes: 13, seconds: 58)),
+        'Too many tries. Try again in 13:58',
+      );
+    });
+  });
+
+  group('the expiry line', () {
+    test('it stays quiet while there is plenty of time', () {
+      expect(
+        expiryLabel(const Duration(minutes: 9, seconds: 37)),
+        isNull,
+        reason: 'a clock ticking for ten minutes is noise, not information',
+      );
+    });
+
+    test('it speaks up in the last two minutes', () {
+      expect(
+        expiryLabel(const Duration(minutes: 1, seconds: 30)),
+        'Expires in 1:30',
+      );
+    });
+
+    test('it says so once the code is dead', () {
+      expect(expiryLabel(Duration.zero), 'That code has run out');
+    });
+  });
+
   group('what a refused code says', () {
     test('it counts the tries that are left', () {
       expect(

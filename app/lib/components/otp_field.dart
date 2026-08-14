@@ -11,12 +11,14 @@ class OtpField extends StatefulWidget {
     required this.onCompleted,
     this.hasError = false,
     this.length = 6,
+    this.enabled = true,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onCompleted;
   final bool hasError;
   final int length;
+  final bool enabled;
 
   @override
   State<OtpField> createState() => _OtpFieldState();
@@ -56,12 +58,14 @@ class _OtpFieldState extends State<OtpField> {
                 decoration: BoxDecoration(
                   color: colors.surface,
                   border: Border.all(
-                    color: widget.hasError
+                    color: !widget.enabled
+                        ? colors.border
+                        : widget.hasError
                         ? colors.danger
                         : index == value.length
                         ? colors.accent
                         : colors.border,
-                    width: index == value.length ? 1.6 : 1,
+                    width: widget.enabled && index == value.length ? 1.6 : 1,
                   ),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
@@ -82,6 +86,7 @@ class _OtpFieldState extends State<OtpField> {
             child: TextField(
               controller: widget.controller,
               focusNode: _focus,
+              enabled: widget.enabled,
               keyboardType: TextInputType.number,
               maxLength: widget.length,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],

@@ -38,8 +38,21 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   String? _error;
 
   Timer? _tick;
-  Duration _codeLife = Duration.zero;
-  Duration _resendIn = Duration.zero;
+  DateTime? _codeDies;
+  DateTime? _canAskAgain;
+  DateTime? _lockedUntil;
+
+  Duration get _codeLife => _leftUntil(_codeDies);
+
+  Duration get _resendIn => _leftUntil(_canAskAgain);
+
+  Duration get _lockedFor => _leftUntil(_lockedUntil);
+
+  Duration _leftUntil(DateTime? moment) {
+    if (moment == null) return Duration.zero;
+    final left = moment.difference(DateTime.now());
+    return left > Duration.zero ? left : Duration.zero;
+  }
 
   @override
   void dispose() {
@@ -50,27 +63,38 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _startClocks(ResetAsk ask) {
+  void _keepTicking() {
     _tick?.cancel();
-    setState(() {
-      _codeLife = ask.expiresIn;
-      _resendIn = ask.resendAfter;
-    });
-
     _tick = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      setState(() {
-        if (_codeLife > Duration.zero) {
-          _codeLife -= const Duration(seconds: 1);
-        }
-        if (_resendIn > Duration.zero) {
-          _resendIn -= const Duration(seconds: 1);
-        }
-      });
-      if (_codeLife <= Duration.zero && _resendIn <= Duration.zero) {
+      setState(() {});
+      if (_codeLife <= Duration.zero &&
+          _resendIn <= Duration.zero &&
+          _lockedFor <= Duration.zero) {
         timer.cancel();
       }
     });
+  }
+
+  void _startClocks(ResetAsk ask) {
+    final now = DateTime.now();
+    setState(() {
+      _codeDies = now.add(ask.expiresIn);
+      _canAskAgain = now.add(ask.resendAfter);
+      _lockedUntil = null;
+    });
+    _keepTicking();
+  }
+
+  void _lockOut(Duration wait) {
+    setState(() {
+      _lockedUntil = DateTime.now().add(wait);
+      _codeDies = null;
+      _canAskAgain = null;
+      _error = null;
+      _otp.clear();
+    });
+    _keepTicking();
   }
 
   Future<void> _request() async {
@@ -94,7 +118,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Future<void> _resend() async {
-    if (_resendIn > Duration.zero || _isBusy) return;
+    if (_resendIn > Duration.zero || _lockedFor > Duration.zero || _isBusy) {
+      return;
+    }
 
     setState(() => _isBusy = true);
     final result = await ref
@@ -135,10 +161,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         _step = _Step.password;
       });
     } else {
-      setState(() {
-        _error = otpTrouble(result.failureOrNull!);
-        _otp.clear();
-      });
+      final failure = result.failureOrNull!;
+      final wait = lockedWait(failure);
+      if (wait != null) {
+        _lockOut(wait);
+      } else {
+        setState(() {
+          _error = otpTrouble(failure);
+          _otp.clear();
+        });
+      }
     }
   }
 
@@ -211,44 +243,57 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               OtpField(
                 controller: _otp,
                 hasError: _error != null,
+                enabled: _lockedFor <= Duration.zero,
                 onCompleted: _verify,
               ),
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.sm),
+              if (_lockedFor > Duration.zero) ...[
+                const SizedBox(height: AppSpacing.md),
                 Text(
-                  _error!,
-                  style: TextStyle(color: colors.danger, fontSize: AppTypeScale.caption),
+                  lockedLabel(_lockedFor),
+                  style: TextStyle(
+                    color: colors.danger,
+                    fontSize: AppTypeScale.caption,
+                  ),
                 ),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+              ] else ...[
+                if (_error != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
-                    _codeLife > Duration.zero
-                        ? 'Good for ${clockLabel(_codeLife)}'
-                        : 'That code has run out',
+                    _error!,
                     style: TextStyle(
-                      color: colors.textMuted,
+                      color: colors.danger,
                       fontSize: AppTypeScale.caption,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _resend,
-                    behavior: HitTestBehavior.opaque,
-                    child: Text(
-                      resendLabel(_resendIn),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      expiryLabel(_codeLife) ?? '',
                       style: TextStyle(
-                        color: _resendIn > Duration.zero
-                            ? colors.textMuted
-                            : colors.accent,
+                        color: colors.textMuted,
                         fontSize: AppTypeScale.caption,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    GestureDetector(
+                      onTap: _resend,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
+                        resendLabel(_resendIn),
+                        style: TextStyle(
+                          color: _resendIn > Duration.zero
+                              ? colors.textMuted
+                              : colors.accent,
+                          fontSize: AppTypeScale.caption,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ] else ...[
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),

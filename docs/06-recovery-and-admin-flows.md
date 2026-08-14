@@ -8,20 +8,24 @@ This document specifies what happens when something goes wrong: a forgotten pass
 
 Four things can be lost, and they have four different outcomes. Being explicit about this table is the single most important thing in this document, because it is what the interface must communicate before a user is in trouble rather than after.
 
-| Lost | Account recoverable? | Vault recoverable? | Path |
-|---|---|---|---|
-| **Password**, email set | Yes | **No** — permanent loss | Email OTP → set new password → UMK is destroyed |
-| **Password**, no email | **No** | No | Nothing. The account is unreachable. |
-| **Passcode**, email set | Account was never lost | Yes | Passcode release ticket → super_admin → 24h reveal |
-| **Passcode**, no email | Account was never lost | **No** | No ticket can be opened without a verified email |
-| **Label** of a hidden item | Account fine | **No** — that item only | Nothing. The label is not stored in readable form. |
-| **Device**, credentials known | Yes | Yes | Sign in on a new device; the UMK re-derives from the password |
+| Lost | Account recoverable? | Vault recoverable? | Chat history? | Path |
+|---|---|---|---|---|
+| **Password**, email set | Yes | Yes — its own passcode | **No** — cleared | Email OTP → set new password → chat keys erased |
+| **Password**, no email | **No** | No | No | Nothing. The account is unreachable. |
+| **Passcode**, email set | Account was never lost | Yes | Unaffected | Passcode release ticket → super_admin → 24h reveal |
+| **Passcode**, no email | Account was never lost | **No** | Unaffected | No ticket can be opened without a verified email |
+| **Label** of a hidden item | Account fine | **No** — that item only | Unaffected | Nothing. The label is not stored in readable form. |
+| **Device**, credentials known | Yes | Yes | Yes | Sign in again; the chat key comes back from the backup |
 
-Two rows deserve emphasis.
+Three rows deserve emphasis.
 
-**Password reset destroys the vault.** `KEK_pw` is derived from the password, and it is the only thing that unwraps the UMK. A reset means the new password derives a different `KEK_pw`, which cannot unwrap the stored `wrapped_umk`. There is no server-side copy of the UMK — that is the entire point of R2 in the security document. This is not a bug to be fixed later; it is the guarantee working correctly.
+**Password reset does not touch the vault.** This is a change from the original design and the reason is worth stating, because the earlier version of this document said the opposite. The UMK is wrapped under a key derived from the **vault passcode**, not from the account password — `_openMaster(passcode, userId)` in `app/lib/features/vault/providers/vault_providers.dart`. The field is named `salt_pw` for historical reasons and that name is misleading; it is a passcode salt. `complete_reset` writes `password_hash` and revokes sessions and does not read or write `user_keys`, `user_passcodes` or `vault_items` at any point. `backend/tests/api/test_reset_forgets_chat.py::test_the_vault_is_left_exactly_as_it_was` asserts `wrapped_umk` and `salt_pw` are byte-identical after a reset, so this cannot drift back silently.
 
-**A password *change* is completely different from a password *reset*.** During a change, the user supplies their current password, so the client can unwrap the UMK and immediately re-wrap it under the new `KEK_pw`. The vault survives. This distinction must be reflected in the interface: "Change password" and "Forgot password" are different flows with different warnings, and they must never be merged into one screen.
+Two leftovers from the old design survive and should not be mistaken for live behaviour. `POST /auth/password-reset/complete` still requires a body field named `acknowledged_vault_loss`; it is now the acknowledgement of **chat** loss, and the name is wrong. `vault_items.key_state` still accepts `"orphaned"`, and a download of such an item is refused — but **nothing in the codebase ever writes that value**, because nothing destroys vault keys any more.
+
+**Password reset does clear chat.** A chat identity key is backed up on the server wrapped under the account password. A forgotten password cannot unwrap it, and the server cannot either, so what is left is ciphertext nobody will ever read. Rather than leave that sitting in storage behind a banner the user cannot act on, the reset erases the caller's side of it — see §2.5.
+
+**A password *change* is completely different from a password *reset*.** During a change the user supplies their current password, so the client re-wraps the *same* chat identity under the new password and nothing is lost. The vault is untouched by both. This distinction must be reflected in the interface: "Change password" and "Forgot password" are different flows with different warnings, and they must never be merged into one screen.
 
 ## 2. Account recovery — email only
 
@@ -35,21 +39,23 @@ sequenceDiagram
     participant A as API
     U->>A: POST /auth/password-reset/request { username }
     A->>A: Look up user; check for a verified email
-    A-->>U: 200 always — generic message, no enumeration
-    A->>A: If email exists → decrypt, send 6-digit OTP (10 min TTL)
+    A-->>U: 200 always — { sent, expires_in, resend_after }, identical for<br/>an account that does not exist
+    A->>A: If email exists and not locked or cooling down →<br/>decrypt, send 6-digit OTP (10 min TTL)
     U->>A: POST /auth/password-reset/verify { username, otp }
-    A-->>U: reset_token (single-use, 10 min, bound to user + OTP)
-    Note over U: Client shows the PERMANENT VAULT LOSS warning<br/>and requires explicit typed confirmation
-    U->>A: POST /auth/password-reset/complete { reset_token, new_password,<br/>new_salt_pw, new_wrapped_umk }
-    A->>A: Verify token; hash new password; replace user_keys row
-    A->>A: Revoke ALL sessions; mark every vault item as orphaned
-    A->>A: Write audit entry; send security notification
+    A-->>U: reset_token (single-use, 15 min, bound to the user)
+    Note over U: Client shows the chat-loss warning<br/>and requires a ticked acknowledgement
+    U->>A: POST /auth/password-reset/complete { reset_token, new_password,<br/>acknowledged_vault_loss }
+    A->>A: Verify token; hash new password
+    A->>A: Erase the caller's chat keys, reads and identity backup (§2.5)
+    A->>A: Revoke ALL sessions and bump the session epoch
     A-->>U: 200 — must sign in again
 ```
 
-Note step `new_wrapped_umk`: the client generates a **brand-new UMK** and wraps it under the new password. The old `wrapped_umk` is replaced, not deleted-and-null, so the account has a functioning key hierarchy for future vault items. Existing items keep their `wrapped_dek` values, which are now permanently undecryptable.
+The client sends no key material. `user_keys` is not read or written, so the vault comes through untouched.
 
-### 2.2 What "orphaned" means
+### 2.2 What "orphaned" was meant to mean
+
+Everything in this subsection describes a state **nothing now produces**. It is kept because the field and the read paths still exist, and a reader finding them deserves to know why they never fire. If vault keys are ever made password-derived again, this is the behaviour to restore.
 
 Vault items whose keys can no longer be derived are marked `key_state: "orphaned"` rather than deleted. Three reasons:
 
@@ -61,25 +67,62 @@ The items are shown in a distinct "Unrecoverable" section with plain copy explai
 
 ### 2.3 The warning
 
-This is the highest-stakes copy in the product. It must appear **before** the OTP is even requested, not after the reset succeeds.
+This is the highest-stakes copy in the product. It appears on the final step, before the new password is submitted, in `app/lib/features/account/screens/forgot_password_screen.dart`:
 
-> **Resetting your password will permanently delete everything in your Vault.**
+> **Read this before continuing**
 >
-> Your Vault is encrypted with a key that only your password can unlock. We do not have a copy — that is what keeps it private, and it is why we cannot recover it.
+> A reset gives you back your account. Your chats were sealed with the password you forgot, so nothing can open them again and they are cleared from here. Whoever you were talking to keeps their own copy.
 >
-> You have **43 items** using **1.2 GB**. After this reset they cannot be opened again, by you or by anyone.
+> Your vault is opened by its own passcode, so it is unaffected and stays exactly as it was.
 >
-> If you still remember your password, go back and use **Change password** instead. Your Vault will be kept.
->
-> To continue, type **DELETE MY VAULT** below.
+> ☐ I understand my chats will be cleared and this signs me out everywhere.
 
-The typed confirmation is deliberate friction. A checkbox is clicked reflexively; a phrase must be read. The item count and size are fetched live so the loss is concrete rather than abstract.
+`app/test/reset_warns_about_chat_test.dart` pins all four of those claims to the source, so the copy cannot quietly lose the part about chat while the code keeps deleting it. The backend refuses the request outright when the acknowledgement is missing (`VAULT_LOSS_NOT_ACKNOWLEDGED`), so the warning is not merely a client-side courtesy.
 
-### 2.4 Enumeration resistance
+### 2.5 What a reset does to chat
 
-`POST /auth/password-reset/request` returns the same `200` with the same message and within the same time envelope in all three cases: the username does not exist, the username exists with no email, and the username exists with a verified email. Otherwise the endpoint is a free oracle for "is this handle registered", which for an anonymity product is a genuine leak.
+Chat is end-to-end encrypted with an identity key held on the device and backed up on the server wrapped under the account password. After a reset, that backup is ciphertext nobody can open — not the user, not the server, not us. Leaving it in place produced the worst possible outcome: a wall of "Cannot be opened on this device" and a banner offering a reset that could not work.
 
-The message is: *"If that account has a verified email, we've sent a code to it."*
+`chat_controllers.forget_my_chats(user_id)` therefore runs inside `complete_reset`, and erases the caller's half:
+
+| Collection | What happens | Why |
+|---|---|---|
+| `chat_conversation_keys` | rows with `user_id` **deleted** | the wrapped CEKs are the access; without them the messages are not the user's data any more |
+| `chat_reads` | rows with `user_id` **deleted** | read markers for a history they can no longer see |
+| `chat_identities` | the caller's document **deleted** | the unopenable backup and the stale public key |
+| `chat_conversations` | `deleted_by` gains the caller, `cleared_at.<user>` set | the conversation leaves their list; old messages stay behind the line |
+| `chat_messages` | **untouched** | the ciphertext is equally the other participant's |
+
+The asymmetry is the point. A forgotten password is one person's problem and must not delete a second person's history. The other participant keeps their own `chat_conversation_keys` row and reads the thread exactly as before — `test_the_other_person_keeps_their_chat` and `test_the_other_person_can_still_read_what_was_said` hold that line.
+
+This differs from account deletion, which calls `_close_the_chats` in `backend/app/workers/deletion.py` and removes the conversation for **both** sides. That is correct there and would be wrong here; the two must not be merged.
+
+Signing in afterwards produces a new chat identity through `ChatBootstrap.afterSignIn` — unless the same device still holds the old private key, in which case that key is kept and simply re-wrapped under the new password. Either way the old conversations stay gone, because their keys were deleted server-side.
+
+### 2.6 One-time code policy
+
+These numbers are enforced in `backend/app/config.py` and asserted in `backend/tests/api/test_otp_security.py`, so changing one is a visible act.
+
+| Setting | Value | Note |
+|---|---|---|
+| `OTP_TTL_SECONDS` | 600 | ten minutes |
+| `OTP_FAIL_THRESHOLD` | 5 | wrong guesses before the code dies |
+| `OTP_LOCKOUT_SECONDS` | 900 | fifteen minutes; blocks both guessing and asking for a new code |
+| `OTP_RESEND_COOLDOWN_SECONDS` | 30 | enforced silently on reset, see below |
+| `reset_request` rate limit | 5 per hour per IP | |
+| `reset_verify` rate limit | 10 per 15 min per IP | |
+
+The lockout is deliberately **not** measured in hours. Since the code only ever reaches the account's own mailbox, an attacker cannot guess their way in — but they can burn five wrong codes against a username they know and deny the real owner their recovery. Fifteen minutes bounds that; a day would hand out a free denial-of-service.
+
+Resend enforcement is silent on the reset path. `request_reset` catches the lock and the cooldown and returns the same body regardless, because a 429 for a real account and a 200 for an invented one is an account-existence oracle. The client therefore drives its own countdown from the `resend_after` it was given, hides the resend action entirely while a lock is running, and disables the code field — the alternative was an app that says "a new code is on its way" while the server sends nothing.
+
+### 2.7 Enumeration resistance
+
+`POST /auth/password-reset/request` returns the same `200` with the same message and the same body in all five cases: the username does not exist, it exists with no email, it exists with an unverified email, it exists and is locked out, and it exists and is within its resend cooldown. Otherwise the endpoint is a free oracle for "is this handle registered", which for an anonymity product is a genuine leak.
+
+The body carries only constants — `expires_in` and `resend_after` come from settings, never from the account — so an invented username and a real one are indistinguishable in content as well as in status. `test_the_numbers_are_the_same_for_an_account_that_does_not_exist` and `test_a_locked_account_looks_like_any_other` hold both halves of that.
+
+The message is: *"If that account can be recovered, a code is on its way."*
 
 ## 3. The optional Vault Recovery Kit
 
