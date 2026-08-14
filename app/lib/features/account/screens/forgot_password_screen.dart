@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +9,14 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/otp_field.dart';
+import '../../../components/recovery_glyphs.dart';
+import '../../../core/utils/otp_wait.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/widgets/password_strength_bar.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../data/account_repository.dart';
 
 enum _Step { username, code, password }
 
@@ -33,12 +38,40 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   String? _resetToken;
   String? _error;
 
+  Timer? _tick;
+  Duration _codeLife = Duration.zero;
+  Duration _resendIn = Duration.zero;
+
   @override
   void dispose() {
+    _tick?.cancel();
     _username.dispose();
     _otp.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  void _startClocks(ResetAsk ask) {
+    _tick?.cancel();
+    setState(() {
+      _codeLife = ask.expiresIn;
+      _resendIn = ask.resendAfter;
+    });
+
+    _tick = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_codeLife > Duration.zero) {
+          _codeLife -= const Duration(seconds: 1);
+        }
+        if (_resendIn > Duration.zero) {
+          _resendIn -= const Duration(seconds: 1);
+        }
+      });
+      if (_codeLife <= Duration.zero && _resendIn <= Duration.zero) {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _request() async {
@@ -47,7 +80,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       _error = null;
     });
 
-    await ref
+    final result = await ref
         .read(accountRepositoryProvider)
         .requestReset(_username.text.trim().toLowerCase());
 
@@ -56,6 +89,30 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       _isBusy = false;
       _step = _Step.code;
     });
+
+    final ask = result.valueOrNull;
+    if (ask != null) _startClocks(ask);
+  }
+
+  Future<void> _resend() async {
+    if (_resendIn > Duration.zero || _isBusy) return;
+
+    setState(() => _isBusy = true);
+    final result = await ref
+        .read(accountRepositoryProvider)
+        .requestReset(_username.text.trim().toLowerCase());
+
+    if (!mounted) return;
+    setState(() {
+      _isBusy = false;
+      _error = null;
+      _otp.clear();
+    });
+
+    final ask = result.valueOrNull;
+    if (ask != null) _startClocks(ask);
+    if (!mounted) return;
+    AppToast.show(context, 'A new code is on its way.');
   }
 
   Future<void> _verify(String otp) async {
@@ -73,13 +130,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     setState(() => _isBusy = false);
 
     if (result.isSuccess) {
+      _tick?.cancel();
       setState(() {
         _resetToken = result.valueOrNull;
         _step = _Step.password;
       });
     } else {
       setState(() {
-        _error = result.failureOrNull!.message;
+        _error = otpTrouble(result.failureOrNull!);
         _otp.clear();
       });
     }
@@ -119,6 +177,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_step == _Step.username) ...[
+              _Doodle(child: EnvelopeGlyph(size: 64, color: colors.accent)),
               Text(
                 'If an email is on your account, we will send a code to it.',
                 style: TextStyle(
@@ -141,6 +200,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 onPressed: _username.text.trim().isEmpty ? null : _request,
               ),
             ] else if (_step == _Step.code) ...[
+              _Doodle(child: KeyholeGlyph(size: 64, color: colors.accent)),
               Text(
                 'Enter the code we sent. If no email is on the account, no code '
                 'was sent and nothing here will work.',
@@ -163,6 +223,35 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   style: TextStyle(color: colors.danger, fontSize: AppTypeScale.caption),
                 ),
               ],
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _codeLife > Duration.zero
+                        ? 'Good for ${clockLabel(_codeLife)}'
+                        : 'That code has run out',
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.caption,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _resend,
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      resendLabel(_resendIn),
+                      style: TextStyle(
+                        color: _resendIn > Duration.zero
+                            ? colors.textMuted
+                            : colors.accent,
+                        fontSize: AppTypeScale.caption,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ] else ...[
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -190,9 +279,20 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'A reset gives you back your account. Your vault is opened by '
-                      'its own passcode, so it is unaffected and stays exactly as it '
-                      'was.',
+                      'A reset gives you back your account. Your chats were sealed '
+                      'with the password you forgot, so nothing can open them again '
+                      'and they are cleared from here. Whoever you were talking to '
+                      'keeps their own copy.',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: AppTypeScale.label,
+                        height: 1.55,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Your vault is opened by its own passcode, so it is unaffected '
+                      'and stays exactly as it was.',
                       style: TextStyle(
                         color: colors.textSecondary,
                         fontSize: AppTypeScale.label,
@@ -225,7 +325,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        'I understand this signs me out everywhere.',
+                        'I understand my chats will be cleared and this signs me '
+                        'out everywhere.',
                         style: TextStyle(
                           color: colors.textSecondary,
                           fontSize: AppTypeScale.label,
@@ -260,4 +361,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       ),
     );
   }
+}
+
+class _Doodle extends StatelessWidget {
+  const _Doodle({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+    child: Align(alignment: Alignment.centerLeft, child: child),
+  );
 }

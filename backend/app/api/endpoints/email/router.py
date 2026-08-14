@@ -102,7 +102,11 @@ async def request_reset(
     return ok_response(controllers.GENERIC_RESET_MESSAGE, data=data)
 
 
-@router.post("/auth/password-reset/verify", status_code=status.HTTP_200_OK)
+@router.post(
+    "/auth/password-reset/verify",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(rate_limit_dep("reset_verify", 10, 900))],
+)
 async def verify_reset(
     body: ResetVerifyRequest,
     mongo: MongoDatabase,

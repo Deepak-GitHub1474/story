@@ -2,10 +2,12 @@ import hashlib
 import secrets
 from typing import Any
 
+from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from redis.asyncio import Redis
 
 from app.api.endpoints.auth.constants import USERS
+from app.api.endpoints.chat import controllers as chat_controllers
 from app.api.endpoints.email import otp as otp_service
 from app.api.endpoints.email.models import (
     AddEmailRequest,
@@ -77,7 +79,12 @@ async def add_email(
     )
     await mail.send_otp(email=body.email, otp=code, purpose="verify_email")
 
-    return {"email_masked": masked, "email_verified": False}
+    return {
+        "email_masked": masked,
+        "email_verified": False,
+        "expires_in": settings.OTP_TTL_SECONDS,
+        "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
+    }
 
 
 async def resend_otp(
@@ -97,7 +104,12 @@ async def resend_otp(
     )
     await mail.send_otp(email=address, otp=code, purpose="verify_email")
 
-    return {"email_masked": document.get("email_masked"), "email_verified": False}
+    return {
+        "email_masked": document.get("email_masked"),
+        "email_verified": False,
+        "expires_in": settings.OTP_TTL_SECONDS,
+        "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
+    }
 
 
 async def verify_email(
@@ -143,6 +155,14 @@ async def remove_email(
     return {"email_removed": True}
 
 
+def _reset_asked(settings: Settings) -> dict[str, Any]:
+    return {
+        "sent": True,
+        "expires_in": settings.OTP_TTL_SECONDS,
+        "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
+    }
+
+
 async def request_reset(
     username: str,
     *,
@@ -155,24 +175,28 @@ async def request_reset(
         {"username_lower": username.lower(), "deleted_at": None}, {"_id": 1}
     )
     if user is None:
-        return {"sent": True}
+        return _reset_asked(settings)
 
     document = await mongo[USER_KEYS].find_one(
         {"_id": user["_id"], "email_verified": True}, {"email_ciphertext": 1}
     )
     if document is None or not document.get("email_ciphertext"):
-        return {"sent": True}
+        return _reset_asked(settings)
 
     address = decrypt_email(document["email_ciphertext"], key=settings.EMAIL_ENCRYPTION_KEY)
-    code = await otp_service.issue(
-        key=keys.reset_otp(user["_id"]),
-        cooldown_key=keys.otp_cooldown(user["_id"]),
-        redis=redis,
-        settings=settings,
-        enforce_cooldown=False,
-    )
+    try:
+        code = await otp_service.issue(
+            key=keys.reset_otp(user["_id"]),
+            cooldown_key=keys.reset_cooldown(user["_id"]),
+            redis=redis,
+            settings=settings,
+            enforce_cooldown=True,
+        )
+    except HTTPException:
+        return _reset_asked(settings)
+
     await mail.send_otp(email=address, otp=code, purpose="password_reset")
-    return {"sent": True}
+    return _reset_asked(settings)
 
 
 async def verify_reset(
@@ -233,6 +257,8 @@ async def complete_reset(
             }
         },
     )
+
+    await chat_controllers.forget_my_chats(user_id, mongo=mongo)
 
     families = await redis.smembers(keys.user_sessions(user_id))
     for family_id in families:

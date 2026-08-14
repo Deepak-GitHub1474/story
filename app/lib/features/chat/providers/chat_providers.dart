@@ -13,6 +13,10 @@ import '../models/chat_models.dart';
 
 const editWindow = Duration(minutes: 10);
 
+const _keysChanged =
+    'The keys for this chat changed, so nothing here can be opened. '
+    'Resetting starts it fresh and clears what came before.';
+
 final chatCryptoProvider = Provider<ChatCrypto>((ref) => const ChatCrypto());
 
 final realtimeProvider = Provider<RealtimeClient>((ref) {
@@ -93,6 +97,7 @@ class ConversationState {
     this.cursor,
     this.error,
     this.needsRekey = false,
+    this.hasKey = false,
   });
 
   final List<ChatMessage> messages;
@@ -103,8 +108,9 @@ class ConversationState {
   final String? cursor;
   final String? error;
   final bool needsRekey;
+  final bool hasKey;
 
-  bool get canSend => !needsRekey && !isLoading;
+  bool get canSend => hasKey && !needsRekey && !isLoading;
 
   ConversationState copyWith({
     List<ChatMessage>? messages,
@@ -115,6 +121,8 @@ class ConversationState {
     String? cursor,
     String? error,
     bool? needsRekey,
+    bool? hasKey,
+    bool clearError = false,
   }) => ConversationState(
     messages: messages ?? this.messages,
     conversation: conversation ?? this.conversation,
@@ -122,8 +130,9 @@ class ConversationState {
     isSending: isSending ?? this.isSending,
     hasMore: hasMore ?? this.hasMore,
     cursor: cursor ?? this.cursor,
-    error: error,
-    needsRekey: needsRekey ?? false,
+    error: clearError ? null : (error ?? this.error),
+    needsRekey: needsRekey ?? this.needsRekey,
+    hasKey: hasKey ?? this.hasKey,
   );
 }
 
@@ -173,29 +182,58 @@ class ConversationNotifier
     final peerKey = peer.valueOrNull?.publicKey;
     final me = ref.read(authProvider).user!.userId;
 
-    if (wrapped != null && peerKey != null) {
-      try {
-        _cek = await _crypto.unwrapFromPeer(
-          wrapped: wrapped,
-          mine: identity,
-          theirPublicKey: peerKey,
-          pair: ChatCrypto.pairKey(me, conversation.other.userId),
-          recipientId: me,
-        );
-      } catch (_) {
-        state = state.copyWith(
-          isLoading: false,
-          conversation: conversation,
-          error: 'The keys for this chat changed, so nothing here can be opened. '
-              'Resetting starts it fresh and clears what came before.',
-          needsRekey: true,
-        );
-        _watchPresence();
-        return;
-      }
+    if (peerKey == null) {
+      state = state.copyWith(
+        isLoading: false,
+        conversation: conversation,
+        error: 'Their keys could not be reached, so this chat cannot be opened '
+            'right now.',
+        needsRekey: false,
+        hasKey: false,
+      );
+      _watchPresence();
+      return;
     }
 
-    state = state.copyWith(conversation: conversation, isLoading: false);
+    if (wrapped == null) {
+      state = state.copyWith(
+        isLoading: false,
+        conversation: conversation,
+        error: _keysChanged,
+        needsRekey: true,
+        hasKey: false,
+      );
+      _watchPresence();
+      return;
+    }
+
+    try {
+      _cek = await _crypto.unwrapFromPeer(
+        wrapped: wrapped,
+        mine: identity,
+        theirPublicKey: peerKey,
+        pair: ChatCrypto.pairKey(me, conversation.other.userId),
+        recipientId: me,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        conversation: conversation,
+        error: _keysChanged,
+        needsRekey: true,
+        hasKey: false,
+      );
+      _watchPresence();
+      return;
+    }
+
+    state = state.copyWith(
+      conversation: conversation,
+      isLoading: false,
+      hasKey: true,
+      needsRekey: false,
+      clearError: true,
+    );
     await _loadLatest();
     _startPolling();
   }
@@ -545,7 +583,12 @@ class ConversationNotifier
     if (done.valueOrNull != true) return false;
 
     _cek = cek;
-    state = state.copyWith(messages: const [], needsRekey: false);
+    state = state.copyWith(
+      messages: const [],
+      needsRekey: false,
+      hasKey: true,
+      clearError: true,
+    );
     await _loadLatest();
     _startPolling();
     return true;
@@ -649,6 +692,17 @@ class PresenceHeartbeat {
 }
 
 
+enum RewrapSource { device, backup, none }
+
+RewrapSource rewrapSource({
+  required bool hasDeviceKey,
+  required bool hasBackup,
+}) {
+  if (hasDeviceKey) return RewrapSource.device;
+  if (hasBackup) return RewrapSource.backup;
+  return RewrapSource.none;
+}
+
 final chatBootstrapProvider = Provider<ChatBootstrap>(ChatBootstrap.new);
 
 class ChatBootstrap {
@@ -721,21 +775,48 @@ class ChatBootstrap {
     }
   }
 
-  Future<void> rewrapBackup({
+  Future<bool> rewrapBackup({
     required String userId,
-    required String password,
+    required String currentPassword,
+    required String newPassword,
   }) async {
     final store = _ref.read(secureStoreProvider);
     final crypto = _ref.read(chatCryptoProvider);
+    final repository = _ref.read(chatRepositoryProvider);
 
     final local = await store.readChatKey(userId);
-    if (local == null) return;
+    final backup = local != null ? null : (await repository.backup()).valueOrNull;
 
-    await _publishBackup(
-      userId: userId,
-      password: password,
-      identity: await crypto.restoreIdentity(local),
-    );
+    switch (rewrapSource(hasDeviceKey: local != null, hasBackup: backup != null)) {
+      case RewrapSource.device:
+        await _publishBackup(
+          userId: userId,
+          password: newPassword,
+          identity: await crypto.restoreIdentity(local!),
+        );
+        return true;
+
+      case RewrapSource.backup:
+        try {
+          final identity = await crypto.unwrapIdentity(
+            wrapped: backup!.wrappedPrivateKey,
+            password: currentPassword,
+            salt: backup.salt,
+            userId: userId,
+          );
+          await _publishBackup(
+            userId: userId,
+            password: newPassword,
+            identity: identity,
+          );
+          return true;
+        } catch (_) {
+          return false;
+        }
+
+      case RewrapSource.none:
+        return true;
+    }
   }
 
   Future<void> _startOver({

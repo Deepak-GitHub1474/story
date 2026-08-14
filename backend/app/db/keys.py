@@ -41,6 +41,10 @@ def reset_otp(user_id: str) -> str:
     return f"{NAMESPACE}:RESET_OTP:{user_id}"
 
 
+def reset_cooldown(user_id: str) -> str:
+    return f"{NAMESPACE}:RESET_CD:{user_id}"
+
+
 def reset_token(token_hash: str) -> str:
     return f"{NAMESPACE}:RESET_TOKEN:{token_hash}"
 

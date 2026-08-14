@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
@@ -243,34 +245,30 @@ class SettingsScreen extends ConsumerWidget {
     final colors = context.colors;
     final choice = await showAppSheet<String>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final option in const [
-              ('system', 'System', null),
-              ('paper', 'Light', null),
-              ('midnight', 'Dark', null),
-              ('blush', 'Blush pink', AppColors.blush),
-              ('maroon', 'Maroon', AppColors.maroon),
-            ])
-              AppListRow(
-                label: option.$2,
-                leadingWidget: option.$3 == null
-                    ? null
-                    : _Swatch(colors: option.$3!),
-                trailing: current == option.$1
-                    ? Icon(
-                        Icons.check,
-                        color: colors.accent,
-                        size: AppSizes.iconMd,
-                      )
-                    : null,
-                onTap: () => Navigator.of(sheetContext).pop(option.$1),
-              ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-        ),
+      title: 'Themes',
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in const [
+            ('system', 'System', AppColors.paper, AppColors.midnight),
+            ('paper', 'Light', AppColors.paper, null),
+            ('midnight', 'Dark', AppColors.midnight, null),
+            ('blush', 'Blush pink', AppColors.blush, null),
+            ('maroon', 'Maroon', AppColors.maroon, null),
+          ])
+            AppListRow(
+              label: option.$2,
+              leadingWidget: _Swatch(colors: option.$3, second: option.$4),
+              trailing: current == option.$1
+                  ? Icon(
+                      Icons.check,
+                      color: colors.accent,
+                      size: AppSizes.iconMd,
+                    )
+                  : null,
+              onTap: () => Navigator.of(sheetContext).pop(option.$1),
+            ),
+        ],
       ),
     );
 
@@ -317,25 +315,62 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _Swatch extends StatelessWidget {
-  const _Swatch({required this.colors});
+  const _Swatch({required this.colors, this.second});
 
   final AppColors colors;
+  final AppColors? second;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: AppSizes.iconMd,
-    height: AppSizes.iconMd,
-    decoration: BoxDecoration(
-      color: colors.bg,
-      shape: BoxShape.circle,
-      border: Border.all(color: colors.border, width: 1),
-    ),
-    child: Center(
-      child: Container(
-        width: AppSizes.iconMd / 2.4,
-        height: AppSizes.iconMd / 2.4,
-        decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
-      ),
-    ),
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size.square(AppSizes.iconMd),
+    painter: _SwatchPainter(colors: colors, second: second),
   );
+}
+
+class _SwatchPainter extends CustomPainter {
+  const _SwatchPainter({required this.colors, this.second});
+
+  final AppColors colors;
+  final AppColors? second;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 0.5;
+    final dot = size.width / 4.8;
+
+    final left = Rect.fromCircle(center: centre, radius: radius);
+    final other = second ?? colors;
+
+    canvas.drawArc(left, -pi / 2, pi, true, Paint()..color = colors.bg);
+    canvas.drawArc(left, pi / 2, pi, true, Paint()..color = other.bg);
+
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: dot),
+      -pi / 2,
+      pi,
+      true,
+      Paint()..color = colors.accent,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: dot),
+      pi / 2,
+      pi,
+      true,
+      Paint()..color = other.accent,
+    );
+
+    canvas.drawCircle(
+      centre,
+      radius,
+      Paint()
+        ..color = colors.border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SwatchPainter old) =>
+      old.colors != colors || old.second != second;
 }

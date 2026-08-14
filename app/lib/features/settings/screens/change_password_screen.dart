@@ -60,13 +60,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     final failure = result.failureOrNull;
     if (failure == null) {
       final userId = ref.read(authProvider).user?.userId;
-      if (userId != null) {
-        await ref
-            .read(chatBootstrapProvider)
-            .rewrapBackup(userId: userId, password: _next.text);
-      }
+      final carried = userId == null
+          ? true
+          : await ref.read(chatBootstrapProvider).rewrapBackup(
+              userId: userId,
+              currentPassword: _current.text,
+              newPassword: _next.text,
+            );
+
       if (!mounted) return;
-      AppToast.show(context, 'Password changed.', kind: AppToastKind.success);
+      AppToast.show(
+        context,
+        carried
+            ? 'Password changed.'
+            : 'Password changed, but your chats could not be carried over.',
+        kind: carried ? AppToastKind.success : AppToastKind.error,
+      );
       context.pop();
       return;
     }

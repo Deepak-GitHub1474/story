@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     OTP_HMAC_SECRET: str = "local-dev-otp-secret-change-me-00000000000000"
     OTP_TTL_SECONDS: int = 600
     OTP_FAIL_THRESHOLD: int = 5
-    OTP_LOCKOUT_SECONDS: int = 30
+    OTP_LOCKOUT_SECONDS: int = 900
     OTP_RESEND_COOLDOWN_SECONDS: int = 30
     RESET_TOKEN_TTL_SECONDS: int = 900
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,10 +9,13 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/otp_field.dart';
+import '../../../components/recovery_glyphs.dart';
+import '../../../core/utils/otp_wait.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../data/account_repository.dart';
 
 class EmailScreen extends ConsumerStatefulWidget {
   const EmailScreen({super.key});
@@ -28,12 +33,40 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   bool _awaitingOtp = false;
   String? _error;
 
+  Timer? _tick;
+  Duration _codeLife = Duration.zero;
+  Duration _resendIn = Duration.zero;
+
   @override
   void dispose() {
+    _tick?.cancel();
     _email.dispose();
     _otp.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  void _startClocks(EmailState state) {
+    _tick?.cancel();
+    setState(() {
+      _codeLife = state.expiresIn;
+      _resendIn = state.resendAfter;
+    });
+
+    _tick = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_codeLife > Duration.zero) {
+          _codeLife -= const Duration(seconds: 1);
+        }
+        if (_resendIn > Duration.zero) {
+          _resendIn -= const Duration(seconds: 1);
+        }
+      });
+      if (_codeLife <= Duration.zero && _resendIn <= Duration.zero) {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _send() async {
@@ -49,11 +82,41 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     if (!mounted) return;
     setState(() => _isBusy = false);
 
-    if (result.isSuccess) {
+    final sent = result.valueOrNull;
+    if (sent != null) {
       setState(() => _awaitingOtp = true);
+      _startClocks(sent);
     } else {
       setState(() => _error = result.failureOrNull!.message);
     }
+  }
+
+  Future<void> _resend() async {
+    if (_resendIn > Duration.zero || _isBusy) return;
+
+    setState(() => _isBusy = true);
+    final result = await ref.read(accountRepositoryProvider).resendOtp();
+
+    if (!mounted) return;
+    setState(() {
+      _isBusy = false;
+      _otp.clear();
+    });
+
+    final sent = result.valueOrNull;
+    if (sent != null) {
+      setState(() => _error = null);
+      _startClocks(sent);
+    } else {
+      setState(() => _error = otpTrouble(result.failureOrNull!));
+    }
+
+    if (!mounted) return;
+    AppToast.show(
+      context,
+      sent != null ? 'Another code sent.' : _error!,
+      kind: sent != null ? AppToastKind.info : AppToastKind.error,
+    );
   }
 
   Future<void> _verify(String otp) async {
@@ -67,13 +130,14 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     setState(() => _isBusy = false);
 
     if (result.isSuccess) {
+      _tick?.cancel();
       await ref.read(authProvider.notifier).refreshUser();
       if (!mounted) return;
       AppToast.show(context, 'Email verified.', kind: AppToastKind.success);
       context.pop();
     } else {
       setState(() {
-        _error = result.failureOrNull!.message;
+        _error = otpTrouble(result.failureOrNull!);
         _otp.clear();
       });
     }
@@ -207,6 +271,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 onPressed: _password.text.isEmpty ? null : _remove,
               ),
             ] else if (_awaitingOtp) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                child: KeyholeGlyph(size: 64, color: colors.accent),
+              ),
               Text(
                 'Enter the 6-digit code we sent.',
                 style: TextStyle(
@@ -231,28 +299,39 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 ),
               ],
               const SizedBox(height: AppSpacing.lg),
-              TextButton(
-                onPressed: () async {
-                  final result = await ref
-                      .read(accountRepositoryProvider)
-                      .resendOtp();
-                  if (!context.mounted) return;
-                  AppToast.show(
-                    context,
-                    result.isSuccess
-                        ? 'Another code sent.'
-                        : result.failureOrNull!.message,
-                    kind: result.isSuccess
-                        ? AppToastKind.info
-                        : AppToastKind.error,
-                  );
-                },
-                child: Text(
-                  'Send another code',
-                  style: TextStyle(color: colors.accent),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _codeLife > Duration.zero
+                        ? 'Good for ${clockLabel(_codeLife)}'
+                        : 'That code has run out',
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: AppTypeScale.caption,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _resend,
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      resendLabel(_resendIn),
+                      style: TextStyle(
+                        color: _resendIn > Duration.zero
+                            ? colors.textMuted
+                            : colors.accent,
+                        fontSize: AppTypeScale.caption,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ] else ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                child: EnvelopeGlyph(size: 64, color: colors.accent),
+              ),
               AppTextField(
                 controller: _email,
                 label: 'Email address',

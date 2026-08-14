@@ -95,6 +95,24 @@ async def read_backup(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     }
 
 
+async def forget_my_chats(user_id: str, *, mongo: AsyncIOMotorDatabase) -> None:
+    now = utc_now()
+    rooms = await mongo[c.CONVERSATIONS].distinct("_id", {"participant_ids": user_id})
+
+    await mongo[c.KEYS].delete_many({"user_id": user_id})
+    await mongo[c.READS].delete_many({"user_id": user_id})
+    await mongo[c.IDENTITIES].delete_one({"_id": user_id})
+
+    for room in rooms:
+        await mongo[c.CONVERSATIONS].update_one(
+            {"_id": room},
+            {
+                "$addToSet": {"deleted_by": user_id},
+                "$set": {f"cleared_at.{user_id}": now},
+            },
+        )
+
+
 async def read_identity(
     username: str | None, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:

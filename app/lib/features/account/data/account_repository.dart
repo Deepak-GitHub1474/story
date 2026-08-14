@@ -3,15 +3,36 @@ import '../../../core/api/endpoints.dart';
 import '../../../core/result.dart';
 
 class EmailState {
-  const EmailState({required this.masked, required this.verified});
+  const EmailState({
+    required this.masked,
+    required this.verified,
+    this.expiresIn = const Duration(minutes: 10),
+    this.resendAfter = const Duration(seconds: 30),
+  });
 
   factory EmailState.fromJson(Map<String, dynamic> json) => EmailState(
     masked: json['email_masked'] as String?,
     verified: json['email_verified'] as bool? ?? false,
+    expiresIn: Duration(seconds: json['expires_in'] as int? ?? 600),
+    resendAfter: Duration(seconds: json['resend_after'] as int? ?? 30),
   );
 
   final String? masked;
   final bool verified;
+  final Duration expiresIn;
+  final Duration resendAfter;
+}
+
+class ResetAsk {
+  const ResetAsk({required this.expiresIn, required this.resendAfter});
+
+  factory ResetAsk.fromJson(Map<String, dynamic> json) => ResetAsk(
+    expiresIn: Duration(seconds: json['expires_in'] as int? ?? 600),
+    resendAfter: Duration(seconds: json['resend_after'] as int? ?? 30),
+  );
+
+  final Duration expiresIn;
+  final Duration resendAfter;
 }
 
 class AccountRepository {
@@ -43,11 +64,11 @@ class AccountRepository {
     parse: (data) => data['email_removed'] as bool? ?? true,
   );
 
-  Future<Result<bool>> requestReset(String username) => _client.post(
+  Future<Result<ResetAsk>> requestReset(String username) => _client.post(
     Endpoints.resetRequest,
     body: {'username': username},
     skipAuth: true,
-    parse: (data) => data['sent'] as bool? ?? true,
+    parse: ResetAsk.fromJson,
   );
 
   Future<Result<String>> verifyReset({

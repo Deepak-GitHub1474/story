@@ -35,8 +35,8 @@ def test_the_lifetime_is_ten_minutes():
     assert get_settings().OTP_TTL_SECONDS == 600
 
 
-def test_the_lockout_is_thirty_seconds():
-    assert get_settings().OTP_LOCKOUT_SECONDS == 30
+def test_the_lockout_is_a_quarter_of_an_hour():
+    assert get_settings().OTP_LOCKOUT_SECONDS == 900
 
 
 def test_five_wrong_tries_locks():
@@ -109,7 +109,7 @@ async def test_five_wrong_codes_lock_the_account_out(client, signup_payload):
     )
 
     assert fifth.json()["data"]["code"] == "OTP_LOCKED"
-    assert fifth.json()["data"]["retry_after_seconds"] == 30
+    assert fifth.json()["data"]["retry_after_seconds"] == 900
 
 
 async def test_the_right_code_is_refused_while_locked(client, signup_payload):
@@ -160,7 +160,7 @@ async def test_the_lockout_expires_and_the_record_goes_with_it(
         )
 
     ttl = await app_instance.state.redis.ttl(keys.email_otp(me["user_id"]))
-    assert 0 < ttl <= 30
+    assert 0 < ttl <= 900
 
 
 async def test_a_resend_does_not_reset_the_attempt_count(
