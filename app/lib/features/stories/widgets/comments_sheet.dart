@@ -65,7 +65,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
     if (me == null) return;
 
     setState(() => _isSending = true);
-    await ref
+    final posted = await ref
         .read(commentsProvider(widget.storyId).notifier)
         .add(text, replyTo: _replyingTo, me: me);
 
@@ -75,6 +75,8 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
       _isSending = false;
       _replyingTo = null;
     });
+
+    if (posted) await refreshStoryEverywhere(ref, widget.storyId);
   }
 
   Future<void> _delete(Comment comment) async {
@@ -203,21 +205,15 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
 
                   return CommentTile(
                     comment: _withLocalLike(comment),
+                    viewerId: me,
                     storyAuthorId: widget.storyAuthorId,
-                    canDelete: mayDelete(
-                      comment: comment,
-                      viewerId: me,
-                      storyAuthorId: widget.storyAuthorId,
-                    ),
-                    canEdit: comment.author.userId == me,
                     isThreadOpen: _openThreads.contains(comment.commentId),
-                    onDelete: () => _delete(comment),
-                    onLike: () => _like(comment),
-                    onReply: () => setState(() => _replyingTo = comment),
+                    onDelete: _delete,
+                    onLike: _like,
+                    onReply: (target) =>
+                        setState(() => _replyingTo = target),
                     onToggleReplies: () => _toggleThread(comment),
                     onAuthorTap: _openProfile,
-                    onDeleteReply: _delete,
-                    onLikeReply: _like,
                     localLike: _withLocalLike,
                   );
                 },

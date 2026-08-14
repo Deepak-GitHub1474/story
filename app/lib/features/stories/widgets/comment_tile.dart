@@ -25,40 +25,42 @@ class CommentTile extends StatelessWidget {
   const CommentTile({
     super.key,
     required this.comment,
-    required this.canDelete,
     required this.onDelete,
     required this.onLike,
     required this.onReply,
+    this.viewerId,
     this.storyAuthorId,
-    this.canEdit = false,
+    this.canEdit,
     this.onEdit,
     this.onToggleReplies,
     this.onAuthorTap,
-    this.onDeleteReply,
-    this.onLikeReply,
     this.localLike,
     this.isThreadOpen = false,
     this.isReply = false,
   });
 
   final Comment comment;
-  final bool canDelete;
-  final VoidCallback onDelete;
-  final VoidCallback onLike;
-  final VoidCallback onReply;
+  final void Function(Comment comment) onDelete;
+  final void Function(Comment comment) onLike;
+  final void Function(Comment comment) onReply;
+  final String? viewerId;
   final String? storyAuthorId;
-  final bool canEdit;
-  final VoidCallback? onEdit;
+  final bool Function(Comment comment)? canEdit;
+  final void Function(Comment comment)? onEdit;
   final VoidCallback? onToggleReplies;
   final void Function(StoryAuthor author)? onAuthorTap;
-  final void Function(Comment reply)? onDeleteReply;
-  final void Function(Comment reply)? onLikeReply;
   final Comment Function(Comment comment)? localLike;
   final bool isThreadOpen;
   final bool isReply;
 
   bool get _isStoryAuthor =>
       storyAuthorId != null && comment.author.userId == storyAuthorId;
+
+  bool get _canDelete => mayDelete(
+    comment: comment,
+    viewerId: viewerId,
+    storyAuthorId: storyAuthorId,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -157,14 +159,24 @@ class CommentTile extends StatelessWidget {
                           ),
                           const SizedBox(width: AppSpacing.md),
                         ],
-                        _Action(label: 'Reply', onTap: onReply),
-                        if (canEdit && onEdit != null) ...[
+                        _Action(
+                          label: 'Reply',
+                          onTap: () => onReply(comment),
+                        ),
+                        if (canEdit?.call(comment) == true && onEdit != null)
+                          ...[
+                            const SizedBox(width: AppSpacing.md),
+                            _Action(
+                              label: 'Edit',
+                              onTap: () => onEdit!(comment),
+                            ),
+                          ],
+                        if (_canDelete) ...[
                           const SizedBox(width: AppSpacing.md),
-                          _Action(label: 'Edit', onTap: onEdit),
-                        ],
-                        if (canDelete) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          _Action(label: 'Delete', onTap: onDelete),
+                          _Action(
+                            label: 'Delete',
+                            onTap: () => onDelete(comment),
+                          ),
                         ],
                       ],
                     ),
@@ -178,7 +190,7 @@ class CommentTile extends StatelessWidget {
                 ),
                 child: LikeIcon(
                   isLiked: comment.isLiked,
-                  onTap: onLike,
+                  onTap: () => onLike(comment),
                   size: AppSizes.iconSm,
                 ),
               ),
@@ -189,11 +201,13 @@ class CommentTile extends StatelessWidget {
           CommentTile(
             key: ValueKey(reply.commentId),
             comment: localLike?.call(reply) ?? reply,
+            viewerId: viewerId,
             storyAuthorId: storyAuthorId,
-            canDelete: canDelete || reply.author.userId == storyAuthorId,
             isReply: true,
-            onDelete: () => (onDeleteReply ?? (_) => onDelete())(reply),
-            onLike: () => (onLikeReply ?? (_) => onLike())(reply),
+            canEdit: canEdit,
+            onEdit: onEdit,
+            onDelete: onDelete,
+            onLike: onLike,
             onReply: onReply,
             onAuthorTap: onAuthorTap,
           ),

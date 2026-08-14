@@ -170,7 +170,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
 
     if (ok) {
       _expanded.clear();
-      ref.invalidate(storyDetailProvider(storyId));
+      setState(() => _story = null);
+      await refreshStoryEverywhere(ref, storyId);
     } else {
       _comment.text = text;
       AppToast.show(
@@ -566,12 +567,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                     ),
                                     child: CommentTile(
                                       comment: _withThread(_resolve(raw)),
+                                      viewerId: currentUserId,
                                       storyAuthorId: story.author.userId,
-                                      canDelete: mayDelete(
-                                        comment: raw,
-                                        viewerId: currentUserId,
-                                        storyAuthorId: story.author.userId,
-                                      ),
                                       isThreadOpen: _expanded.containsKey(
                                         raw.commentId,
                                       ),
@@ -580,16 +577,17 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                               '${Routes.user}/${author.username}',
                                             )
                                           : null,
-                                      onDelete: () =>
-                                          _deleteComment(raw, story.storyId),
-                                      canEdit: _canEdit(raw, currentUserId),
-                                      onEdit: () => _editComment(
-                                        _resolve(raw),
+                                      onDelete: (target) =>
+                                          _deleteComment(target, story.storyId),
+                                      canEdit: (target) =>
+                                          _canEdit(target, currentUserId),
+                                      onEdit: (target) => _editComment(
+                                        _resolve(target),
                                         story.storyId,
                                       ),
-                                      onLike: () =>
-                                          _toggleCommentLike(_resolve(raw)),
-                                      onReply: () => _startReply(raw),
+                                      onLike: (target) =>
+                                          _toggleCommentLike(_resolve(target)),
+                                      onReply: _startReply,
                                       onToggleReplies: () =>
                                           _expandReplies(raw),
                                     ),

@@ -272,7 +272,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                               child: Material(
                                 color: profile.isFollowing
                                     ? Colors.transparent
-                                    : colors.accent,
+                                    : colors.accentStrong,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.md,
                                 ),
@@ -289,7 +289,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                                       border: Border.all(
                                         color: profile.isFollowing
                                             ? colors.border
-                                            : colors.accent,
+                                            : colors.accentStrong,
                                       ),
                                       borderRadius: BorderRadius.circular(
                                         AppRadius.md,

@@ -40,7 +40,7 @@ Future<void> showTile(
   bool isThreadOpen = false,
   VoidCallback? onToggleReplies,
   void Function(StoryAuthor)? onAuthorTap,
-  bool canDelete = false,
+  String? viewerId,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -49,12 +49,12 @@ Future<void> showTile(
         body: SingleChildScrollView(
           child: CommentTile(
             comment: comment,
+            viewerId: viewerId,
             storyAuthorId: storyAuthorId,
-            canDelete: canDelete,
             isThreadOpen: isThreadOpen,
-            onDelete: () {},
-            onLike: () {},
-            onReply: () {},
+            onDelete: (_) {},
+            onLike: (_) {},
+            onReply: (_) {},
             onToggleReplies: onToggleReplies ?? () {},
             onAuthorTap: onAuthorTap,
           ),
@@ -174,16 +174,106 @@ void main() {
   testWidgets('a story author can take down what was said on their story', (
     tester,
   ) async {
-    await showTile(tester, aComment(), canDelete: true);
+    await showTile(
+      tester,
+      aComment(userId: 'us_stranger'),
+      storyAuthorId: 'us_me',
+      viewerId: 'us_me',
+    );
 
     expect(find.text('Delete'), findsOneWidget);
     expect(find.text('Report'), findsNothing);
   });
 
+  testWidgets('my own reply under a stranger\'s comment is mine to delete', (
+    tester,
+  ) async {
+    await showTile(
+      tester,
+      aComment(
+        userId: 'us_stranger',
+        username: 'someone',
+        replyCount: 1,
+        replies: [
+          aComment(
+            id: 'cm_2',
+            userId: 'us_me',
+            username: 'deepshri',
+            body: 'My reply',
+          ),
+        ],
+      ),
+      storyAuthorId: 'us_stranger',
+      viewerId: 'us_me',
+      isThreadOpen: true,
+    );
+
+    expect(
+      find.text('Delete'),
+      findsOneWidget,
+      reason: 'the reply is mine even though the comment above it is not',
+    );
+  });
+
+  testWidgets('a reply by someone else on their story stays theirs', (
+    tester,
+  ) async {
+    await showTile(
+      tester,
+      aComment(
+        userId: 'us_stranger',
+        username: 'someone',
+        replyCount: 1,
+        replies: [
+          aComment(
+            id: 'cm_2',
+            userId: 'us_other',
+            username: 'third_party',
+            body: 'Their reply',
+          ),
+        ],
+      ),
+      storyAuthorId: 'us_stranger',
+      viewerId: 'us_me',
+      isThreadOpen: true,
+    );
+
+    expect(find.text('Delete'), findsNothing);
+  });
+
+  testWidgets('the story author can take down a reply too', (tester) async {
+    await showTile(
+      tester,
+      aComment(
+        userId: 'us_stranger',
+        username: 'someone',
+        replyCount: 1,
+        replies: [
+          aComment(
+            id: 'cm_2',
+            userId: 'us_other',
+            username: 'third_party',
+            body: 'Their reply',
+          ),
+        ],
+      ),
+      storyAuthorId: 'us_me',
+      viewerId: 'us_me',
+      isThreadOpen: true,
+    );
+
+    expect(find.text('Delete'), findsNWidgets(2));
+  });
+
   testWidgets('someone with no say over a comment is offered nothing', (
     tester,
   ) async {
-    await showTile(tester, aComment());
+    await showTile(
+      tester,
+      aComment(userId: 'us_stranger'),
+      storyAuthorId: 'us_stranger',
+      viewerId: 'us_me',
+    );
 
     expect(find.text('Delete'), findsNothing);
     expect(
