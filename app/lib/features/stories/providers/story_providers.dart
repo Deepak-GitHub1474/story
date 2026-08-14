@@ -280,6 +280,20 @@ class CommentsNotifier extends FamilyAsyncNotifier<List<Comment>, String> {
     state = AsyncData(result.valueOrNull ?? const []);
   }
 
+  Future<void> loadReplies(String commentId) async {
+    final result = await ref.read(storyRepositoryProvider).replies(commentId);
+    final replies = result.valueOrNull;
+    if (replies == null) return;
+
+    state = AsyncData([
+      for (final comment in state.valueOrNull ?? const <Comment>[])
+        if (comment.commentId == commentId)
+          comment.copyWith(replies: replies)
+        else
+          comment,
+    ]);
+  }
+
   void removeLocally(String commentId) {
     state = AsyncData(_remove(state.valueOrNull ?? const [], commentId));
   }

@@ -121,34 +121,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final colors = context.colors;
 
     final action = await showAppSheet<SwipeAction>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: story.title?.isNotEmpty == true ? story.title! : 'This story',
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (story.isEditable)
-              ListTile(
-                leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
-                title: Text(
-                  'Edit',
-                  style: TextStyle(color: colors.textPrimary),
-                ),
-                subtitle: story.isDraft
-                    ? null
-                    : Text(
-                        'For 24 hours after publishing.',
-                        style: TextStyle(
-                          color: colors.textMuted,
-                          fontSize: AppTypeScale.caption,
-                        ),
-                      ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  context.push('${Routes.compose}?id=${story.storyId}');
-                },
-              ),
+            ListTile(
+              leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+              title: Text('Edit', style: TextStyle(color: colors.textPrimary)),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push('${Routes.compose}?id=${story.storyId}');
+              },
+            ),
             for (final option in _moves(story))
               ListTile(
                 leading: Icon(option.icon, color: colors.textPrimary),
@@ -280,7 +266,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 onLike: (story) => toggleStoryLike(ref, story),
                 onShare: (story) => _share(story),
                 onComment: (story) =>
-                    showCommentsSheet(context: context, storyId: story.storyId),
+                    showCommentsSheet(
+                      context: context,
+                      storyId: story.storyId,
+                      storyAuthorId: story.author.userId,
+                    ),
                 onRefresh: () => ref.read(myStoriesProvider.notifier).refresh(),
                 onLoadMore: () =>
                     ref.read(myStoriesProvider.notifier).loadMore(),

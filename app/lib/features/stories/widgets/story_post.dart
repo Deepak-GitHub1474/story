@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../components/expandable_text.dart';
+import '../../../components/story_glyphs.dart';
+import '../../../components/story_text.dart';
 import '../../../core/utils/time_ago.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../models/story_models.dart';
+import '../providers/story_providers.dart';
+import 'liked_by_row.dart';
+import 'likes_sheet.dart';
 import 'shared_story_card.dart';
 import 'story_images.dart';
 
@@ -60,7 +66,7 @@ class _StoryPostState extends State<StoryPost> {
           child: Row(
             children: [
               GestureDetector(
-                onTap: widget.onAuthorTap,
+                onTap: story.author.isReachable ? widget.onAuthorTap : null,
                 child: AppAvatar(
                   seed: story.author.avatarSeed,
                   size: 34,
@@ -74,7 +80,7 @@ class _StoryPostState extends State<StoryPost> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: widget.onAuthorTap,
+                      onTap: story.author.isReachable ? widget.onAuthorTap : null,
                       child: Text(
                         story.author.handle,
                         overflow: TextOverflow.ellipsis,
@@ -89,8 +95,7 @@ class _StoryPostState extends State<StoryPost> {
                       story.shared != null
                           ? 'Shared ${story.shared!.author.handle}\'s story'
                           : '${timeAgoLong(story.publishedAt ?? story.createdAt)}'
-                                '${story.wasEdited ? ' · Edited' : ''}'
-                                ' · ${story.readingMinutes} min read',
+                                '${story.wasEdited ? ' · Edited' : ''}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textMuted,
@@ -133,14 +138,19 @@ class _StoryPostState extends State<StoryPost> {
                   LikeIcon(isLiked: story.isLiked, onTap: widget.onLike),
                   if (story.likes > 0) ...[
                     const SizedBox(width: AppSpacing.xs),
-                    _Count(value: story.likes, onTap: widget.onLike),
+                    _Count(
+                      value: story.likes,
+                      onTap: () => showLikesSheet(
+                        context: context,
+                        storyId: story.storyId,
+                      ),
+                    ),
                   ],
                   const SizedBox(width: AppSpacing.lg),
                   InkResponse(
                     onTap: widget.onComment ?? widget.onTap,
                     radius: 22,
-                    child: Icon(
-                      Icons.chat_bubble_outline,
+                    child: CommentGlyph(
                       size: AppSizes.iconAction,
                       color: colors.textPrimary,
                     ),
@@ -157,8 +167,7 @@ class _StoryPostState extends State<StoryPost> {
                     InkResponse(
                       onTap: widget.onShare,
                       radius: 22,
-                      child: Icon(
-                        Icons.near_me_outlined,
+                      child: ShareGlyph(
                         size: AppSizes.iconAction,
                         color: colors.textPrimary,
                       ),
@@ -166,6 +175,15 @@ class _StoryPostState extends State<StoryPost> {
                   ],
                 ],
               ),
+              if (story.likedBy.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                LikedByRow(
+                  people: story.likedBy,
+                  likes: story.likes,
+                  onTap: () =>
+                      showLikesSheet(context: context, storyId: story.storyId),
+                ),
+              ],
               const SizedBox(height: AppSpacing.sm),
               _Caption(
                 story: story,
@@ -188,7 +206,7 @@ class _StoryPostState extends State<StoryPost> {
   }
 }
 
-class _Caption extends StatelessWidget {
+class _Caption extends ConsumerStatefulWidget {
   const _Caption({
     required this.story,
     required this.collapsedLines,
@@ -200,49 +218,85 @@ class _Caption extends StatelessWidget {
   final VoidCallback? onOpen;
 
   @override
+  ConsumerState<_Caption> createState() => _CaptionState();
+}
+
+class _CaptionState extends ConsumerState<_Caption> {
+  String? _whole;
+
+  Story get story => widget.story;
+
+  bool get _isTrimmed => story.excerpt.endsWith('…');
+
+  Future<void> _readTheRest() async {
+    if (_whole != null || !_isTrimmed) return;
+
+    final inHand = story.body;
+    if (inHand != null && inHand.isNotEmpty) {
+      setState(() => _whole = plainStoryText(inHand));
+      return;
+    }
+
+    try {
+      final detail = await ref.read(storyDetailProvider(story.storyId).future);
+      if (!mounted) return;
+      final body = detail.body;
+      if (body != null && body.isNotEmpty) {
+        setState(() => _whole = plainStoryText(body));
+      }
+    } catch (_) {
+      return;
+    }
+  }
+
+  TextSpan _span(String body, AppColors colors) => TextSpan(
+    children: [
+      TextSpan(
+        text: story.author.handle,
+        style: TextStyle(
+          color: colors.textPrimary,
+          fontSize: AppTypeScale.label,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      const TextSpan(text: '  '),
+      if (story.title != null && story.title!.isNotEmpty)
+        TextSpan(
+          text: '${story.title}\n',
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: AppTypeScale.label,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+        ),
+      TextSpan(
+        text: body,
+        style: TextStyle(
+          color: colors.textSecondary,
+          fontSize: AppTypeScale.label,
+          height: 1.5,
+        ),
+      ),
+    ],
+  );
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final title = story.title;
-    final body = story.excerpt;
 
-    if ((title == null || title.isEmpty) && body.isEmpty) {
+    if ((title == null || title.isEmpty) && story.excerpt.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return ExpandableText(
-      collapsedLines: collapsedLines,
-      onTapWhenShort: onOpen,
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: story.author.handle,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: AppTypeScale.label,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const TextSpan(text: '  '),
-          if (title != null && title.isNotEmpty)
-            TextSpan(
-              text: '$title\n',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: AppTypeScale.label,
-                fontWeight: FontWeight.w500,
-                height: 1.5,
-              ),
-            ),
-          TextSpan(
-            text: body,
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: AppTypeScale.label,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
+      collapsedLines: widget.collapsedLines,
+      onTapWhenShort: widget.onOpen,
+      onExpand: _isTrimmed ? _readTheRest : null,
+      maxExpandedHeight: MediaQuery.sizeOf(context).height * 0.5,
+      text: _span(story.excerpt, colors),
+      expandedText: _whole == null ? null : _span(_whole!, colors),
     );
   }
 }
@@ -294,7 +348,7 @@ class _LikeIconState extends State<LikeIcon>
         child: Icon(
           widget.isLiked ? Icons.favorite : Icons.favorite_border,
           size: widget.size ?? AppSizes.iconAction,
-          color: widget.isLiked ? colors.danger : colors.textPrimary,
+          color: widget.isLiked ? AppInk.like : colors.textPrimary,
         ),
       ),
     );

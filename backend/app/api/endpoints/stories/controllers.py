@@ -24,10 +24,11 @@ from app.api.endpoints.stories.utils import (
     serialize_comment,
     serialize_story,
 )
+from app.core.accounts import GONE_STATUSES
 from app.core.care import sounds_at_risk
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
-from app.core.time import to_storage, utc_now
+from app.core.time import from_wire, to_storage, to_wire, utc_now
 from app.ports.ai import ALLOWED, AIPort, StoryReview
 from app.ports.storage import StoragePort
 
@@ -187,9 +188,6 @@ async def update_story(
 ) -> dict[str, Any]:
     story = await _owned_story(story_id, claims.user_id, mongo)
 
-    # A writer owns their story for as long as it stands. An edit after
-    # publishing is marked with ``edited_at`` and shown as "Edited" on the
-    # story, the way every other place a person can revise in public does it.
     update: dict[str, Any] = {"updated_at": utc_now()}
     if body.title is not None:
         update["title"] = body.title or None
@@ -707,6 +705,96 @@ async def _paginate(
     }
 
 
+def _liker_card(user_id: str, snapshot: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "user_id": user_id,
+        "display_name": snapshot["display_name"],
+        "avatar_seed": snapshot["avatar_seed"],
+        "username": snapshot.get("username"),
+    }
+
+
+async def _fill_the_gap(story: dict[str, Any], user_id: str, mongo: AsyncIOMotorDatabase) -> None:
+    shown = story.get("likers") or []
+    if not any(person.get("user_id") == user_id for person in shown):
+        return
+
+    left_standing = len(shown) - 1
+    still_liked_by = max(0, story.get("counts", {}).get("likes", 0) - 1)
+    if still_liked_by <= left_standing:
+        return
+
+    fresh, _, _ = await people_who_liked(story["_id"], mongo, limit=c.LIKERS_PREVIEW)
+    await mongo[c.STORIES].update_one(
+        {"_id": story["_id"]},
+        {"$set": {"likers": [_liker_card(person["user_id"], person) for person in fresh]}},
+    )
+
+
+async def people_who_liked(
+    story_id: str, mongo: AsyncIOMotorDatabase, *, limit: int, before: str | None = None
+) -> tuple[list[dict[str, Any]], bool, str | None]:
+    query: dict[str, Any] = {"target_kind": "story", "target_id": story_id, "kind": "like"}
+    moment = from_wire(before)
+    if moment is not None:
+        query["created_at"] = {"$lt": moment}
+
+    reactions = (
+        await mongo[c.REACTIONS]
+        .find(query, {"user_id": 1, "created_at": 1})
+        .sort("created_at", -1)
+        .limit(limit + 1)
+        .to_list(length=limit + 1)
+    )
+    has_more = len(reactions) > limit
+    reactions = reactions[:limit]
+    if not reactions:
+        return [], False, None
+
+    people = (
+        await mongo[c.USERS]
+        .find(
+            {
+                "_id": {"$in": [reaction["user_id"] for reaction in reactions]},
+                "status": {"$nin": GONE_STATUSES},
+                "deleted_at": None,
+            },
+            {"display_name": 1, "avatar_seed": 1, "username": 1},
+        )
+        .to_list(length=len(reactions))
+    )
+    by_id = {person["_id"]: person for person in people}
+
+    liked_by = []
+    for reaction in reactions:
+        person = by_id.get(reaction["user_id"])
+        if person is None:
+            continue
+        liked_by.append(
+            {
+                "user_id": person["_id"],
+                "display_name": person["display_name"],
+                "avatar_seed": person["avatar_seed"],
+                "username": person.get("username"),
+                "liked_at": to_wire(reaction["created_at"]),
+            }
+        )
+    return liked_by, has_more, to_wire(reactions[-1]["created_at"]) if has_more else None
+
+
+async def list_story_likes(
+    story_id: str, *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+) -> dict[str, Any]:
+    await _readable_story(story_id, claims.user_id, mongo)
+
+    limit = max(1, min(limit, c.FEED_MAX_LIMIT))
+    page, has_more, next_cursor = await people_who_liked(
+        story_id, mongo, limit=limit, before=cursor
+    )
+
+    return {"items": page, "next_cursor": next_cursor, "has_more": has_more}
+
+
 async def set_like(
     story_id: str, *, liked: bool, claims, mongo: AsyncIOMotorDatabase, redis=None
 ) -> dict[str, Any]:
@@ -733,14 +821,30 @@ async def set_like(
         delta = -1 if result.deleted_count else 0
 
     if delta:
-        await mongo[c.STORIES].update_one({"_id": story_id}, {"$inc": {"counts.likes": delta}})
+        snapshot = await _author_snapshot(claims.user_id, mongo) if delta > 0 else None
+        changes: dict[str, Any] = {"$inc": {"counts.likes": delta}}
+        if snapshot is not None:
+            changes["$push"] = {
+                "likers": {
+                    "$each": [_liker_card(claims.user_id, snapshot)],
+                    "$position": 0,
+                    "$slice": c.LIKERS_PREVIEW,
+                }
+            }
+        else:
+            changes["$pull"] = {"likers": {"user_id": claims.user_id}}
+
+        await mongo[c.STORIES].update_one({"_id": story_id}, changes)
+
+        if delta < 0:
+            await _fill_the_gap(story, claims.user_id, mongo)
 
         if delta > 0:
             await notify(
                 mongo=mongo,
                 user_id=story["author_id"],
                 actor_id=claims.user_id,
-                actor_snapshot=await _author_snapshot(claims.user_id, mongo),
+                actor_snapshot=snapshot,
                 kind="story_like",
                 target_kind="story",
                 target_id=story_id,

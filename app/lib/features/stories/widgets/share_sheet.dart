@@ -19,34 +19,25 @@ Future<bool> showShareSheet({
   required Story story,
 }) async {
   final choice = await showAppSheet<String>(
-    contentPadding: EdgeInsets.zero,
     context: context,
     title: 'Share',
-    builder: (sheetContext) => Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.sm,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ShareOption(
-            icon: Icons.repeat_rounded,
-            label: 'Add to your story',
-            hint: 'Post it on your profile with a note of your own',
-            onTap: () => Navigator.of(sheetContext).pop('reshare'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _ShareOption(
-            icon: Icons.link_rounded,
-            label: 'Copy link',
-            hint: 'Anyone with the link can read it',
-            onTap: () => Navigator.of(sheetContext).pop('link'),
-          ),
-        ],
-      ),
+    builder: (sheetContext) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ShareOption(
+          icon: Icons.repeat_rounded,
+          label: 'Add to your story',
+          hint: 'Post it on your profile with a note of your own',
+          onTap: () => Navigator.of(sheetContext).pop('reshare'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _ShareOption(
+          icon: Icons.link_rounded,
+          label: 'Copy link',
+          hint: 'Anyone with the link can read it',
+          onTap: () => Navigator.of(sheetContext).pop('link'),
+        ),
+      ],
     ),
   );
 
@@ -73,7 +64,6 @@ Future<bool> showShareSheet({
   }
 
   final posted = await showAppSheet<bool>(
-    contentPadding: EdgeInsets.zero,
     context: context,
     title: 'Add to your story',
     builder: (sheetContext) => _ReshareComposer(story: story),

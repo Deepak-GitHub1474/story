@@ -34,6 +34,9 @@ _VALIDATION_MESSAGES = {
     "string_pattern_mismatch": "This value is not in the expected format.",
     "value_error": "This value is not valid.",
     "bool_type": "This must be true or false.",
+    "literal_error": "That is not one of the choices.",
+    "extra_forbidden": "This field does not belong here.",
+    "json_invalid": "The request could not be read.",
 }
 
 

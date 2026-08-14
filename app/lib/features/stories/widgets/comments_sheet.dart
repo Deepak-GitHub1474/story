@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../components/app_sheet.dart';
 import '../../../components/skeleton.dart';
+import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -13,19 +16,28 @@ import 'comment_tile.dart';
 Future<void> showCommentsSheet({
   required BuildContext context,
   required String storyId,
-}) => showModalBottomSheet<void>(
+  String? storyAuthorId,
+}) => showAppSheet<void>(
   context: context,
-  isScrollControlled: true,
-  useRootNavigator: true,
-  useSafeArea: true,
-  backgroundColor: Colors.transparent,
-  builder: (sheetContext) => CommentsSheet(storyId: storyId),
+  initialSize: 0.68,
+  shell: (sheetContext, scrollController) => CommentsSheet(
+    storyId: storyId,
+    storyAuthorId: storyAuthorId,
+    scrollController: scrollController,
+  ),
 );
 
 class CommentsSheet extends ConsumerStatefulWidget {
-  const CommentsSheet({super.key, required this.storyId});
+  const CommentsSheet({
+    super.key,
+    required this.storyId,
+    this.storyAuthorId,
+    this.scrollController,
+  });
 
   final String storyId;
+  final String? storyAuthorId;
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<CommentsSheet> createState() => _CommentsSheetState();
@@ -34,6 +46,7 @@ class CommentsSheet extends ConsumerStatefulWidget {
 class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   final _composer = TextEditingController();
   final _liked = <String, bool>{};
+  final _openThreads = <String>{};
   Comment? _replyingTo;
   bool _isSending = false;
 
@@ -83,145 +96,112 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   bool _isLiked(Comment comment) =>
       _liked[comment.commentId] ?? comment.isLiked;
 
+  Future<void> _toggleThread(Comment comment) async {
+    final isOpen = _openThreads.contains(comment.commentId);
+    setState(() {
+      if (isOpen) {
+        _openThreads.remove(comment.commentId);
+      } else {
+        _openThreads.add(comment.commentId);
+      }
+    });
+    if (!isOpen) {
+      await ref
+          .read(commentsProvider(widget.storyId).notifier)
+          .loadReplies(comment.commentId);
+    }
+  }
+
+  void _openProfile(StoryAuthor author) {
+    if (!author.isReachable) return;
+    Navigator.of(context).pop();
+    context.push('${Routes.user}/${author.username}');
+  }
+
+  Comment _withLocalLike(Comment comment) {
+    if (!_liked.containsKey(comment.commentId)) return comment;
+
+    final liked = _liked[comment.commentId]!;
+    return comment.copyWith(
+      isLiked: liked,
+      likes: comment.likes + (liked == comment.isLiked ? 0 : (liked ? 1 : -1)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final comments = ref.watch(commentsProvider(widget.storyId));
     final me = ref.watch(authProvider).user?.userId;
-    final media = MediaQuery.of(context);
+    final isMyStory = me != null && me == widget.storyAuthorId;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.68,
-      minChildSize: 0.45,
-      maxChildSize: 1,
-      expand: false,
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: colors.bg,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
+    return AppSheet(
+      title: 'Comments',
+      scrollController: widget.scrollController,
+      footer: CommentComposer(
+        controller: _composer,
+        isSending: _isSending,
+        onSend: _send,
+        replyingTo: _replyingTo?.author.handle,
+        onCancelReply: () => setState(() => _replyingTo = null),
+      ),
+      body: comments.when(
+        loading: () => const SkeletonList(count: 4),
+        error: (error, _) => Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Text(
+            'Could not load the comments.',
+            style: TextStyle(color: colors.textSecondary),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                top: AppSpacing.sm,
-                bottom: AppSpacing.xs,
-              ),
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Text(
-                'Comments',
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: AppTypeScale.body,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Divider(
-              height: 1,
-              thickness: 0.5,
-              color: colors.border.withValues(alpha: 0.45),
-            ),
-            Expanded(
-              child: comments.when(
-                loading: () => const SkeletonList(count: 4),
-                error: (error, _) => Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Text(
-                    'Could not load the comments.',
-                    style: TextStyle(color: colors.textSecondary),
-                  ),
-                ),
-                data: (items) => items.isEmpty
-                    ? ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                'No comments yet',
-                                style: TextStyle(
-                                  color: colors.textPrimary,
-                                  fontSize: AppTypeScale.body,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                'Say something kind.',
-                                style: TextStyle(color: colors.textMuted),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    : ListView.separated(
-                        controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.md,
-                          AppSpacing.lg,
-                          AppSpacing.sm,
+        data: (items) => items.isEmpty
+            ? ListView(
+                controller: widget.scrollController,
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'No comments yet',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: AppTypeScale.body,
+                          fontWeight: FontWeight.w500,
                         ),
-                        itemCount: items.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 2),
-                        itemBuilder: (context, index) {
-                          final comment = items[index];
-
-                          final shown = _liked.containsKey(comment.commentId)
-                              ? comment.copyWith(
-                                  isLiked: _liked[comment.commentId],
-                                  likes:
-                                      comment.likes +
-                                      (_liked[comment.commentId]! ==
-                                              comment.isLiked
-                                          ? 0
-                                          : (_liked[comment.commentId]!
-                                                ? 1
-                                                : -1)),
-                                )
-                              : comment;
-
-                          return CommentTile(
-                            comment: shown,
-                            canDelete: comment.author.userId == me,
-                            canEdit: comment.author.userId == me,
-                            onDelete: () => _delete(comment),
-                            onLike: () => _like(comment),
-                            onReply: () =>
-                                setState(() => _replyingTo = comment),
-                          );
-                        },
                       ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Say something kind.',
+                        style: TextStyle(color: colors.textMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : ListView.builder(
+                controller: widget.scrollController,
+                padding: AppSheet.insets,
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final comment = items[index];
+
+                  return CommentTile(
+                    comment: _withLocalLike(comment),
+                    storyAuthorId: widget.storyAuthorId,
+                    canDelete: comment.author.userId == me || isMyStory,
+                    canEdit: comment.author.userId == me,
+                    isThreadOpen: _openThreads.contains(comment.commentId),
+                    onDelete: () => _delete(comment),
+                    onLike: () => _like(comment),
+                    onReply: () => setState(() => _replyingTo = comment),
+                    onToggleReplies: () => _toggleThread(comment),
+                    onAuthorTap: _openProfile,
+                    onDeleteReply: _delete,
+                    onLikeReply: _like,
+                    localLike: _withLocalLike,
+                  );
+                },
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-              child: CommentComposer(
-                controller: _composer,
-                isSending: _isSending,
-                onSend: _send,
-                replyingTo: _replyingTo?.author.handle,
-                onCancelReply: () => setState(() => _replyingTo = null),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

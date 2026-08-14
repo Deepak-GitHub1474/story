@@ -123,6 +123,12 @@ class AppTypeScale {
   static const double micro = 10;
 }
 
+class AppInk {
+  const AppInk._();
+
+  static const Color like = Color(0xFFED4956);
+}
+
 class AppSizes {
   const AppSizes._();
 

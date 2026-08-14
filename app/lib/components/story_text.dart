@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
-enum StoryBlockKind { paragraph, heading, bullet }
+enum StoryBlockKind { paragraph, heading, bullet, rule }
 
 class StoryBlock {
   const StoryBlock(this.kind, this.text);
@@ -15,6 +15,7 @@ class StoryBlock {
 final _emphasis = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*|_(.+?)_');
 final _headingLine = RegExp(r'^\*\*(.+)\*\*$');
 final _bulletLine = RegExp(r'^\s*[-*•]\s+(.*)$');
+final _ruleLine = RegExp(r'^\s*[-–—_*]{3,}\s*$');
 
 List<StoryBlock> parseStoryBlocks(String source) {
   final blocks = <StoryBlock>[];
@@ -31,6 +32,12 @@ List<StoryBlock> parseStoryBlocks(String source) {
 
     if (line.trim().isEmpty) {
       flush();
+      continue;
+    }
+
+    if (_ruleLine.hasMatch(line)) {
+      flush();
+      blocks.add(const StoryBlock(StoryBlockKind.rule, ''));
       continue;
     }
 
@@ -91,6 +98,7 @@ List<InlineSpan> _spansOf(String text) {
 String plainStoryText(String source) {
   final buffer = StringBuffer();
   for (final block in parseStoryBlocks(source)) {
+    if (block.kind == StoryBlockKind.rule) continue;
     if (buffer.isNotEmpty) buffer.write(' ');
     buffer.write(
       block.text.replaceAllMapped(_emphasis, (match) {
@@ -161,6 +169,14 @@ class StoryText extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            StoryBlockKind.rule => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Divider(
+                color: colors.border,
+                thickness: AppSizes.hairline,
+                height: AppSizes.hairline,
               ),
             ),
             StoryBlockKind.paragraph => SelectableText.rich(

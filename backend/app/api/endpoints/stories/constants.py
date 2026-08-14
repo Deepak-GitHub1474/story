@@ -10,6 +10,8 @@ EXCERPT_LENGTH = 240
 WORDS_PER_MINUTE = 220
 FEED_DEFAULT_LIMIT = 20
 FEED_MAX_LIMIT = 50
+LIKERS_PREVIEW = 3
+LIKES_PAGE_LIMIT = 30
 EDIT_WINDOW_HOURS = 24
 INLINE_REPLIES = 3
 COMMUNITY_FANOUT_CAP = 200
@@ -29,8 +31,11 @@ FEED_PROJECTION = {
     "image_ratio": 1,
     "image_fit": 1,
     "counts": 1,
+    "likers": 1,
     "reading_minutes": 1,
     "published_at": 1,
+    "scheduled_for": 1,
+    "edited_at": 1,
     "created_at": 1,
     "updated_at": 1,
 }

@@ -242,7 +242,6 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     final colors = context.colors;
     final choice = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(

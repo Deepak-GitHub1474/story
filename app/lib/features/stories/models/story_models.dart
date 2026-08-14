@@ -45,7 +45,11 @@ class StoryAuthor {
   final String? username;
 
   String get handle => username ?? displayName;
+
+  bool get isReachable => username != null && username!.isNotEmpty;
 }
+
+const publishableVisibilities = {'public', 'private', 'scheduled'};
 
 class Story {
   const Story({
@@ -61,10 +65,12 @@ class Story {
     required this.readingMinutes,
     required this.isLiked,
     required this.publishedAt,
+    this.scheduledFor,
     required this.createdAt,
     required this.updatedAt,
     this.editedAt,
     this.shared,
+    this.likedBy = const [],
     this.images = const [],
     this.imageRatio,
     this.imageFit = 'cover',
@@ -87,9 +93,16 @@ class Story {
       readingMinutes: json['reading_minutes'] as int? ?? 1,
       isLiked: json['is_liked'] as bool? ?? false,
       publishedAt: json['published_at'] as String?,
+      scheduledFor: json['scheduled_for'] as String?,
       createdAt: json['created_at'] as String? ?? '',
       updatedAt: json['updated_at'] as String? ?? '',
       editedAt: json['edited_at'] as String?,
+      likedBy: (json['liked_by'] as List<dynamic>? ?? const [])
+          .map(
+            (item) =>
+                StoryAuthor.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(),
       images: (json['images'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .toList(),
@@ -115,10 +128,12 @@ class Story {
   final int readingMinutes;
   final bool isLiked;
   final String? publishedAt;
+  final String? scheduledFor;
   final String createdAt;
   final String updatedAt;
   final String? editedAt;
   final SharedStory? shared;
+  final List<StoryAuthor> likedBy;
   final List<String> images;
   final double? imageRatio;
   final String imageFit;
@@ -140,9 +155,19 @@ class Story {
     'visibility': visibility,
     'slug': slug,
     'counts': {'likes': likes, 'comments': comments},
+    'liked_by': [
+      for (final person in likedBy)
+        {
+          'user_id': person.userId,
+          'display_name': person.displayName,
+          'avatar_seed': person.avatarSeed,
+          'username': person.username,
+        },
+    ],
     'reading_minutes': readingMinutes,
     'is_liked': isLiked,
     'published_at': publishedAt,
+    'scheduled_for': scheduledFor,
     'created_at': createdAt,
     'updated_at': updatedAt,
     'edited_at': editedAt,
@@ -166,14 +191,7 @@ class Story {
 
   bool get isPublic => visibility == 'public';
 
-  bool get isEditable {
-    if (isDraft) return true;
-    final stamp = publishedAt;
-    if (stamp == null) return true;
-    final posted = DateTime.tryParse(stamp);
-    if (posted == null) return true;
-    return DateTime.now().toUtc().difference(posted.toUtc()).inHours < 24;
-  }
+  bool get isEditable => true;
 
   bool get isScheduled => visibility == 'scheduled';
 
@@ -184,6 +202,7 @@ class Story {
     String? visibility,
   }) => Story(
     shared: shared,
+    likedBy: likedBy,
     images: images,
     imageRatio: imageRatio,
     imageFit: imageFit,
@@ -199,6 +218,7 @@ class Story {
     readingMinutes: readingMinutes,
     isLiked: isLiked ?? this.isLiked,
     publishedAt: publishedAt,
+    scheduledFor: scheduledFor,
     createdAt: createdAt,
     updatedAt: updatedAt,
     editedAt: editedAt,
@@ -221,6 +241,28 @@ class StoryPage {
   );
 
   final List<Story> items;
+  final String? nextCursor;
+  final bool hasMore;
+}
+
+class LikersPage {
+  const LikersPage({
+    required this.items,
+    required this.nextCursor,
+    required this.hasMore,
+  });
+
+  factory LikersPage.fromJson(Map<String, dynamic> json) => LikersPage(
+    items: (json['items'] as List<dynamic>)
+        .map(
+          (item) => StoryAuthor.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList(),
+    nextCursor: json['next_cursor'] as String?,
+    hasMore: json['has_more'] as bool? ?? false,
+  );
+
+  final List<StoryAuthor> items;
   final String? nextCursor;
   final bool hasMore;
 }

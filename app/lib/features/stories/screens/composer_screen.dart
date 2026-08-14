@@ -50,6 +50,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   String _savedLabel = '';
   final _images = <String>[];
   String _visibility = 'draft';
+  String _standing = 'draft';
   bool _isUploading = false;
   double? _imageRatio;
   String _imageFit = 'cover';
@@ -93,6 +94,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       _imageRatio = story.imageRatio;
       _imageFit = story.imageFit;
       _canFit = story.images.isNotEmpty;
+      _visibility = story.visibility;
+      _standing = story.visibility;
+      _scheduledFor = story.scheduledFor == null
+          ? null
+          : DateTime.tryParse(story.scheduledFor!)?.toLocal();
     }
     setState(() => _isLoading = false);
   }
@@ -136,6 +142,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         _isDirty = false;
         _savedLabel = 'Draft saved';
       });
+      ref.invalidate(storyDetailProvider(story.storyId));
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
     } else {
       AppToast.show(
@@ -252,7 +259,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
   Future<void> _polish() async {
     final polished = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'Another go at it',
       builder: (sheetContext) => PolishSheet(text: _body.text),
@@ -281,6 +287,11 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
       return;
     }
 
+    if (!publishableVisibilities.contains(visibility)) {
+      await _keepAsDraft(storyId);
+      return;
+    }
+
     final result = await ref
         .read(storyRepositoryProvider)
         .publish(
@@ -296,6 +307,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     if (result.isSuccess) {
       final outcome = result.valueOrNull!;
+      _standing = visibility;
       unawaited(ref.read(feedProvider.notifier).refresh());
       unawaited(ref.read(myStoriesProvider.notifier).refresh());
       await ref.read(authProvider.notifier).refreshUser();
@@ -308,7 +320,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
       if (outcome.needsCare || outcome.suggestedCommunity != null) {
         await showAppSheet<void>(
-          contentPadding: EdgeInsets.zero,
           context: context,
           title: outcome.needsCare ? 'Before you go' : 'One more room',
           builder: (sheetContext) => _AfterPublishSheet(
@@ -325,13 +336,36 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     }
   }
 
+  Future<void> _keepAsDraft(String storyId) async {
+    final result = _standing == 'draft'
+        ? null
+        : await ref.read(storyRepositoryProvider).unpublish(storyId);
+
+    if (!mounted) return;
+    setState(() => _isPublishing = false);
+
+    if (result != null && !result.isSuccess) {
+      AppToast.show(
+        context,
+        result.failureOrNull!.message,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
+    _standing = 'draft';
+    unawaited(ref.read(feedProvider.notifier).refresh());
+    unawaited(ref.read(myStoriesProvider.notifier).refresh());
+    AppToast.show(context, 'Kept in your drafts.', kind: AppToastKind.success);
+    context.pop();
+  }
+
   Future<void> _handlePublishFailure(
     Failure<PublishOutcome> failure,
     String visibility,
   ) async {
     if (failure.code == 'EXPOSURE_ACK_REQUIRED') {
       final goAhead = await showAppSheet<bool>(
-        contentPadding: EdgeInsets.zero,
         context: context,
         title: 'This could point back to you',
         builder: (sheetContext) =>
@@ -345,7 +379,6 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     if (failure.code == 'MODERATION_BLOCKED') {
       await showAppSheet<void>(
-        contentPadding: EdgeInsets.zero,
         context: context,
         title: 'This cannot go up',
         builder: (sheetContext) => _BlockedSheet(
@@ -611,7 +644,6 @@ class _CommunityPicker extends ConsumerWidget {
         return InkWell(
           onTap: () async {
             final choice = await showAppSheet<String?>(
-              contentPadding: EdgeInsets.zero,
               context: context,
               builder: (sheetContext) => SafeArea(
                 child: ListView(
@@ -1024,7 +1056,6 @@ class _VisibilityChip extends StatelessWidget {
     final colors = context.colors;
 
     final picked = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'Who can read this?',
       builder: (sheetContext) => SafeArea(

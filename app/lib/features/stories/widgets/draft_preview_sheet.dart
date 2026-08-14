@@ -21,7 +21,6 @@ Future<WrittenDraft?> showDraftPreview({
   isResizable: true,
   initialSize: 0.92,
   title: 'Read it first',
-  contentPadding: EdgeInsets.zero,
   builder: (_) => DraftPreviewSheet(title: title, body: body),
 );
 

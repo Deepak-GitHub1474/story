@@ -3,60 +3,71 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
+typedef AppSheetShell = Widget Function(BuildContext, ScrollController);
+
 Future<T?> showAppSheet<T>({
   required BuildContext context,
-  required WidgetBuilder builder,
+  WidgetBuilder? builder,
+  AppSheetShell? shell,
   String? title,
   bool isScrollControlled = true,
-  EdgeInsets contentPadding = const EdgeInsets.fromLTRB(
-    AppSpacing.lg,
-    AppSpacing.md,
-    AppSpacing.lg,
-    0,
-  ),
+  EdgeInsets contentPadding = AppSheet.insets,
   Widget? footer,
   bool isResizable = false,
   double initialSize = 0.68,
+  double minSize = 0.45,
+  double maxSize = 1,
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: isScrollControlled,
   useRootNavigator: true,
-  useSafeArea: isResizable,
+  useSafeArea: isResizable || shell != null,
   backgroundColor: Colors.transparent,
-  builder: (sheetContext) => isResizable
+  builder: (sheetContext) => isResizable || shell != null
       ? DraggableScrollableSheet(
           initialChildSize: initialSize,
-          minChildSize: 0.45,
-          maxChildSize: 1,
+          minChildSize: minSize,
+          maxChildSize: maxSize,
           expand: false,
           shouldCloseOnMinExtent: true,
-          builder: (context, scrollController) => AppSheet(
-            title: title,
-            contentPadding: contentPadding,
-            footer: footer,
-            scrollController: scrollController,
-            child: builder(sheetContext),
-          ),
+          builder: (context, scrollController) =>
+              shell?.call(sheetContext, scrollController) ??
+              AppSheet(
+                title: title,
+                contentPadding: contentPadding,
+                footer: footer,
+                scrollController: scrollController,
+                child: builder!(sheetContext),
+              ),
         )
       : AppSheet(
           title: title,
           contentPadding: contentPadding,
           footer: footer,
-          child: builder(sheetContext),
+          child: builder!(sheetContext),
         ),
 );
 
 class AppSheet extends StatelessWidget {
   const AppSheet({
     super.key,
-    required this.child,
+    this.child,
+    this.body,
     this.title,
-    this.contentPadding = EdgeInsets.zero,
+    this.contentPadding = insets,
     this.footer,
     this.scrollController,
-  });
+  }) : assert(child != null || body != null, 'a sheet needs something to show');
 
-  final Widget child;
+  static const EdgeInsets insets = EdgeInsets.fromLTRB(
+    AppSpacing.lg,
+    AppSpacing.md,
+    AppSpacing.lg,
+    0,
+  );
+
+  final Widget? child;
+  final Widget? body;
   final String? title;
   final EdgeInsets contentPadding;
   final Widget? footer;
@@ -66,7 +77,7 @@ class AppSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final media = MediaQuery.of(context);
-    final isResizable = scrollController != null;
+    final isResizable = scrollController != null || body != null;
 
     return Container(
       constraints: isResizable
@@ -125,19 +136,24 @@ class AppSheet extends StatelessWidget {
             ),
           ],
           Flexible(
-            child: SingleChildScrollView(
-              controller: scrollController,
-              physics: isResizable
-                  ? const AlwaysScrollableScrollPhysics()
-                  : null,
-              padding: contentPadding.copyWith(
-                bottom: footer != null
-                    ? AppSpacing.lg
-                    : media.viewInsets.bottom +
-                          media.padding.bottom +
-                          AppSpacing.lg,
-              ),
-              child: child,
+            child: ListTileTheme.merge(
+              contentPadding: EdgeInsets.zero,
+              child:
+                  body ??
+                  SingleChildScrollView(
+                    controller: scrollController,
+                    physics: isResizable
+                        ? const AlwaysScrollableScrollPhysics()
+                        : null,
+                    padding: contentPadding.copyWith(
+                      bottom: footer != null
+                          ? AppSpacing.lg
+                          : media.viewInsets.bottom +
+                                media.padding.bottom +
+                                AppSpacing.lg,
+                    ),
+                    child: child,
+                  ),
             ),
           ),
           if (footer != null)

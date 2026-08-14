@@ -185,6 +185,13 @@ class StoryRepository {
         : _client.delete(path, parse: _likes);
   }
 
+  Future<Result<LikersPage>> likers(String storyId, {String? cursor}) =>
+      _client.get(
+        Endpoints.storyLikes(storyId),
+        query: _pageQuery(cursor: cursor, limit: 30),
+        parse: LikersPage.fromJson,
+      );
+
   Future<Result<List<Comment>>> comments(String storyId, {String? cursor}) =>
       _client.get(
         Endpoints.storyComments(storyId),

@@ -7,15 +7,14 @@ from app.core.time import to_wire
 WHITESPACE = re.compile(r"\s+")
 
 
-# A drafted story may carry light markdown - **a turn in the story**, a "- "
-# list, *a remembered line*. The card shows a plain excerpt, so the marks come
-# off here rather than being shown as asterisks to the reader.
 MARKUP = re.compile(r"\*\*(.+?)\*\*|\*(.+?)\*|_(.+?)_", re.DOTALL)
 BULLET = re.compile(r"^\s*[-*\u2022]\s+", re.MULTILINE)
+RULE = re.compile(r"^[ \t]*[-\u2013\u2014_*]{3,}[ \t]*$", re.MULTILINE)
 
 
 def strip_markup(body: str) -> str:
-    without_bullets = BULLET.sub("", body)
+    without_rules = RULE.sub("", body)
+    without_bullets = BULLET.sub("", without_rules)
     return MARKUP.sub(lambda m: m.group(1) or m.group(2) or m.group(3) or "", without_bullets)
 
 
@@ -52,12 +51,15 @@ def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) ->
         "visibility": doc["visibility"],
         "slug": doc.get("slug"),
         "counts": doc.get("counts", {}),
+        "liked_by": doc.get("likers", []),
         "reading_minutes": doc.get("reading_minutes", 1),
         "images": doc.get("images", []),
         "image_ratio": doc.get("image_ratio"),
         "image_fit": doc.get("image_fit") or "cover",
         "is_liked": is_liked,
         "published_at": to_wire(doc.get("published_at")),
+        "scheduled_for": to_wire(doc.get("scheduled_for")),
+        "edited_at": to_wire(doc.get("edited_at")),
         "created_at": to_wire(doc.get("created_at")),
         "updated_at": to_wire(doc.get("updated_at")),
     }
@@ -76,6 +78,7 @@ def serialize_comment(doc: dict, *, is_liked: bool = False) -> dict:
             "user_id": doc.get("author_id"),
             "display_name": snapshot.get("display_name", "A deleted account"),
             "avatar_seed": snapshot.get("avatar_seed", ""),
+            "username": snapshot.get("username"),
         },
         "body": doc["body"],
         "counts": doc.get("counts", {}),

@@ -70,6 +70,7 @@ class FeedScreen extends ConsumerWidget {
               onComment: (story) => showCommentsSheet(
                 context: context,
                 storyId: story.storyId,
+                storyAuthorId: story.author.userId,
               ),
               onShare: (story) => _share(context, ref, story),
               onOpenShared: (storyId) => context.push('${Routes.story}/$storyId'),

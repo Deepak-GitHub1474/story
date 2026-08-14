@@ -16,12 +16,16 @@ class CommentTile extends StatelessWidget {
     required this.onDelete,
     required this.onLike,
     required this.onReply,
+    this.storyAuthorId,
     this.canEdit = false,
     this.onEdit,
-    this.onExpandReplies,
+    this.onToggleReplies,
+    this.onAuthorTap,
+    this.onDeleteReply,
+    this.onLikeReply,
+    this.localLike,
+    this.isThreadOpen = false,
     this.isReply = false,
-    this.expandedReplies = const [],
-    this.isExpanded = false,
   });
 
   final Comment comment;
@@ -29,18 +33,25 @@ class CommentTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onLike;
   final VoidCallback onReply;
+  final String? storyAuthorId;
   final bool canEdit;
   final VoidCallback? onEdit;
-  final VoidCallback? onExpandReplies;
+  final VoidCallback? onToggleReplies;
+  final void Function(StoryAuthor author)? onAuthorTap;
+  final void Function(Comment reply)? onDeleteReply;
+  final void Function(Comment reply)? onLikeReply;
+  final Comment Function(Comment comment)? localLike;
+  final bool isThreadOpen;
   final bool isReply;
-  final List<Comment> expandedReplies;
-  final bool isExpanded;
+
+  bool get _isStoryAuthor =>
+      storyAuthorId != null && comment.author.userId == storyAuthorId;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final visibleReplies = isExpanded ? expandedReplies : comment.replies;
-    final hidden = comment.replyCount - visibleReplies.length;
+    final replies = isThreadOpen ? comment.replies : const <Comment>[];
+    final waiting = comment.replyCount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,102 +59,100 @@ class CommentTile extends StatelessWidget {
         Padding(
           padding: EdgeInsets.only(
             left: isReply ? AppSpacing.xxl : 0,
-            bottom: AppSpacing.md,
+            bottom: AppSpacing.lg,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppAvatar(
-                seed: comment.author.avatarSeed,
-                size: isReply ? 24 : 30,
-                displayName: comment.author.displayName,
-                username: comment.author.username,
+              GestureDetector(
+                onTap: () => onAuthorTap?.call(comment.author),
+                child: AppAvatar(
+                  seed: comment.author.avatarSeed,
+                  size: isReply ? 26 : 32,
+                  displayName: comment.author.displayName,
+                  username: comment.author.username,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ExpandableText(
-                      collapsedLines: 4,
-                      text: TextSpan(
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: AppTypeScale.body,
-                          height: 1.45,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: comment.author.handle,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const TextSpan(text: '  '),
-                          ..._bodySpans(context, comment.body),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
+                        Flexible(
+                          child: GestureDetector(
+                            onTap: () => onAuthorTap?.call(comment.author),
+                            child: Text(
+                              comment.author.handle,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: AppTypeScale.label,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
-                          comment.editedAt == null
-                              ? timeAgo(comment.createdAt)
-                              : '${timeAgo(comment.createdAt)} · edited',
+                          timeAgoLong(comment.createdAt),
                           style: TextStyle(
                             color: colors.textMuted,
                             fontSize: AppTypeScale.caption,
                           ),
                         ),
-                        if (comment.likes > 0) ...[
-                          const SizedBox(width: AppSpacing.md),
+                        if (comment.editedAt != null)
                           Text(
-                            '${comment.likes} ${comment.likes == 1 ? 'like' : 'likes'}',
+                            ' · edited',
                             style: TextStyle(
                               color: colors.textMuted,
+                              fontSize: AppTypeScale.caption,
+                            ),
+                          ),
+                        if (_isStoryAuthor)
+                          Text(
+                            ' · Author',
+                            style: TextStyle(
+                              color: colors.accent,
                               fontSize: AppTypeScale.caption,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
-                        const SizedBox(width: AppSpacing.md),
-                        InkWell(
-                          onTap: onReply,
-                          child: Text(
-                            'Reply',
-                            style: TextStyle(
-                              color: colors.textMuted,
-                              fontSize: AppTypeScale.caption,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    ExpandableText(
+                      collapsedLines: 4,
+                      text: TextSpan(
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: AppTypeScale.label,
+                          height: 1.45,
                         ),
+                        children: _bodySpans(context, comment.body),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      children: [
+                        if (comment.likes > 0) ...[
+                          _Action(
+                            label:
+                                '${comment.likes} ${comment.likes == 1 ? 'like' : 'likes'}',
+                            onTap: null,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                        ],
+                        _Action(label: 'Reply', onTap: onReply),
                         if (canEdit && onEdit != null) ...[
                           const SizedBox(width: AppSpacing.md),
-                          InkWell(
-                            onTap: onEdit,
-                            child: Text(
-                              'Edit',
-                              style: TextStyle(
-                                color: colors.textMuted,
-                                fontSize: AppTypeScale.caption,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
+                          _Action(label: 'Edit', onTap: onEdit),
                         ],
                         const SizedBox(width: AppSpacing.md),
-                        InkWell(
+                        _Action(
+                          label: canDelete ? 'Delete' : 'Report',
                           onTap: onDelete,
-                          child: Text(
-                            canDelete ? 'Delete' : 'Report',
-                            style: TextStyle(
-                              color: colors.textMuted,
-                              fontSize: AppTypeScale.caption,
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -164,30 +173,34 @@ class CommentTile extends StatelessWidget {
             ],
           ),
         ),
-        for (final reply in visibleReplies)
+        for (final reply in replies)
           CommentTile(
             key: ValueKey(reply.commentId),
-            comment: reply,
-            canDelete: canDelete,
+            comment: localLike?.call(reply) ?? reply,
+            storyAuthorId: storyAuthorId,
+            canDelete: canDelete || reply.author.userId == storyAuthorId,
             isReply: true,
-            onDelete: onDelete,
-            onLike: onLike,
+            onDelete: () => (onDeleteReply ?? (_) => onDelete())(reply),
+            onLike: () => (onLikeReply ?? (_) => onLike())(reply),
             onReply: onReply,
+            onAuthorTap: onAuthorTap,
           ),
-        if (hidden > 0 && onExpandReplies != null)
+        if (waiting > 0 && onToggleReplies != null && !isReply)
           Padding(
             padding: const EdgeInsets.only(
               left: AppSpacing.xxl,
-              bottom: AppSpacing.md,
+              bottom: AppSpacing.lg,
             ),
             child: InkWell(
-              onTap: onExpandReplies,
+              onTap: onToggleReplies,
               child: Row(
                 children: [
                   Container(width: 24, height: 1, color: colors.border),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    'View $hidden more ${hidden == 1 ? 'reply' : 'replies'}',
+                    isThreadOpen
+                        ? 'Hide replies'
+                        : 'View $waiting more ${waiting == 1 ? 'reply' : 'replies'}',
                     style: TextStyle(
                       color: colors.textMuted,
                       fontSize: AppTypeScale.caption,
@@ -223,5 +236,29 @@ class CommentTile extends StatelessWidget {
 
     if (index < body.length) spans.add(TextSpan(text: body.substring(index)));
     return spans;
+  }
+}
+
+class _Action extends StatelessWidget {
+  const _Action({required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: colors.textMuted,
+          fontSize: AppTypeScale.caption,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
   }
 }

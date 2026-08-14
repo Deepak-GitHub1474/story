@@ -100,7 +100,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
   Future<void> _renameVault(VaultPasscode vault) async {
     final name = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'Rename vault',
       builder: (sheetContext) => _RenameSheet(current: vault.label),
@@ -160,7 +159,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     final colors = context.colors;
 
     await showAppSheet<void>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: vault.label,
       builder: (sheetContext) => SafeArea(
@@ -195,7 +193,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     final isOwn = session.keySource == 'own';
 
     final chosen = await showAppSheet<String>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: isOwn ? 'Change this vault passcode' : 'Change your main passcode',
       builder: (sheetContext) => _ChangePasscodeSheet(isOwn: isOwn),
@@ -221,7 +218,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
   Future<void> _newVault() async {
     final created = await showAppSheet<bool>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       title: 'New vault',
       builder: (sheetContext) => const _NewVaultSheet(),
@@ -260,7 +256,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     }
 
     final label = await showAppSheet<String?>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => _HideSheet(filename: file.name),
     );
@@ -447,7 +442,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   const SizedBox(height: AppSpacing.sm),
                   for (final vault in vaults)
                     ListTile(
-                      contentPadding: EdgeInsets.zero,
                       title: Text(
                         vault.label,
                         style: TextStyle(color: colors.textPrimary),
@@ -698,7 +692,6 @@ class _HideSheetState extends State<_HideSheet> {
           SwitchListTile.adaptive(
             value: _isHidden,
             onChanged: (value) => setState(() => _isHidden = value),
-            contentPadding: EdgeInsets.zero,
             activeThumbColor: colors.accent,
             title: Text(
               'Seal this file',

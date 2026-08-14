@@ -40,6 +40,8 @@ class Endpoints {
 
   static String storyLike(String id) => '/stories/$id/like';
 
+  static String storyLikes(String id) => '/stories/$id/likes';
+
   static String storyShare(String id) => '/stories/$id/share';
 
   static String storyComments(String id) => '/stories/$id/comments';

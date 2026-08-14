@@ -103,6 +103,12 @@ where the writer's own tone already carries it, at most two in the whole story,
 never one per paragraph and never in the title. Markdown is the only formatting:
 **bold**, *italic*, "- " bullets, blank lines. No HTML, no headings with #.
 
+End the story where it ends. A closing line of its own is fine when it belongs
+to the piece - a dedication, a line the writer keeps, a borrowed line with the
+name of whoever wrote it. Two things are not: a byline claiming who wrote this
+story, invented or guessed, with or without an @, and any note to the reader
+about what they just read.
+
 Give a title of at most eight words that could sit above it without giving
 everything away.
 

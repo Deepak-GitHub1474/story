@@ -36,7 +36,6 @@ Future<void> showReportSheet(
   final colors = context.colors;
 
   final reason = await showAppSheet<ReportReason>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
       child: ListView(

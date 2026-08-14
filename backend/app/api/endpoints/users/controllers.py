@@ -8,6 +8,7 @@ from app.api.endpoints.auth.utils import new_avatar_seed, serialize_user
 from app.api.endpoints.connections import controllers as connection_controllers
 from app.api.endpoints.users.models import ChangePasswordRequest, UpdateProfileRequest
 from app.api.endpoints.users.utils import contains_link, serialize_public_user
+from app.core.accounts import GONE_STATUSES
 from app.core.errors import ErrorCode, api_error
 from app.core.password import hash_password, validate_password_strength, verify_password
 from app.core.time import to_wire, utc_now
@@ -82,7 +83,11 @@ async def regenerate_avatar(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str,
 
 async def public_profile(username: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     user = await mongo[USERS].find_one(
-        {"username_lower": username.lower(), "deleted_at": None},
+        {
+            "username_lower": username.lower(),
+            "deleted_at": None,
+            "status": {"$nin": list(GONE_STATUSES)},
+        },
         PUBLIC_PROFILE_PROJECTION,
     )
     if user is None or user.get("blocked"):

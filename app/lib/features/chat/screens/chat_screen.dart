@@ -346,7 +346,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     await showAppSheet<void>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(

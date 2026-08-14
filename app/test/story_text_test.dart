@@ -75,4 +75,41 @@ void main() {
     await render(tester, 'I left at nineteen. Nobody stopped me.');
     expect(find.text('I left at nineteen. Nobody stopped me.'), findsOneWidget);
   });
+
+  test('a line of dashes is kept as a break the writer meant', () {
+    final blocks = parseStoryBlocks('Before.\n---\nAfter.');
+
+    expect(blocks.map((b) => b.kind).toList(), [
+      StoryBlockKind.paragraph,
+      StoryBlockKind.rule,
+      StoryBlockKind.paragraph,
+    ], reason: 'a writer separating two parts must not lose the separator');
+  });
+
+  testWidgets('the break is drawn as a line, not printed as dashes', (
+    tester,
+  ) async {
+    await render(tester, 'Before.\n-------\nAfter.');
+
+    expect(find.byType(Divider), findsOneWidget);
+    expect(find.text('-------'), findsNothing);
+    expect(find.text('Before.'), findsOneWidget);
+    expect(find.text('After.'), findsOneWidget);
+  });
+
+  test('symbols a writer types are their own business', () {
+    final blocks = parseStoryBlocks('Ask @deepak about the _thing_ - it works.');
+
+    expect(blocks.length, 1);
+    expect(blocks.first.text, 'Ask @deepak about the _thing_ - it works.');
+    expect(
+      plainStoryText('Ask @deepak - #2 & 50% of it.'),
+      'Ask @deepak - #2 & 50% of it.',
+      reason: 'nothing here is markup, so nothing may be eaten',
+    );
+  });
+
+  test('a break carries no words into a plain reading', () {
+    expect(plainStoryText('Before.\n---\nAfter.'), 'Before. After.');
+  });
 }

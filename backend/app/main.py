@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.config import get_settings
+from app.db.backfill import backfill_likers
 from app.db.indexes import ensure_indexes
 from app.db.mongo import connect_mongo, disconnect_mongo
 from app.db.redis import connect_redis, disconnect_redis
@@ -33,6 +34,8 @@ async def lifespan(app: FastAPI):
     seeded = await seed_reference_data(app.state.mongo_db)
     logger.info("startup_seed", count=sum(seeded.values()))
 
+    app.state.likers_backfill = asyncio.create_task(backfill_likers(app.state.mongo_db))
+
     if settings.RUN_BACKGROUND_JOBS:
         scheduler.start(app, app.state.mongo_db)
 
@@ -52,6 +55,12 @@ async def lifespan(app: FastAPI):
             listener.cancel()
             with suppress(asyncio.CancelledError):
                 await listener
+
+        backfill = getattr(app.state, "likers_backfill", None)
+        if backfill is not None:
+            backfill.cancel()
+            with suppress(asyncio.CancelledError):
+                await backfill
 
         await scheduler.stop(app)
         for name, close in (("redis", disconnect_redis), ("mongodb", disconnect_mongo)):

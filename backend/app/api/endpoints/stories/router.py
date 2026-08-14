@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 
 from app.api.endpoints.stories import controllers
-from app.api.endpoints.stories.constants import FEED_DEFAULT_LIMIT
+from app.api.endpoints.stories.constants import FEED_DEFAULT_LIMIT, LIKES_PAGE_LIMIT
 from app.api.endpoints.stories.models import (
     CreateCommentRequest,
     CreateStoryRequest,
@@ -155,6 +155,20 @@ async def unlike_story(
         story_id, liked=False, claims=claims, mongo=mongo, redis=redis
     )
     return ok_response("Unliked.", data=data)
+
+
+@router.get("/stories/{story_id}/likes", status_code=status.HTTP_200_OK)
+async def list_story_likes(
+    story_id: str,
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    limit: int = LIKES_PAGE_LIMIT,
+    cursor: str | None = None,
+):
+    data = await controllers.list_story_likes(
+        story_id, claims=claims, mongo=mongo, limit=limit, cursor=cursor
+    )
+    return ok_response("Likes loaded.", data=data)
 
 
 @router.get("/stories/{story_id}/comments", status_code=status.HTTP_200_OK)

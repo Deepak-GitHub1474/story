@@ -93,6 +93,14 @@ INDEXES: dict[str, list[IndexSpec]] = {
             [("target_kind", ASCENDING), ("target_id", ASCENDING), ("_id", DESCENDING)],
             "ix_target",
         ),
+        IndexSpec(
+            [
+                ("target_kind", ASCENDING),
+                ("target_id", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
+            "ix_target_recent",
+        ),
         IndexSpec([("user_id", ASCENDING), ("_id", DESCENDING)], "ix_user_reactions"),
     ],
     "connections": [

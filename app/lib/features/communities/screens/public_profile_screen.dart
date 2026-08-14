@@ -101,7 +101,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     if (profile == null || profile.isMe) return;
 
     await showAppSheet<void>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(

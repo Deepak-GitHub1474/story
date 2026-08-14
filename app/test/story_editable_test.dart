@@ -40,18 +40,21 @@ void main() {
     expect(story.isEditable, isTrue);
   });
 
-  test('a story published yesterday is past its window', () {
+  test('a story published yesterday can still be corrected', () {
     final story = storyPosted(visibility: 'public', publishedAt: hoursAgo(25));
     expect(
       story.isEditable,
-      isFalse,
-      reason: 'the server refuses this edit, so we must not offer it',
+      isTrue,
+      reason: 'a writer owns their story for as long as it stands',
     );
   });
 
-  test('the boundary belongs to the writer', () {
+  test('a story from last month is still the writer\'s to fix', () {
     expect(
-      storyPosted(visibility: 'public', publishedAt: hoursAgo(23)).isEditable,
+      storyPosted(
+        visibility: 'public',
+        publishedAt: hoursAgo(24 * 30),
+      ).isEditable,
       isTrue,
     );
   });

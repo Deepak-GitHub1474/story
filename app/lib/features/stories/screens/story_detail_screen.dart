@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../components/app_back_button.dart';
 
 import '../../../components/app_sheet.dart';
+import '../../../components/story_glyphs.dart';
 import '../../../components/story_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +26,8 @@ import '../models/story_models.dart';
 import '../providers/story_providers.dart';
 import '../widgets/comment_composer.dart';
 import '../widgets/comment_tile.dart';
+import '../widgets/liked_by_row.dart';
+import '../widgets/likes_sheet.dart';
 import '../widgets/share_sheet.dart';
 import '../widgets/shared_story_card.dart';
 import '../widgets/story_images.dart';
@@ -113,12 +116,22 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   }
 
   Future<void> _expandReplies(Comment comment) async {
+    if (_expanded.containsKey(comment.commentId)) {
+      setState(() => _expanded.remove(comment.commentId));
+      return;
+    }
+
     final result = await ref
         .read(storyRepositoryProvider)
         .replies(comment.commentId);
     if (!mounted) return;
     final replies = result.valueOrNull;
     if (replies != null) setState(() => _expanded[comment.commentId] = replies);
+  }
+
+  Comment _withThread(Comment comment) {
+    final replies = _expanded[comment.commentId];
+    return replies == null ? comment : comment.copyWith(replies: replies);
   }
 
   void _startReply(Comment comment) {
@@ -179,28 +192,16 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final controller = TextEditingController(text: comment.body);
 
     final next = await showAppSheet<String?>(
-      contentPadding: EdgeInsets.zero,
       context: context,
+      title: 'Edit comment',
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
-          left: AppSpacing.xl,
-          right: AppSpacing.xl,
-          top: AppSpacing.xl,
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + AppSpacing.xl,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Edit comment',
-              style: TextStyle(
-                color: context.colors.textPrimary,
-                fontSize: AppTypeScale.heading,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
             AppTextField(
               controller: controller,
               label: 'Your comment',
@@ -263,25 +264,23 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final colors = context.colors;
 
     await showAppSheet<void>(
-      contentPadding: EdgeInsets.zero,
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isMine) ...[
-              if (story.isEditable)
-                ListTile(
-                  leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
-                  title: Text(
-                    'Edit',
-                    style: TextStyle(color: colors.textPrimary),
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push('${Routes.compose}?id=${story.storyId}');
-                  },
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: colors.textPrimary),
+                title: Text(
+                  'Edit',
+                  style: TextStyle(color: colors.textPrimary),
                 ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('${Routes.compose}?id=${story.storyId}');
+                },
+              ),
               if (story.isPublic)
                 ListTile(
                   leading: Icon(
@@ -401,8 +400,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                               ),
                               Text(
                                 '${timeAgoLong(story.publishedAt ?? story.createdAt)}'
-                                '${story.wasEdited ? ' · Edited' : ''}'
-                                ' · ${story.readingMinutes} min read',
+                                '${story.wasEdited ? ' · Edited' : ''}',
                                 style: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: AppTypeScale.caption,
@@ -461,18 +459,25 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           onTap: () => _toggleStoryLike(story),
                         ),
                         const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          '${story.likes}',
-                          style: TextStyle(
-                            color: story.isLiked
-                                ? colors.danger
-                                : colors.textMuted,
-                            fontSize: AppTypeScale.label,
+                        GestureDetector(
+                          onTap: story.likes == 0
+                              ? null
+                              : () => showLikesSheet(
+                                  context: context,
+                                  storyId: story.storyId,
+                                ),
+                          child: Text(
+                            '${story.likes}',
+                            style: TextStyle(
+                              color: story.isLiked
+                                  ? AppInk.like
+                                  : colors.textMuted,
+                              fontSize: AppTypeScale.label,
+                            ),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.xl),
-                        Icon(
-                          Icons.chat_bubble_outline,
+                        CommentGlyph(
                           size: AppSizes.iconAction,
                           color: colors.textPrimary,
                         ),
@@ -493,8 +498,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                               ref: ref,
                               story: story,
                             ),
-                            child: Icon(
-                              Icons.near_me_outlined,
+                            child: ShareGlyph(
                               size: AppSizes.iconAction,
                               color: colors.textPrimary,
                             ),
@@ -502,6 +506,17 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                         ],
                       ],
                     ),
+                    if (story.likedBy.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      LikedByRow(
+                        people: story.likedBy,
+                        likes: story.likes,
+                        onTap: () => showLikesSheet(
+                          context: context,
+                          storyId: story.storyId,
+                        ),
+                      ),
+                    ],
                     Divider(color: colors.border, height: AppSpacing.xxl),
                     comments.when(
                       loading: () => const SkeletonList(count: 3),
@@ -536,15 +551,19 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                       ),
                                     ),
                                     child: CommentTile(
-                                      comment: _resolve(raw),
+                                      comment: _withThread(_resolve(raw)),
+                                      storyAuthorId: story.author.userId,
                                       canDelete:
                                           raw.author.userId == currentUserId ||
                                           isMine,
-                                      isExpanded: _expanded.containsKey(
+                                      isThreadOpen: _expanded.containsKey(
                                         raw.commentId,
                                       ),
-                                      expandedReplies:
-                                          _expanded[raw.commentId] ?? const [],
+                                      onAuthorTap: (author) => author.isReachable
+                                          ? context.push(
+                                              '${Routes.user}/${author.username}',
+                                            )
+                                          : null,
                                       onDelete: () =>
                                           raw.author.userId == currentUserId ||
                                               isMine
@@ -563,7 +582,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                       onLike: () =>
                                           _toggleCommentLike(_resolve(raw)),
                                       onReply: () => _startReply(raw),
-                                      onExpandReplies: () =>
+                                      onToggleReplies: () =>
                                           _expandReplies(raw),
                                     ),
                                   ),
