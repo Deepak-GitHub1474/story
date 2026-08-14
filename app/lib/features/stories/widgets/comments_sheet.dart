@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../components/app_sheet.dart';
+import '../../../components/app_toast.dart';
 import '../../../components/skeleton.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -80,10 +81,26 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
     ref
         .read(commentsProvider(widget.storyId).notifier)
         .removeLocally(comment.commentId);
-    await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
+
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .deleteComment(comment.commentId);
+
     if (!mounted) return;
+    if (result.isFailure) {
+      await ref.read(commentsProvider(widget.storyId).notifier).refresh();
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        result.failureOrNull!.message,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
     await ref.read(commentsProvider(widget.storyId).notifier).refresh();
-    ref.invalidate(storyDetailProvider(widget.storyId));
+    if (!mounted) return;
+    await refreshStoryEverywhere(ref, widget.storyId);
   }
 
   Future<void> _like(Comment comment) async {

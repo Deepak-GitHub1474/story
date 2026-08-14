@@ -245,6 +245,30 @@ class StoryPage {
   final bool hasMore;
 }
 
+class Liker {
+  const Liker({
+    required this.person,
+    required this.isFollowing,
+    required this.isMe,
+  });
+
+  factory Liker.fromJson(Map<String, dynamic> json) => Liker(
+    person: StoryAuthor.fromJson(json),
+    isFollowing: json['is_following'] as bool? ?? false,
+    isMe: json['is_me'] as bool? ?? false,
+  );
+
+  final StoryAuthor person;
+  final bool isFollowing;
+  final bool isMe;
+
+  Liker copyWith({bool? isFollowing}) => Liker(
+    person: person,
+    isFollowing: isFollowing ?? this.isFollowing,
+    isMe: isMe,
+  );
+}
+
 class LikersPage {
   const LikersPage({
     required this.items,
@@ -254,15 +278,13 @@ class LikersPage {
 
   factory LikersPage.fromJson(Map<String, dynamic> json) => LikersPage(
     items: (json['items'] as List<dynamic>)
-        .map(
-          (item) => StoryAuthor.fromJson(Map<String, dynamic>.from(item as Map)),
-        )
+        .map((item) => Liker.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList(),
     nextCursor: json['next_cursor'] as String?,
     hasMore: json['has_more'] as bool? ?? false,
   );
 
-  final List<StoryAuthor> items;
+  final List<Liker> items;
   final String? nextCursor;
   final bool hasMore;
 }

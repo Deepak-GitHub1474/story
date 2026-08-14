@@ -149,11 +149,10 @@ class CommentTile extends StatelessWidget {
                           const SizedBox(width: AppSpacing.md),
                           _Action(label: 'Edit', onTap: onEdit),
                         ],
-                        const SizedBox(width: AppSpacing.md),
-                        _Action(
-                          label: canDelete ? 'Delete' : 'Report',
-                          onTap: onDelete,
-                        ),
+                        if (canDelete) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          _Action(label: 'Delete', onTap: onDelete),
+                        ],
                       ],
                     ),
                   ],

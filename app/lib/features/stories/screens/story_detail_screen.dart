@@ -252,12 +252,26 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
         .read(commentsProvider(storyId).notifier)
         .removeLocally(comment.commentId);
 
-    await ref.read(storyRepositoryProvider).deleteComment(comment.commentId);
+    final result = await ref
+        .read(storyRepositoryProvider)
+        .deleteComment(comment.commentId);
     if (!mounted) return;
 
     _expanded.clear();
     await ref.read(commentsProvider(storyId).notifier).refresh();
-    ref.invalidate(storyDetailProvider(storyId));
+    if (!mounted) return;
+
+    if (result.isFailure) {
+      AppToast.show(
+        context,
+        result.failureOrNull!.message,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
+    await refreshStoryEverywhere(ref, storyId);
+    if (mounted) setState(() => _story = null);
   }
 
   Future<void> _openStoryMenu(Story story, {required bool isMine}) async {
@@ -565,15 +579,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                             )
                                           : null,
                                       onDelete: () =>
-                                          raw.author.userId == currentUserId ||
-                                              isMine
-                                          ? _deleteComment(raw, story.storyId)
-                                          : showReportSheet(
-                                              context,
-                                              ref,
-                                              targetKind: 'comment',
-                                              targetId: raw.commentId,
-                                            ),
+                                          _deleteComment(raw, story.storyId),
                                       canEdit: _canEdit(raw, currentUserId),
                                       onEdit: () => _editComment(
                                         _resolve(raw),

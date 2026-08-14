@@ -792,6 +792,21 @@ async def list_story_likes(
         story_id, mongo, limit=limit, before=cursor
     )
 
+    if page:
+        followed = set(
+            await mongo["connections"].distinct(
+                "followee_id",
+                {
+                    "follower_id": claims.user_id,
+                    "followee_id": {"$in": [person["user_id"] for person in page]},
+                    "status": "active",
+                },
+            )
+        )
+        for person in page:
+            person["is_following"] = person["user_id"] in followed
+            person["is_me"] = person["user_id"] == claims.user_id
+
     return {"items": page, "next_cursor": next_cursor, "has_more": has_more}
 
 

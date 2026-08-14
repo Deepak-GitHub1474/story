@@ -180,10 +180,17 @@ void main() {
     expect(find.text('Report'), findsNothing);
   });
 
-  testWidgets('a stranger can only report it', (tester) async {
+  testWidgets('someone with no say over a comment is offered nothing', (
+    tester,
+  ) async {
     await showTile(tester, aComment());
 
-    expect(find.text('Report'), findsOneWidget);
     expect(find.text('Delete'), findsNothing);
+    expect(
+      find.text('Report'),
+      findsNothing,
+      reason: 'Report was wired to the delete call and kept losing comments',
+    );
+    expect(find.text('Reply'), findsOneWidget);
   });
 }

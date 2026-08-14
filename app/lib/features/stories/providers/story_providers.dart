@@ -215,6 +215,16 @@ class MyStoriesNotifier extends StoryListNotifier {
   String? get visibility => _visibility;
 }
 
+Future<void> refreshStoryEverywhere(WidgetRef ref, String storyId) async {
+  ref.invalidate(storyDetailProvider(storyId));
+
+  final result = await ref.read(storyRepositoryProvider).byId(storyId);
+  final story = result.valueOrNull;
+  if (story == null) return;
+
+  _echoEverywhere(ref, story);
+}
+
 final storyDetailProvider = FutureProvider.family<Story, String>((
   ref,
   storyId,

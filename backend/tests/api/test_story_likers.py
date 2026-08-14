@@ -87,6 +87,28 @@ async def test_the_feed_shows_the_faces_without_asking_again(client, signup_payl
     assert [person["username"] for person in posted["liked_by"]] == ["one_reader"]
 
 
+async def test_the_list_says_who_you_already_follow(client, signup_payload):
+    mine = await headers_for(client, signup_payload, "the_writer")
+    story_id = await a_public_story(client, mine)
+
+    known = await headers_for(client, signup_payload, "an_old_friend")
+    stranger = await headers_for(client, signup_payload, "a_new_face")
+    await client.post(f"/v1/stories/{story_id}/like", headers=known)
+    await client.post(f"/v1/stories/{story_id}/like", headers=stranger)
+    await client.post(f"/v1/stories/{story_id}/like", headers=mine)
+    await client.post("/v1/connections/an_old_friend", headers=mine)
+
+    items = (await client.get(f"/v1/stories/{story_id}/likes", headers=mine)).json()["data"][
+        "items"
+    ]
+    by_name = {person["username"]: person for person in items}
+
+    assert by_name["an_old_friend"]["is_following"] is True
+    assert by_name["a_new_face"]["is_following"] is False
+    assert by_name["the_writer"]["is_me"] is True, "no follow button against yourself"
+    assert by_name["an_old_friend"]["is_me"] is False
+
+
 async def test_everyone_who_liked_it_can_be_listed(client, signup_payload):
     mine = await headers_for(client, signup_payload, "the_writer")
     story_id = await a_public_story(client, mine)
