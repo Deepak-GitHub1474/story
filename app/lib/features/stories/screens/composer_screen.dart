@@ -56,6 +56,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   double? _imageRatio;
   String _imageFit = 'cover';
   bool _canFit = false;
+  _Unfinished? _rewrite;
+  _Unfinished? _draft;
 
   static const _bodyMax = 20000;
 
@@ -241,33 +243,89 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     final written = await showWriteForMeSheet(context: context, ref: ref);
     if (written == null || !mounted) return;
 
+    await _readDraft(
+      _Unfinished(
+        body: written.body,
+        title: written.title,
+        subject: written.subject,
+        brief: written.brief,
+      ),
+    );
+  }
+
+  Future<void> _readDraft(_Unfinished draft) async {
+    setState(() => _draft = draft);
+
     final accepted = await showDraftPreview(
       context: context,
       ref: ref,
-      title: written.title,
-      body: written.body,
+      title: draft.title!,
+      body: draft.body,
+      subject: draft.subject,
+      brief: draft.brief,
+      onDraft: (written, brief) => setState(
+        () => _draft = _Unfinished(
+          body: written.body,
+          title: written.title,
+          subject: draft.subject,
+          brief: brief,
+          rounds: (_draft?.rounds ?? 0) + 1,
+        ),
+      ),
     );
-    if (accepted == null || !mounted) return;
+    if (!mounted) return;
+
+    if (accepted == null) {
+      AppToast.show(context, 'Kept. Open it again from the bar up top.');
+      return;
+    }
 
     setState(() {
       _title.text = accepted.title;
       _body.text = accepted.body;
       _isDirty = true;
+      _draft = null;
     });
     _onChanged();
     AppToast.show(context, 'Dropped in. Publish when it reads right.');
   }
 
   Future<void> _polish() async {
-    final polished = await showAppSheet<String>(
+    final source = _body.text;
+    final resume = _rewrite?.from == source ? _rewrite : null;
+    if (resume == null && _rewrite != null) setState(() => _rewrite = null);
+
+    final taken = await showPolishSheet(
       context: context,
-      title: 'Another go at it',
-      builder: (sheetContext) => PolishSheet(text: _body.text),
+      text: source,
+      startFrom: resume?.body,
+      startRounds: resume?.rounds ?? 0,
+      onDraft: (text, rounds) => setState(
+        () => _rewrite = _Unfinished(body: text, from: source, rounds: rounds),
+      ),
     );
 
-    if (polished == null || !mounted) return;
-    setState(() => _body.text = polished);
-    AppToast.show(context, 'Swapped in. Yours is one undo away.');
+    if (!mounted) return;
+
+    if (taken == true && _rewrite != null) {
+      final version = _rewrite!.body;
+      setState(() {
+        _body.text = version;
+        _rewrite = null;
+      });
+      _onChanged();
+      AppToast.show(context, 'Swapped in. Yours is one undo away.');
+      return;
+    }
+
+    if (taken == false) {
+      setState(() => _rewrite = null);
+      return;
+    }
+
+    if (_rewrite != null) {
+      AppToast.show(context, 'Kept. Open it again from the bar up top.');
+    }
   }
 
   Future<void> _publish(String visibility, {bool exposureAck = false}) async {
@@ -439,8 +497,29 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             onPressed: _isPublishing ? null : _writeForMe,
           ),
           IconButton(
-            tooltip: 'Ask for a tidier version',
-            icon: Icon(Icons.auto_awesome_outlined, color: colors.textPrimary),
+            tooltip: _rewrite == null
+                ? 'Ask for a tidier version'
+                : 'Pick up your rewrite',
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.auto_awesome_outlined, color: colors.textPrimary),
+                if (_rewrite != null)
+                  Positioned(
+                    top: -1,
+                    right: -1,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: colors.accent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colors.bg, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: _body.text.trim().isEmpty ? null : _polish,
           ),
           TextButton(
@@ -464,6 +543,20 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           : SafeArea(
               child: Column(
                 children: [
+                  if (_draft != null)
+                    _WaitingBar(
+                      label: 'A written story is waiting',
+                      onOpen: () => _readDraft(_draft!),
+                      onDrop: () => setState(() => _draft = null),
+                    ),
+                  if (_rewrite != null)
+                    _WaitingBar(
+                      label: _rewrite!.rounds == 1
+                          ? 'A rewrite is waiting'
+                          : 'A rewrite is waiting, ${_rewrite!.rounds} changes in',
+                      onOpen: _polish,
+                      onDrop: () => setState(() => _rewrite = null),
+                    ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
@@ -626,6 +719,97 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _Unfinished {
+  const _Unfinished({
+    required this.body,
+    this.title,
+    this.from,
+    this.subject = '',
+    this.brief = '',
+    this.rounds = 0,
+  });
+
+  final String body;
+  final String? title;
+  final String? from;
+  final String subject;
+  final String brief;
+  final int rounds;
+}
+
+class _WaitingBar extends StatelessWidget {
+  const _WaitingBar({
+    required this.label,
+    required this.onOpen,
+    required this.onDrop,
+  });
+
+  final String label;
+  final VoidCallback onOpen;
+  final VoidCallback onDrop;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Material(
+      color: colors.surfaceRaised,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.sm,
+            AppSpacing.sm,
+            AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_outlined,
+                size: AppSizes.iconSm,
+                color: colors.accent,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: AppTypeScale.label,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onOpen,
+                child: Text(
+                  'Open',
+                  style: TextStyle(
+                    color: colors.accent,
+                    fontSize: AppTypeScale.label,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Throw it away',
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.close,
+                  size: AppSizes.iconSm,
+                  color: colors.textMuted,
+                ),
+                onPressed: onDrop,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

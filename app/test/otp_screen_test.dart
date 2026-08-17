@@ -1,10 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_app/components/recovery_glyphs.dart';
 import 'package:story_app/core/result.dart';
 import 'package:story_app/core/utils/otp_wait.dart';
 import 'package:story_app/features/account/screens/forgot_password_screen.dart';
-import 'package:story_app/theme/app_theme.dart';
 
 import 'small_screen_test.dart' show show;
 
@@ -140,23 +141,22 @@ void main() {
       expect(find.byType(KeyholeGlyph), findsNothing);
     });
 
-    testWidgets('the glyphs are drawn, not fetched', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: midnightTheme,
-          home: const Scaffold(
-            body: Column(
-              children: [
-                EnvelopeGlyph(size: 64, color: Color(0xFFFFFFFF)),
-                KeyholeGlyph(size: 64, color: Color(0xFFFFFFFF)),
-              ],
-            ),
-          ),
-        ),
-      );
+    test('no recovery screen reaches for a drawn glyph any more', () {
+      const screens = [
+        'lib/features/account/screens/forgot_password_screen.dart',
+        'lib/features/account/screens/email_screen.dart',
+      ];
 
-      expect(find.byType(CustomPaint), findsWidgets);
-      expect(find.byType(Image), findsNothing);
+      for (final path in screens) {
+        final source = File(path).readAsStringSync();
+        for (final glyph in ['EnvelopeGlyph', 'KeyholeGlyph']) {
+          expect(
+            source.contains(glyph),
+            isFalse,
+            reason: '$path still draws $glyph, and these screens stay plain',
+          );
+        }
+      }
     });
   });
 

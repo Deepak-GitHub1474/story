@@ -8,7 +8,13 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../providers/story_providers.dart';
 
-typedef WrittenStory = ({String title, String body, String visibility});
+typedef WrittenStory = ({
+  String title,
+  String body,
+  String visibility,
+  String subject,
+  String brief,
+});
 
 Future<WrittenStory?> showWriteForMeSheet({
   required BuildContext context,
@@ -64,9 +70,13 @@ class _WriteForMeState extends ConsumerState<_WriteForMe> {
       return;
     }
 
-    Navigator.of(
-      context,
-    ).pop((title: written.title, body: written.body, visibility: _visibility));
+    Navigator.of(context).pop((
+      title: written.title,
+      body: written.body,
+      visibility: _visibility,
+      subject: _subject.text.trim(),
+      brief: _brief.text.trim(),
+    ));
   }
 
   @override
@@ -77,7 +87,6 @@ class _WriteForMeState extends ConsumerState<_WriteForMe> {
 
     return AppSheet(
       title: 'Write it with AI',
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       footer: AppButton(
         label: 'Write it',
         isLoading: _isWriting,

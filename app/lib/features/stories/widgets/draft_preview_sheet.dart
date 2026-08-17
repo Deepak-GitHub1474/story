@@ -16,28 +16,64 @@ Future<WrittenDraft?> showDraftPreview({
   required WidgetRef ref,
   required String title,
   required String body,
+  required String subject,
+  required String brief,
+  void Function(WrittenDraft draft, String brief)? onDraft,
 }) => showAppSheet<WrittenDraft>(
   context: context,
-  isResizable: true,
   initialSize: 0.92,
-  title: 'Read it first',
-  builder: (_) => DraftPreviewSheet(title: title, body: body),
+  minSize: 0.5,
+  maxSize: 0.95,
+  shell: (sheetContext, scrollController) => DraftPreviewSheet(
+    title: title,
+    body: body,
+    subject: subject,
+    brief: brief,
+    onDraft: onDraft,
+    scrollController: scrollController,
+  ),
 );
 
 class DraftPreviewSheet extends ConsumerStatefulWidget {
-  const DraftPreviewSheet({super.key, required this.title, required this.body});
+  const DraftPreviewSheet({
+    super.key,
+    required this.title,
+    required this.body,
+    this.subject = '',
+    this.brief = '',
+    this.onDraft,
+    this.scrollController,
+  });
 
   final String title;
   final String body;
+  final String subject;
+  final String brief;
+  final void Function(WrittenDraft draft, String brief)? onDraft;
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<DraftPreviewSheet> createState() => _DraftPreviewSheetState();
 }
 
 class _DraftPreviewSheetState extends ConsumerState<DraftPreviewSheet> {
-  late final String _title = widget.title;
+  late String _title = widget.title;
   late String _body = widget.body;
+  late String _brief = widget.brief;
   bool _isRefining = false;
+  String? _error;
+  ({String title, String body, String brief})? _before;
+
+  void _stepBack() {
+    final back = _before!;
+    setState(() {
+      _title = back.title;
+      _body = back.body;
+      _brief = back.brief;
+      _before = null;
+    });
+    widget.onDraft?.call((title: back.title, body: back.body), back.brief);
+  }
 
   Future<void> _refine() async {
     final asked = await showAppSheet<String>(
@@ -50,25 +86,63 @@ class _DraftPreviewSheetState extends ConsumerState<DraftPreviewSheet> {
 
     if (asked == null || asked.trim().isEmpty || !mounted) return;
 
-    setState(() => _isRefining = true);
+    final brief = '$_brief\n\nChange this time: ${asked.trim()}';
+    setState(() {
+      _isRefining = true;
+      _error = null;
+    });
+
     final result = await ref
         .read(storyRepositoryProvider)
-        .polish(text: _body, instruction: asked.trim());
+        .draft(subject: widget.subject, brief: brief);
 
     if (!mounted) return;
-    final improved = result.valueOrNull;
+    final written = result.valueOrNull;
     setState(() {
       _isRefining = false;
-      if (improved != null) _body = improved;
+      _error = result.failureOrNull?.message;
+      if (written != null) {
+        _before = (title: _title, body: _body, brief: _brief);
+        _title = written.title;
+        _body = written.body;
+        _brief = brief;
+      }
     });
+
+    if (written != null) {
+      widget.onDraft?.call((title: written.title, body: written.body), brief);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    return AppSheet(
+      title: 'Read it first',
+      scrollController: widget.scrollController,
+      footer: Row(
+        children: [
+          Expanded(
+            child: AppButton(
+              label: 'Ask for changes',
+              variant: AppButtonVariant.outline,
+              onPressed: _isRefining ? null : _refine,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: AppButton(
+              label: 'Use this',
+              isLoading: _isRefining,
+              onPressed: _isRefining
+                  ? null
+                  : () =>
+                        Navigator.of(context).pop((title: _title, body: _body)),
+            ),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -84,6 +158,22 @@ class _DraftPreviewSheetState extends ConsumerState<DraftPreviewSheet> {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
+          if (_before != null && !_isRefining) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _stepBack,
+                child: Text(
+                  'Back to the one before',
+                  style: TextStyle(
+                    color: colors.accent,
+                    fontSize: AppTypeScale.caption,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           if (_isRefining)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -96,7 +186,7 @@ class _DraftPreviewSheetState extends ConsumerState<DraftPreviewSheet> {
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Text(
-                    'Working on it…',
+                    'Writing it again…',
                     style: TextStyle(
                       color: colors.textMuted,
                       fontSize: AppTypeScale.label,
@@ -105,21 +195,18 @@ class _DraftPreviewSheetState extends ConsumerState<DraftPreviewSheet> {
                 ],
               ),
             ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: Text(
+                _error!,
+                style: TextStyle(
+                  color: colors.danger,
+                  fontSize: AppTypeScale.label,
+                ),
+              ),
+            ),
           StoryText(text: _body, fontSize: AppTypeScale.reading),
-          const SizedBox(height: AppSpacing.xl),
-          AppButton(
-            label: 'Use this',
-            onPressed: _isRefining
-                ? null
-                : () => Navigator.of(context).pop((title: _title, body: _body)),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: 'Ask for changes',
-            variant: AppButtonVariant.outline,
-            onPressed: _isRefining ? null : _refine,
-          ),
-          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );

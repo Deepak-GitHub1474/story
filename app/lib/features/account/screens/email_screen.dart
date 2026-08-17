@@ -9,7 +9,6 @@ import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../components/otp_field.dart';
-import '../../../components/recovery_glyphs.dart';
 import '../../../core/utils/otp_wait.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -308,10 +307,6 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 onPressed: _password.text.isEmpty ? null : _remove,
               ),
             ] else if (_awaitingOtp) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                child: KeyholeGlyph(size: 64, color: colors.accent),
-              ),
               Text(
                 'Enter the 6-digit code we sent.',
                 style: TextStyle(
@@ -375,10 +370,6 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                 ),
               ],
             ] else ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                child: EnvelopeGlyph(size: 64, color: colors.accent),
-              ),
               AppTextField(
                 controller: _email,
                 label: 'Email address',
