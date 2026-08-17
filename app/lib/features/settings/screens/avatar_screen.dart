@@ -126,7 +126,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isChosen ? colors.accentStrong : Colors.transparent,
+                        color: isChosen ? colors.accent : Colors.transparent,
                         width: 2.4,
                       ),
                     ),

@@ -39,7 +39,8 @@ void main() {
 
   group('every theme carries its own colours', () {
     test('blush is the palette that was asked for', () {
-      expect(AppColors.blush.accentStrong, const Color(0xFFFF6FA3));
+      expect(AppColors.blush.accent, const Color(0xFFD6416F));
+      expect(AppColors.blush.accentStrong, const Color(0xFF9C2350));
       expect(AppColors.blush.bg, const Color(0xFFFFF5F7));
       expect(AppColors.blush.textPrimary, const Color(0xFF1A1A1A));
       expect(AppColors.blush.textMuted, const Color(0xFF8C8C8C));

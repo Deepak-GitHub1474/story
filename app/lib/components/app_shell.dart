@@ -146,7 +146,7 @@ class _ShellTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final color = isActive ? colors.accentStrong : colors.textSecondary;
+    final color = isActive ? colors.accent : colors.textSecondary;
 
     return Semantics(
       label: destination.label,
