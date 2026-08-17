@@ -1,6 +1,6 @@
 # 07 — Data Model
 
-Nineteen MongoDB collections. Every field, every type, every index, and the reasoning behind the shape of each document.
+Twenty MongoDB collections. Every field, every type, every index, and the reasoning behind the shape of each document.
 
 ## 1. Conventions
 
@@ -22,6 +22,7 @@ These apply to every collection without exception.
 | `rep_` | reports |
 | `pcd_` | user_passcodes |
 | `rev_` | content_reviews |
+| `med_` | media |
 
 `community_categories` and `interests` are the two exceptions: their `_id` **is** their slug, because the slug is the natural key, is stable, and appears in URLs and in configuration files where an opaque ULID would be unreadable.
 
@@ -54,9 +55,9 @@ def utc_now() -> datetime:
 
 `datetime.now()` without a tzinfo, `datetime.utcnow()` (naive, deprecated), `time.time()`, and any manual `strftime` on a stored value are **lint failures**. A naive datetime written to Mongo is silently interpreted as UTC on the way in and comes back tz-aware, so the bug does not appear until something compares the two — which is exactly the class of failure this rule exists to prevent.
 
-Every collection has `created_at` and `updated_at`. `updated_at` is set in the same `$set` as any mutation — never in a separate write. Nullable timestamps use `_at` suffixes throughout (`published_at`, `verified_at`, `deleted_at`).
+Every collection has `created_at` and `updated_at`. `updated_at` is set in the same `$set` as any mutation — never in a separate write. Nullable timestamps use `_at` suffixes throughout (`published_at`, `verified_at`, `deleted_at`). The one exception is `media`, which has no `updated_at` because nothing ever mutates a row: it is written once and deleted once.
 
-**Soft delete.** Content collections use `deleted_at: datetime | None`. A non-null value means deleted; every read query filters on it. Security collections (`user_keys`, `user_passcodes`, `audit_logs`) never soft-delete.
+**Soft delete.** Content collections use `deleted_at: datetime | None`. A non-null value means deleted; every read query filters on it. Security collections (`user_keys`, `user_passcodes`, `audit_logs`) never soft-delete, and neither does `media` — a row there stands for bytes on a disk, so leaving a tombstone behind would leave the bytes too.
 
 **Field naming.** `snake_case` everywhere, matching the wire format and Python. No abbreviations except the established ones (`dek`, `umk`, `kek`, `otp`, `tnc`).
 
@@ -589,6 +590,24 @@ Embedded `CheckResult`: `{check: "safety" | "fit" | "exposure" | "care", verdict
 ---
 
 ## 16. Supporting collections
+
+### `media`
+
+| Field | Type | Notes |
+|---|---|---|
+| `_id` | `str` (`med_…`) | The media id. The stored object's key is `media/{_id}`; the URL a story holds is `/v1/media/{_id}`. |
+| `created_at` | `datetime` | The only other field, and it exists for one job: the orphan sweep in [15](15-storage-security-and-scale.md) §5.4. |
+
+Deliberately not here: `owner_id`, `bytes`, `sha256`, `refcount`. Whether an
+object is still in use is answered by querying `stories` for the URL, so there
+is no counter to drift out of step. The row is written **before** the bytes, so
+a failed write leaves a record the sweep tidies rather than bytes nothing knows
+about. `drop_unused` erases the row and the object together.
+
+This is the one collection with no `updated_at` — nothing ever mutates it.
+
+Indexes: `{created_at: 1}` for the sweep. The reference check leans on
+`stories.{images: 1}`, partial-filtered to `deleted_at: null`.
 
 ### `devices`
 

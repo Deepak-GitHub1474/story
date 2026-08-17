@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     STORAGE_S3_SECRET_KEY: str = ""
     STORAGE_S3_BUCKET_VAULT: str = ""
     STORAGE_S3_BUCKET_MEDIA: str = ""
+    MEDIA_ORPHAN_GRACE_SECONDS: int = 86400
     AI_PROVIDER: Literal["none", "gemini"] = "none"
     AI_API_KEY: str = ""
     AI_MODEL: str = "gemini-3.5-flash-lite"

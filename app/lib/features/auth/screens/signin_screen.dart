@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../components/app_button.dart';
 import '../../../components/app_scaffold.dart';
 import '../../../components/app_text_field.dart';
+import '../../../components/bloom_mark.dart';
 import '../../../components/app_toast.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
@@ -221,14 +222,7 @@ class _SigninScreenState extends ConsumerState<SigninScreen> {
           Positioned(
             top: 46,
             right: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/images/bloom.png',
-                width: 176,
-                height: 236,
-                fit: BoxFit.contain,
-              ),
-            ),
+            child: const BloomMark(width: 176, height: 236),
           ),
           Positioned(
             top: 0,

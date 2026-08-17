@@ -1,8 +1,9 @@
 # 15 — Storage: security, cleanup and scale
 
-> Design only. Nothing here is built yet. It covers where uploaded bytes live,
-> who can reach them, what happens when something is deleted, and how this stops
-> filling a disk we pay for.
+> Mostly design. Orphan sweeping (§5.4) is built; everything else here is still
+> a plan, and each section says which it is. It covers where uploaded bytes
+> live, who can reach them, what happens when something is deleted, and how this
+> stops filling a disk we pay for.
 
 ---
 
@@ -19,9 +20,15 @@ backup.
 **Story images are public content and are not encrypted.** They are attachments
 on public stories; other people must be able to see them.
 
-**Media has no database record at all.** No `insert_one` anywhere in the media
-router. There is therefore no owner, no size accounting, no quota, and no way to
-know whether an object is still referenced.
+**Media has a minimal database record.** `upload_image` writes one document to
+`media` — `_id` and `created_at`, nothing more. It exists so an upload nobody
+attached can still be found and erased (§5.4). There is still no owner, no size
+accounting and no quota.
+
+Whether an object is referenced is answered by querying `stories` for the URL,
+not by a stored count. The query is derived state and cannot drift; a `refcount`
+is a second source of truth that has to be kept correct on every path. §5.2
+keeps the counter as a design option for when the query stops being cheap.
 
 **Bytes live on one EC2 disk.** `STORAGE_PROVIDER=local` writes to
 `/srv/storage-data`, a Docker volume on the instance. Every image view is served
@@ -130,26 +137,33 @@ acceptable, because unreferenced files are pure cost.
 
 ### 5.1 A media record, finally
 
-One document per stored object:
+**Built, in its smallest form.** One document per stored object:
 
 ```
 media/
-  _id           the random key from §3
-  owner_id
-  bytes         size, for quota
-  sha256        content hash, for dedup
-  refcount      how many stories point at it
-  created_at
-  last_seen_at
+  _id           the media id from §3
+  created_at    when it was uploaded
 ```
 
-Everything below depends on this existing. It is the cheapest item in this
-document and the one that unblocks the rest.
+The document is written *before* the bytes. If the write then fails we are left
+with a record and no object, which the sweep tidies away; the other order would
+leave bytes nothing knows about — exactly the leak being closed.
+
+`drop_unused` deletes the record in the same step as the bytes, so a swept id is
+never revisited.
+
+**Still designed, not built:** `owner_id`, `bytes`, `sha256`, `refcount`,
+`last_seen_at`. Each is wanted by a different section below — quota needs
+`bytes`, dedup needs `sha256`, §5.5 wants `owner_id`. None of them are needed to
+stop the leak, so none were added.
 
 ### 5.2 Reference counting, not story-based deletion
 
-Deleting the story and deleting its images in one step is wrong. A reshare, or
-the same picture attached to two stories, would break someone else's post.
+**Design.** What is built instead is the reference *query*: `drop_unused` asks
+`stories` whether any live document still holds the URL, and only erases when
+none does. It already survives the shared-picture case a naive story-based
+delete would break — there is a test for exactly that. A counter becomes worth
+its upkeep only when that query is too expensive to run per candidate.
 
 ```
 attach image to story      refcount += 1
@@ -173,22 +187,41 @@ distinct.
 
 ### 5.4 Sweeping orphans
 
-Some objects never get attached: a person picks a photo, then abandons the
-draft. Nothing decrements them because nothing ever incremented them.
+**Built.** Some objects never get attached: a person picks a photo, then
+abandons the draft. Nothing ever pointed at them, so no delete path reaches
+them.
 
-A job beside the existing `publish_scheduled_stories` in `app/workers/`:
+`sweep_orphans` in `app/api/endpoints/media/cleanup.py`, scheduled hourly beside
+`publish_scheduled_stories`:
 
 ```
-delete where refcount = 0 and created_at older than 24 hours
+every hour:
+  ids = media where created_at < now - MEDIA_ORPHAN_GRACE_SECONDS
+  drop_unused(their urls)          # erases only what no live story holds
 ```
 
-The 24-hour grace exists so a slow compose session is not swept mid-write.
+It reuses `drop_unused` rather than repeating the reference check, so a picture
+can never be erased out from under a story that still shows it.
+
+`MEDIA_ORPHAN_GRACE_SECONDS` defaults to 24 hours. The grace exists so a slow
+compose session is not swept mid-write; the composer's own autosave is five
+seconds, so the margin is enormous on purpose.
+
+Uploads made before this shipped have no record, so the sweep cannot see them.
+That is deliberate — a backfill would have to infer intent about bytes nothing
+describes, and the safe reading of an unknown object is to keep it.
 
 ### 5.5 Deleting an account
 
-Account deletion is already scheduled 14 days out. It must also enumerate that
-user's media and vault objects and delete them. Without the record from §5.1
-this is impossible — there is no way to find them.
+Account deletion is already scheduled 14 days out, and `workers/deletion.py`
+already erases the pictures hanging off that user's stories. What it cannot
+reach is an upload they never attached to anything — the record from §5.1 holds
+no `owner_id`, so there is nothing to enumerate by. The sweep collects those
+within the grace period instead, which is slower but leaves nothing behind.
+
+Adding `owner_id` would close the gap immediately, at the cost of a stored link
+between a person and a picture they never published. That trade is worth stating
+out loud before anyone makes it on autopilot.
 
 ---
 
@@ -238,20 +271,25 @@ pay for per gigabyte.
 
 Each step is useful on its own and safe to ship alone.
 
-1. **Media record** — owner, bytes, sha256, refcount. Nothing works without it.
-2. **Random opaque keys with sharding** — §3. Do it before there is a large
+1. ~~**Media record**~~ — **done**, in the minimal form of §5.1: `_id` and
+   `created_at`. `owner_id`, `bytes` and `sha256` are still open, each blocking
+   a different step below.
+2. ~~**Orphan sweeper**~~ — **done**, §5.4. Hourly, reusing `drop_unused`.
+3. **Random opaque keys with sharding** — §3. Do it before there is a large
    corpus to migrate.
-3. **Refcounted deletion** — wire increment and decrement into publish, unpublish
-   and delete.
-4. **Orphan sweeper** — one job in the existing scheduler.
+4. **Refcounted deletion** — only if the reference query gets expensive; the
+   query is correct today and a counter is not free. See §5.2.
 5. **Quotas** — media allowance, and enforce the vault one that already exists.
-6. **Account deletion clears storage** — depends on 1.
-7. **Move to R2** — config, once 1–6 hold.
+   Needs `bytes` on the record.
+6. **Account deletion clears unattached uploads** — needs `owner_id`; weigh
+   §5.5 first. Attached pictures are already erased.
+7. **Move to R2** — config, once the rest holds.
 8. **CDN and immutable caching for media** — after 7.
 
-Steps 1–4 are what stop the disk filling. They are worth doing **before real
-users arrive**, because retrofitting ownership onto files already on disk means
-guessing who owns what, and that guess cannot be made safely.
+1 and 2 are what stop the disk filling, and they are in. The rest is worth
+finishing **before real users arrive**, because retrofitting ownership onto
+files already on disk means guessing who owns what, and that guess cannot be
+made safely.
 
 ---
 

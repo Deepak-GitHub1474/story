@@ -66,6 +66,8 @@ flutter:
   assets:
     - assets/splash.png
     - assets/images/bloom.png
+    - assets/images/bloom_pink.png
+    - assets/images/bloom_indigo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

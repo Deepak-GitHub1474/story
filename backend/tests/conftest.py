@@ -51,6 +51,7 @@ MUTABLE_COLLECTIONS = (
     "vault_items",
     "user_passcodes",
     "support_tickets",
+    "media",
 )
 
 

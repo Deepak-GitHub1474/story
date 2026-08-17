@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/app_scaffold.dart';
+import '../../../components/bloom_mark.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../widgets/signin_form.dart';
@@ -33,13 +34,7 @@ class _AuthScreenState extends State<AuthScreen> {
           Positioned(
             top: 0,
             right: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/images/bloom.png',
-                width: 151,
-                height: 226,
-              ),
-            ),
+            child: const BloomMark(width: 151, height: 226),
           ),
           Column(
             children: [

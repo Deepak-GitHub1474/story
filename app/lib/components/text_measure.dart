@@ -19,6 +19,21 @@ bool longerThanLines({
   return painter.didExceedMaxLines;
 }
 
+double widthOf({
+  required TextSpan span,
+  required TextDirection direction,
+  TextScaler scaler = TextScaler.noScaling,
+}) {
+  final painter = TextPainter(
+    text: span,
+    maxLines: 1,
+    textDirection: direction,
+    textScaler: scaler,
+  )..layout();
+
+  return painter.width;
+}
+
 bool tallerThan({
   required TextSpan span,
   required double width,

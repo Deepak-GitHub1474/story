@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_button.dart';
 import '../../../components/app_scaffold.dart';
+import '../../../components/bloom_mark.dart';
 import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
@@ -22,14 +23,7 @@ class WelcomeScreen extends StatelessWidget {
           Positioned(
             top: 0,
             right: -28,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/images/bloom.png',
-                width: 196,
-                height: 300,
-                fit: BoxFit.contain,
-              ),
-            ),
+            child: const BloomMark(width: 196, height: 300),
           ),
           Column(
             children: [

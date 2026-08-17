@@ -14,6 +14,7 @@ class AppColors {
     required this.accentText,
     required this.danger,
     required this.success,
+    required this.bloom,
     this.like = const Color(0xFFED4956),
   });
 
@@ -30,6 +31,7 @@ class AppColors {
   final Color danger;
   final Color success;
   final Color like;
+  final String bloom;
 
   static const midnight = AppColors(
     bg: Color(0xFF0B0D12),
@@ -45,6 +47,7 @@ class AppColors {
     danger: Color(0xFFFF8A8A),
     success: Color(0xFF7BD88F),
     like: Color(0xFFFF5C7A),
+    bloom: AppArt.bloomIndigo,
   );
 
   static const paper = AppColors(
@@ -61,6 +64,7 @@ class AppColors {
     danger: Color(0xFFB3261E),
     success: Color(0xFF2E7D45),
     like: Color(0xFFE23A57),
+    bloom: AppArt.bloomIndigo,
   );
 
   static const blush = AppColors(
@@ -77,6 +81,7 @@ class AppColors {
     danger: Color(0xFFB3261E),
     success: Color(0xFF2E7D45),
     like: Color(0xFFD6416F),
+    bloom: AppArt.bloomPink,
   );
 
   static const maroon = AppColors(
@@ -93,7 +98,16 @@ class AppColors {
     danger: Color(0xFFFF8A8A),
     success: Color(0xFF7BD88F),
     like: Color(0xFFE0708D),
+    bloom: AppArt.bloomMaroon,
   );
+}
+
+class AppArt {
+  const AppArt._();
+
+  static const bloomIndigo = 'assets/images/bloom_indigo.png';
+  static const bloomPink = 'assets/images/bloom_pink.png';
+  static const bloomMaroon = 'assets/images/bloom.png';
 }
 
 class AppSpacing {

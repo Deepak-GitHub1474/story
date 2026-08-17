@@ -10,6 +10,7 @@ import '../../../components/app_button.dart';
 import '../../../components/app_close_button.dart';
 import '../../../components/app_sheet.dart';
 import '../../../components/app_toast.dart';
+import '../../../components/text_measure.dart';
 import '../../../core/files/file_picker.dart';
 import '../../../core/result.dart';
 import '../../../routing/routes.dart';
@@ -501,21 +502,18 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                             const SizedBox(height: AppSpacing.md),
                             Row(
                               children: [
-                                Flexible(
-                                  child: _CommunityPicker(
-                                    slug: _communitySlug,
-                                    onPick: (slug) =>
-                                        setState(() => _communitySlug = slug),
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: _CommunityPicker(
+                                      slug: _communitySlug,
+                                      onPick: (slug) =>
+                                          setState(() => _communitySlug = slug),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: AppSpacing.sm),
-                                _VisibilityChip(
-                                  value: _visibility,
-                                  scheduledFor: _scheduledFor,
-                                  onChanged: _chooseVisibility,
-                                ),
-                                const Spacer(),
-                                if (_images.isNotEmpty)
+                                if (_images.isNotEmpty) ...[
                                   AppCloseButton(
                                     tooltip: 'Remove the picture',
                                     onPressed: () {
@@ -528,6 +526,13 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                       unawaited(_save());
                                     },
                                   ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                ],
+                                _VisibilityChip(
+                                  value: _visibility,
+                                  scheduledFor: _scheduledFor,
+                                  onChanged: _chooseVisibility,
+                                ),
                               ],
                             ),
                             const SizedBox(height: AppSpacing.md),
@@ -625,6 +630,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   }
 }
 
+const noCommunity = 'No community';
+
 class _CommunityPicker extends ConsumerWidget {
   const _CommunityPicker({required this.slug, required this.onPick});
 
@@ -642,37 +649,48 @@ class _CommunityPicker extends ConsumerWidget {
       data: (items) {
         if (items.isEmpty) return const SizedBox.shrink();
         final picked = items.where((item) => item.slug == slug).firstOrNull;
+        final label = DefaultTextStyle.of(context).style.merge(
+          TextStyle(color: colors.textSecondary, fontSize: AppTypeScale.caption),
+        );
+        final slot = widthOf(
+          span: TextSpan(text: noCommunity, style: label),
+          direction: Directionality.of(context),
+          scaler: MediaQuery.textScalerOf(context),
+        );
 
         return InkWell(
           onTap: () async {
             final choice = await showAppSheet<String?>(
               context: context,
               builder: (sheetContext) => SafeArea(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                      leading: Icon(Icons.public, color: colors.textMuted),
-                      title: Text(
-                        'No community',
-                        style: TextStyle(color: colors.textPrimary),
-                      ),
-                      onTap: () => Navigator.of(sheetContext).pop(null),
-                    ),
-                    for (final community in items)
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
                       ListTile(
-                        leading: Icon(
-                          Icons.groups_outlined,
-                          color: colors.accent,
-                        ),
+                        leading: Icon(Icons.public, color: colors.textMuted),
                         title: Text(
-                          community.name,
+                          noCommunity,
                           style: TextStyle(color: colors.textPrimary),
                         ),
-                        onTap: () =>
-                            Navigator.of(sheetContext).pop(community.slug),
+                        onTap: () => Navigator.of(sheetContext).pop(null),
                       ),
-                  ],
+                      for (final community in items)
+                        ListTile(
+                          leading: Icon(
+                            Icons.groups_outlined,
+                            color: colors.accent,
+                          ),
+                          title: Text(
+                            community.name,
+                            style: TextStyle(color: colors.textPrimary),
+                          ),
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop(community.slug),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -700,14 +718,14 @@ class _CommunityPicker extends ConsumerWidget {
                   color: picked == null ? colors.textMuted : colors.accent,
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Flexible(
+                SizedBox(
+                  width: slot,
                   child: Text(
-                    picked?.name ?? 'No community',
+                    picked?.name ?? noCommunity,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: AppTypeScale.caption,
-                    ),
+                    softWrap: false,
+                    style: label,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),

@@ -74,6 +74,11 @@ INDEXES: dict[str, list[IndexSpec]] = {
             partial={"visibility": "scheduled"},
         ),
         IndexSpec(
+            [("images", ASCENDING)],
+            "ix_story_images",
+            partial={"deleted_at": None},
+        ),
+        IndexSpec(
             [("slug", ASCENDING)],
             "uq_slug",
             unique=True,
@@ -188,6 +193,9 @@ INDEXES: dict[str, list[IndexSpec]] = {
             unique=True,
         ),
         IndexSpec([("user_id", ASCENDING), ("last_seen_at", DESCENDING)], "ix_user_last_seen"),
+    ],
+    "media": [
+        IndexSpec([("created_at", ASCENDING)], "ix_media_created"),
     ],
 }
 
