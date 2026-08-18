@@ -1,3 +1,4 @@
+import '../../../core/identity/handle.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -299,17 +300,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                user.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: colors.textPrimary,
-                                  fontSize: AppTypeScale.body,
-                                  fontWeight: FontWeight.w500,
+                              if (namesDiffer(
+                                displayName: user.displayName,
+                                username: user.username,
+                              )) ...[
+                                Text(
+                                  user.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: AppTypeScale.body,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
+                                const SizedBox(height: AppSpacing.md),
+                              ],
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,

@@ -1,3 +1,4 @@
+import '../../../components/handle_line.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
@@ -105,8 +106,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      subtitle: Text(
-                        '@${user.username}',
+                      subtitle: handleLine(
+                        displayName: user.displayName,
+                        username: user.username,
                         style: TextStyle(color: colors.textMuted),
                       ),
                       onTap: () async {

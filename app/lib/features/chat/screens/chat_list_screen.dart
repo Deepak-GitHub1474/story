@@ -1,3 +1,4 @@
+import '../../../core/identity/handle.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -324,7 +325,11 @@ class _ConversationRow extends StatelessWidget {
                         ? conversation.isRequester
                               ? 'Request sent'
                               : 'Wants to send you a message'
-                        : '@${conversation.other.username}',
+                        : handleFor(
+                                displayName: conversation.other.displayName,
+                                username: conversation.other.username,
+                              ) ??
+                              '',
                     style: TextStyle(
                       color: colors.textMuted,
                       fontSize: AppTypeScale.caption,
@@ -596,7 +601,11 @@ class _SuggestionRow extends StatelessWidget {
                   Text(
                     person.username == null
                         ? person.reason
-                        : '@${person.username}',
+                        : handleFor(
+                                displayName: person.displayName,
+                                username: person.username!,
+                              ) ??
+                              '',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: colors.textMuted,

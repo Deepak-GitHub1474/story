@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../components/app_avatar.dart';
 import '../../../core/utils/time_ago.dart';
+import '../../../core/push/push_routes.dart';
 import '../../../routing/routes.dart';
 import '../../../components/skeleton.dart';
 import '../../../components/swipe_to_reveal.dart';
@@ -135,9 +136,13 @@ class _Tile extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           ref.read(notificationsProvider.notifier).markRead(notification.notificationId);
-          if (notification.targetKind == 'story') {
-            context.push('${Routes.story}/${notification.targetId}');
-          }
+          final route = routeForPush({
+            'kind': notification.kind,
+            'target_kind': notification.targetKind,
+            'target_id': notification.targetId,
+            'username': notification.actorUsername,
+          });
+          if (route != null && route != Routes.activity) context.push(route);
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(

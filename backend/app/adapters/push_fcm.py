@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import time
 
@@ -20,8 +21,31 @@ TOKEN_REFRESH_MARGIN_SECONDS = 120
 MAX_IN_FLIGHT = 10
 
 DEAD_TOKEN_STATUSES = (404,)
-DEAD_TOKEN_CODES = ("UNREGISTERED", "INVALID_ARGUMENT", "SENDER_ID_MISMATCH")
+DEAD_TOKEN_CODES = ("UNREGISTERED", "SENDER_ID_MISMATCH")
+DEAD_DEVICE_PHRASE = "registration token"
 RETRY_STATUSES = (429, 500, 502, 503, 504)
+COLLAPSE_MAX_BYTES = 64
+COLLAPSE_HASH_CHARS = 32
+
+
+def collapse_id(thread: str) -> str:
+    if len(thread.encode()) <= COLLAPSE_MAX_BYTES:
+        return thread
+    return hashlib.sha256(thread.encode()).hexdigest()[:COLLAPSE_HASH_CHARS]
+
+
+def classify(status_code: int, detail_status: str, detail_message: str) -> str:
+    if status_code == 200:
+        return "delivered"
+    if status_code in RETRY_STATUSES:
+        return "retry"
+    if status_code in DEAD_TOKEN_STATUSES:
+        return "stale"
+    if detail_status in DEAD_TOKEN_CODES:
+        return "stale"
+    if detail_status == "INVALID_ARGUMENT" and DEAD_DEVICE_PHRASE in detail_message:
+        return "stale"
+    return "retry"
 
 
 class FcmConfigError(ValueError):
@@ -87,6 +111,7 @@ class FcmAdapter:
             return self._token
 
     def _envelope(self, message: PushMessage) -> dict:
+        thread = collapse_id(message.data.get("thread", ""))
         return {
             "message": {
                 "token": message.token,
@@ -96,14 +121,14 @@ class FcmAdapter:
                     "priority": "high",
                     "notification": {
                         "icon": "ic_notification",
-                        "tag": message.data.get("thread", ""),
+                        "tag": thread,
                         "click_action": "FLUTTER_NOTIFICATION_CLICK",
                     },
                 },
                 "apns": {
                     "headers": {
                         "apns-priority": "10",
-                        "apns-collapse-id": message.data.get("thread", ""),
+                        "apns-collapse-id": thread,
                     }
                 },
             }
@@ -123,24 +148,22 @@ class FcmAdapter:
                 logger.warning("push_send_failed", error=f"{type(exc).__name__}: {exc}")
                 return ("retry", message.token)
 
-            if response.status_code == 200:
-                return ("delivered", message.token)
-            if response.status_code in RETRY_STATUSES:
-                return ("retry", message.token)
-            if response.status_code in DEAD_TOKEN_STATUSES:
-                return ("stale", message.token)
+            status, detail = "", ""
+            if response.status_code != 200:
+                try:
+                    error = response.json().get("error", {})
+                    status, detail = error.get("status", ""), error.get("message", "")
+                except ValueError:
+                    detail = response.text[:200]
 
-            detail = ""
-            try:
-                detail = response.json().get("error", {}).get("status", "")
-            except ValueError:
-                detail = response.text[:120]
-
-            if detail in DEAD_TOKEN_CODES:
-                return ("stale", message.token)
-
-            logger.warning("push_rejected", code=str(response.status_code), error=detail)
-            return ("retry", message.token)
+            verdict = classify(response.status_code, status, detail)
+            if verdict == "retry" and response.status_code not in RETRY_STATUSES:
+                logger.error(
+                    "push_rejected",
+                    code=str(response.status_code),
+                    error=f"{status}: {detail[:160]}",
+                )
+            return (verdict, message.token)
 
     async def send(self, messages: list[PushMessage]) -> PushOutcome:
         if not messages:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/push/push_taps.dart';
 import 'features/settings/providers/theme_provider.dart';
 import 'routing/router.dart';
 import 'theme/app_theme.dart';
@@ -13,6 +14,7 @@ class StoryApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sessionGuardProvider);
+    ref.watch(pushTapsProvider);
 
     final chosen = ref.watch(themeProvider);
     final mode = ref.read(themeProvider.notifier).mode;

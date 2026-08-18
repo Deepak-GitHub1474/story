@@ -24,11 +24,13 @@ def compose(doc: dict[str, Any]) -> tuple[str, str]:
 
 def payload(doc: dict[str, Any]) -> dict[str, str]:
     target = doc.get("target") or {}
+    snapshot = doc.get("actor_snapshot") or {}
     return {
         "notification_id": str(doc["_id"]),
         "kind": str(doc.get("kind") or ""),
         "target_kind": str(target.get("kind") or ""),
         "target_id": str(target.get("id") or ""),
+        "username": str(snapshot.get("username") or ""),
         "thread": str(doc.get("dedupe_key") or doc["_id"]),
     }
 

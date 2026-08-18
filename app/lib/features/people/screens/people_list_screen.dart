@@ -1,3 +1,4 @@
+import '../../../components/handle_line.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
@@ -139,8 +140,9 @@ class PeopleListScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        subtitle: Text(
-                          '@${person.username}',
+                        subtitle: handleLine(
+                          displayName: person.displayName,
+                          username: person.username,
                           style: TextStyle(color: colors.textMuted),
                         ),
                         trailing: kind == PeopleKind.blocked

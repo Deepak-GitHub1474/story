@@ -17,7 +17,7 @@ async def list_notifications(
     *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None, unread_only: bool
 ) -> dict[str, Any]:
     limit = max(1, min(limit, c.MAX_LIMIT))
-    query: dict[str, Any] = {"user_id": claims.user_id}
+    query: dict[str, Any] = {"user_id": claims.user_id, "in_feed": {"$ne": False}}
     if unread_only:
         query["read_at"] = None
     if cursor:
@@ -42,7 +42,7 @@ async def list_notifications(
 
 async def unread_count(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     count = await mongo[c.NOTIFICATIONS].count_documents(
-        {"user_id": claims.user_id, "read_at": None}
+        {"user_id": claims.user_id, "read_at": None, "in_feed": {"$ne": False}}
     )
     return {"unread": count}
 

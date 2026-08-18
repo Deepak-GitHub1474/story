@@ -41,6 +41,7 @@ async def notify(
     target_id: str,
     body: str,
     collapse: bool = False,
+    feed: bool = True,
     redis: Redis | None = None,
 ) -> None:
     if user_id == actor_id:
@@ -63,6 +64,9 @@ async def notify(
         "created_at": now,
         "push_after": now,
     }
+
+    if not feed:
+        document["in_feed"] = False
 
     if collapse:
         merged = await mongo[NOTIFICATIONS].find_one_and_update(

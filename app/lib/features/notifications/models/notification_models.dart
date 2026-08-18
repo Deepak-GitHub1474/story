@@ -4,6 +4,7 @@ class AppNotification {
     required this.kind,
     required this.actorName,
     required this.actorAvatarSeed,
+    required this.actorUsername,
     required this.targetKind,
     required this.targetId,
     required this.body,
@@ -19,6 +20,7 @@ class AppNotification {
       kind: json['kind'] as String,
       actorName: actor['display_name'] as String? ?? 'Someone',
       actorAvatarSeed: actor['avatar_seed'] as String? ?? '',
+      actorUsername: actor['username'] as String? ?? '',
       targetKind: target['kind'] as String? ?? '',
       targetId: target['id'] as String? ?? '',
       body: json['body'] as String? ?? '',
@@ -31,6 +33,7 @@ class AppNotification {
   final String kind;
   final String actorName;
   final String actorAvatarSeed;
+  final String actorUsername;
   final String targetKind;
   final String targetId;
   final String body;
@@ -42,6 +45,7 @@ class AppNotification {
     kind: kind,
     actorName: actorName,
     actorAvatarSeed: actorAvatarSeed,
+    actorUsername: actorUsername,
     targetKind: targetKind,
     targetId: targetId,
     body: body,

@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.chat import constants as c
 from app.api.endpoints.connections import controllers as connection_controllers
+from app.api.endpoints.notifications.service import notify
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import to_storage, to_wire, utc_now
@@ -582,6 +583,27 @@ async def send_message(
     await mongo[c.CONVERSATIONS].update_one(
         {"_id": conversation_id},
         {"$set": {"last_message_at": now, "updated_at": now}, "$pull": {"deleted_by": other_id}},
+    )
+
+    sender = await mongo[c.USERS].find_one(
+        {"_id": claims.user_id}, {"display_name": 1, "avatar_seed": 1, "username": 1}
+    )
+    await notify(
+        mongo=mongo,
+        user_id=other_id,
+        actor_id=claims.user_id,
+        actor_snapshot={
+            "display_name": (sender or {}).get("display_name", "Someone"),
+            "avatar_seed": (sender or {}).get("avatar_seed", ""),
+            "username": (sender or {}).get("username"),
+        },
+        kind="chat_message",
+        target_kind="conversation",
+        target_id=conversation_id,
+        body="New message",
+        collapse=True,
+        feed=False,
+        redis=redis,
     )
 
     payload = _serialize_message(message)
