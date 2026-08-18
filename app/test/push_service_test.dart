@@ -62,13 +62,17 @@ class RecordingRepository implements NotificationRepository {
   final registered = <Map<String, String>>[];
   final forgotten = <String>[];
 
+  RecordingRepository({this.answer = const Success(true)});
+
+  final Result<bool> answer;
+
   @override
   Future<Result<bool>> registerPushToken({
     required String token,
     required String platform,
   }) async {
     registered.add({'token': token, 'platform': platform});
-    return const Success(true);
+    return answer;
   }
 
   @override
@@ -86,9 +90,9 @@ void main() {
     final repository = RecordingRepository();
     final messaging = FakeMessaging();
 
-    final allowed = await PushService(repository, messaging).enable();
+    final problem = await PushService(repository, messaging).enable();
 
-    expect(allowed, isTrue);
+    expect(problem, isNull, reason: 'nothing went wrong, so nothing to report');
     expect(messaging.permissionAsked, isTrue);
     expect(repository.registered.single['token'], 'fcm-token-value');
     expect(repository.registered.single['platform'], devicePlatform);
@@ -98,9 +102,9 @@ void main() {
     final repository = RecordingRepository();
     final messaging = FakeMessaging(status: AuthorizationStatus.denied);
 
-    final allowed = await PushService(repository, messaging).enable();
+    final problem = await PushService(repository, messaging).enable();
 
-    expect(allowed, isFalse);
+    expect(problem, contains('phone settings'));
     expect(
       repository.registered,
       isEmpty,
@@ -112,10 +116,24 @@ void main() {
     final repository = RecordingRepository();
     final messaging = FakeMessaging(token: null);
 
-    final allowed = await PushService(repository, messaging).enable();
+    final problem = await PushService(repository, messaging).enable();
 
-    expect(allowed, isFalse);
+    expect(problem, contains('token from Google'));
     expect(repository.registered, isEmpty);
+  });
+
+  test('a server that refuses says why, not "check your phone settings"', () async {
+    final repository = RecordingRepository(
+      answer: const Failure(code: 'NOT_FOUND', message: 'That route is gone.'),
+    );
+
+    final problem = await PushService(repository, FakeMessaging()).enable();
+
+    expect(
+      problem,
+      'That route is gone.',
+      reason: 'blaming the phone for a server fault sends people to the wrong screen',
+    );
   });
 
   test('turning it off erases the token here and on the server', () async {

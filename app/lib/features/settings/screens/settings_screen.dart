@@ -115,12 +115,12 @@ class SettingsScreen extends ConsumerWidget {
                           onChanged: (value) async {
                             final push = ref.read(pushServiceProvider);
                             if (value) {
-                              final allowed = await push.enable();
-                              if (!allowed) {
+                              final problem = await push.enable();
+                              if (problem != null) {
                                 if (context.mounted) {
                                   AppToast.show(
                                     context,
-                                    'Allow notifications for Story in your phone settings first.',
+                                    problem,
                                     kind: AppToastKind.error,
                                   );
                                 }

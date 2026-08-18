@@ -12,20 +12,25 @@ class PushService {
   final NotificationRepository _repository;
   final FirebaseMessaging _messaging;
 
-  Future<bool> enable() async {
+  Future<String?> enable() async {
     final permission = await _messaging.requestPermission();
     if (permission.authorizationStatus == AuthorizationStatus.denied) {
-      return false;
+      return 'Allow notifications for Story in your phone settings first.';
     }
 
     final token = await _messaging.getToken();
-    if (token == null) return false;
+    if (token == null) {
+      return 'This phone could not get a notification token from Google.';
+    }
 
     final result = await _repository.registerPushToken(
       token: token,
       platform: devicePlatform,
     );
-    return result.valueOrNull ?? false;
+    return result.fold(
+      onSuccess: (_) => null,
+      onFailure: (failure) => failure.message,
+    );
   }
 
   Future<void> disable() async {
