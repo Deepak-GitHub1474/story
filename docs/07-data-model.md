@@ -23,6 +23,7 @@ These apply to every collection without exception.
 | `pcd_` | user_passcodes |
 | `rev_` | content_reviews |
 | `med_` | media |
+| `psh_` | push_tokens |
 
 `community_categories` and `interests` are the two exceptions: their `_id` **is** their slug, because the slug is the natural key, is stable, and appears in URLs and in configuration files where an opaque ULID would be unreadable.
 
@@ -609,6 +610,29 @@ This is the one collection with no `updated_at` — nothing ever mutates it.
 Indexes: `{created_at: 1}` for the sweep. The reference check leans on
 `stories.{images: 1}`, partial-filtered to `deleted_at: null`.
 
+### `push_tokens`
+
+| Field | Type | Notes |
+|---|---|---|
+| `_id` | `str` (`psh_…`) | |
+| `token` | `str` | The FCM registration token. Unique across the collection. |
+| `user_id` | `str` | Whoever registered this token most recently. |
+| `platform` | `"android" \| "ios"` | |
+| `created_at`, `last_seen_at` | `datetime` | |
+
+Keyed on the **token**, not on `(user_id, device)`, and deliberately separate
+from `devices`. A phone signed into two accounts is two `devices` rows but one
+FCM token; keeping tokens here with a unique index means registering re-points
+the token at the current user instead of leaving both rows live. Without that,
+one account's notifications land on a phone now signed in as someone else.
+
+Rows are hard-deleted, never tombstoned — the same rule `media` follows, and for
+the same reason. A row stands for a phone that can still be reached, so a dead
+one must stop existing. FCM reports dead tokens as `UNREGISTERED`, and the
+sender erases them in the same pass.
+
+Indexes: `{token: 1}` unique, `{user_id: 1}` for the send fan-out.
+
 ### `devices`
 
 | Field | Type | Notes |
@@ -636,6 +660,9 @@ Indexes: `{user_id: 1, last_seen_at: -1}`, `{user_id: 1, fingerprint: 1}` unique
 | `body` | `str` | Pre-rendered text |
 | `read_at` | `datetime \| None` | |
 | `created_at` | `datetime` | |
+| `push_after` | `datetime` | Absent once settled. When it is in the past the row is due for a push; claiming it leases the row forward. See [16](16-push-notifications.md) §2. |
+| `pushed_at` | `datetime \| None` | Set only on a successful send. |
+| `push_tries` | `int` | Incremented on every claim. Past `PUSH_MAX_TRIES` the row is abandoned. |
 
 Indexes: `{user_id: 1, created_at: -1}`, `{user_id: 1, read_at: 1}` for the unread badge (partial-filtered to `read_at: null`), and a TTL index on `created_at` at 90 days — except `security_alert` and `ticket_update`, which are excluded from the TTL by a partial filter because a security notice must not silently vanish.
 

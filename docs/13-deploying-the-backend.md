@@ -75,6 +75,8 @@ secret is worse than one that refuses to boot.
 | `SMTP_*`, `MAIL_FROM` | see `.env.example` |
 | `STORAGE_PROVIDER` | `r2` once the bucket exists, `local` until then |
 | `AI_PROVIDER` | `gemini` with a real key, or `none` to skip every check |
+| `PUSH_PROVIDER` | `fcm` with a service account, or `none` to send nothing |
+| `FCM_SERVICE_ACCOUNT` | The Firebase service account JSON on one line. See §7 |
 
 Generate secrets with `make secrets`. Each must differ from the others — the
 config compares them and refuses a repeat.
@@ -107,3 +109,40 @@ anyone.
 would publish exactly what the gate exists to stop — but it means a dead provider
 stops publishing. Set `AI_PROVIDER=none` to turn the gate off deliberately rather
 than leaving it broken.
+
+**Push fails silently, not closed.** Unlike the AI gate, a broken push provider
+never surfaces to a user. `PUSH_PROVIDER=none` returns before a send is
+attempted, and a rejected send only leaves a `push_rejected` line in the log.
+A deploy with the variable missing looks perfectly healthy and notifies nobody.
+Check `push_swept` in the logs after the first deploy rather than assuming.
+
+## 7. Firebase, for push
+
+Push needs a Firebase project on the free Spark plan. No card, no billing, and
+FCM has no paid tier to graduate to. Two files come out of it, and they are not
+equally sensitive.
+
+**`google-services.json`** — Project settings → Your apps → Android. The package
+name must be exactly `com.story.story_app`; a mismatch fails at runtime with no
+build error. This file holds a project id, an app id and a scoped API key, and
+it ships inside every APK, so it lives in git at `app/android/app/`.
+
+**The service account** — Project settings → Service accounts → Generate new
+private key. This is a private RSA key that can send push to every user, so it
+belongs in `FCM_SERVICE_ACCOUNT` and nowhere else. `backend/.gitignore` blocks
+the filenames Firebase generates.
+
+Paste the JSON collapsed to one line, unquoted. It contains no `#`, `$` or
+newline, so nothing in env-file parsing mangles it; the spaces inside
+`-----BEGIN PRIVATE KEY-----` are harmless because a value runs to end of line.
+`read_service_account` converts literal `\n` back to newlines, which is the
+usual failure when a PEM is pasted into a panel that stores it verbatim.
+
+Nothing else in the Firebase console is needed. Analytics, Gemini and the
+Developer Program are all off by default here on purpose: FCM needs none of
+them, and Analytics in particular attaches per-install behavioural events to a
+platform built on anonymous writing.
+
+Turning push off later is one variable. `PUSH_PROVIDER=none` stops every send
+without touching a row — the notification history and the in-app badge are
+unaffected, because push is only a transport for records that already exist.

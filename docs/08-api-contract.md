@@ -424,6 +424,8 @@ Every response carries `email_masked` only. There is no endpoint anywhere that r
 | `GET` | `/notifications/unread-count` | S | Cached 30 s. |
 | `POST` | `/notifications/{id}/read` | S | |
 | `POST` | `/notifications/read-all` | S | |
+| `POST` | `/notifications/push-tokens` | S | Registers this device for push. Re-points an existing token at the caller. |
+| `DELETE` | `/notifications/push-tokens` | S | Body carries the token, so it stays out of access logs. |
 
 ### Recommendations — `/recommendations`
 
