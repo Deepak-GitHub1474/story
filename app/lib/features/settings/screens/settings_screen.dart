@@ -16,6 +16,7 @@ import '../../../routing/routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/providers/notification_providers.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -104,6 +105,40 @@ class SettingsScreen extends ConsumerWidget {
                             await ref.read(authProvider.notifier).refreshUser();
                           },
                         ),
+                      ),
+                      AppListRow(
+                        label: 'On my phone',
+                        icon: Icons.phone_iphone_outlined,
+                        trailing: Switch.adaptive(
+                          value: user?.prefs['notify_push'] as bool? ?? false,
+                          activeThumbColor: colors.accent,
+                          onChanged: (value) async {
+                            final push = ref.read(pushServiceProvider);
+                            if (value) {
+                              final allowed = await push.enable();
+                              if (!allowed) {
+                                if (context.mounted) {
+                                  AppToast.show(
+                                    context,
+                                    'Allow notifications for Story in your phone settings first.',
+                                    kind: AppToastKind.error,
+                                  );
+                                }
+                                return;
+                              }
+                            } else {
+                              await push.disable();
+                            }
+                            await ref
+                                .read(profileRepositoryProvider)
+                                .updateProfile(prefs: {'notify_push': value});
+                            await ref.read(authProvider.notifier).refreshUser();
+                          },
+                        ),
+                      ),
+                      const AppListRow(
+                        label: 'Only when the app is closed, so nothing arrives twice.',
+                        icon: Icons.info_outline,
                       ),
                     ],
                   ),

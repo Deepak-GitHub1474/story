@@ -6,9 +6,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.api.endpoints.media.cleanup import sweep_orphans
 from app.config import get_settings
 from app.logging import get_logger
-from app.ports.factory import build_storage
+from app.ports.factory import build_push, build_storage
 from app.workers.deletion import purge_deleted_accounts
 from app.workers.maintenance import publish_scheduled_stories, reconcile_counts
+from app.workers.push import sweep_due
 
 logger = get_logger("story.workers.scheduler")
 
@@ -16,6 +17,7 @@ PUBLISH_INTERVAL_SECONDS = 60
 RECONCILE_INTERVAL_SECONDS = 3600
 PURGE_INTERVAL_SECONDS = 3600
 MEDIA_SWEEP_INTERVAL_SECONDS = 3600
+PUSH_SWEEP_INTERVAL_SECONDS = 30
 
 
 async def _every(seconds: int, job, mongo: AsyncIOMotorDatabase, name: str) -> None:
@@ -43,6 +45,26 @@ async def _sweep_media(mongo: AsyncIOMotorDatabase) -> int:
     return removed
 
 
+def _push_sweeper(app):
+    async def run(mongo: AsyncIOMotorDatabase) -> int:
+        settings = get_settings()
+        if settings.PUSH_PROVIDER == "none":
+            return 0
+
+        sent = await sweep_due(
+            mongo=mongo,
+            push=build_push(settings),
+            redis=getattr(app.state, "redis", None),
+            lease_seconds=settings.PUSH_LEASE_SECONDS,
+            max_tries=settings.PUSH_MAX_TRIES,
+        )
+        if sent:
+            logger.info("push_swept", service="push", count=sent)
+        return sent
+
+    return run
+
+
 def start(app, mongo: AsyncIOMotorDatabase) -> None:
     app.state.background_jobs = [
         asyncio.create_task(
@@ -54,6 +76,9 @@ def start(app, mongo: AsyncIOMotorDatabase) -> None:
         asyncio.create_task(_every(PURGE_INTERVAL_SECONDS, _purge, mongo, "purge")),
         asyncio.create_task(
             _every(MEDIA_SWEEP_INTERVAL_SECONDS, _sweep_media, mongo, "media_sweep")
+        ),
+        asyncio.create_task(
+            _every(PUSH_SWEEP_INTERVAL_SECONDS, _push_sweeper(app), mongo, "push_sweep")
         ),
     ]
     logger.info("scheduler_started", count=len(app.state.background_jobs))

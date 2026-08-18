@@ -159,6 +159,7 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_user_unread",
             partial={"read_at": None},
         ),
+        IndexSpec([("push_after", ASCENDING)], "ix_push_due", sparse=True),
         IndexSpec(
             [("user_id", ASCENDING), ("dedupe_key", ASCENDING)],
             "uq_user_dedupe",
@@ -196,6 +197,10 @@ INDEXES: dict[str, list[IndexSpec]] = {
     ],
     "media": [
         IndexSpec([("created_at", ASCENDING)], "ix_media_created"),
+    ],
+    "push_tokens": [
+        IndexSpec([("token", ASCENDING)], "uq_push_token", unique=True),
+        IndexSpec([("user_id", ASCENDING)], "ix_push_user"),
     ],
 }
 

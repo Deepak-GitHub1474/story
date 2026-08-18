@@ -2,6 +2,10 @@ from fastapi import APIRouter, status
 
 from app.api.endpoints.notifications import constants as c
 from app.api.endpoints.notifications import controllers
+from app.api.endpoints.notifications.models import (
+    ForgetPushTokenRequest,
+    RegisterPushTokenRequest,
+)
 from app.core.deps import CurrentClaims
 from app.db.mongo import MongoDatabase
 from app.responses import ok_response
@@ -27,6 +31,22 @@ async def list_notifications(
 async def unread_count(claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.unread_count(claims=claims, mongo=mongo)
     return ok_response("Unread count.", data=data)
+
+
+@router.post("/push-tokens", status_code=status.HTTP_201_CREATED)
+async def register_push_token(
+    body: RegisterPushTokenRequest, claims: CurrentClaims, mongo: MongoDatabase
+):
+    data = await controllers.register_push_token(body, claims=claims, mongo=mongo)
+    return ok_response("This device will receive notifications.", data=data)
+
+
+@router.delete("/push-tokens", status_code=status.HTTP_200_OK)
+async def forget_push_token(
+    body: ForgetPushTokenRequest, claims: CurrentClaims, mongo: MongoDatabase
+):
+    data = await controllers.forget_push_token(body, claims=claims, mongo=mongo)
+    return ok_response("This device will stop receiving notifications.", data=data)
 
 
 @router.post("/{notification_id}/read", status_code=status.HTTP_200_OK)

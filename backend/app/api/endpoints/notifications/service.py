@@ -1,12 +1,22 @@
+import asyncio
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ReturnDocument
 from redis.asyncio import Redis
 
 from app.api.endpoints.notifications.constants import NOTIFICATIONS, PREVIEW_LENGTH
+from app.config import get_settings
 from app.core.ids import new_id
 from app.core.time import to_wire, utc_now
+from app.logging import get_logger
+from app.ports.factory import build_push
 from app.realtime import bus
+from app.workers.push import deliver_now
+
+logger = get_logger("story.notifications")
+
+_IN_FLIGHT: set[asyncio.Task] = set()
 
 
 def preview(text: str) -> str:
@@ -51,15 +61,19 @@ async def notify(
         "dedupe_key": dedupe_key(kind, actor_id, target_id),
         "read_at": None,
         "created_at": now,
+        "push_after": now,
     }
 
     if collapse:
-        await mongo[NOTIFICATIONS].update_one(
+        merged = await mongo[NOTIFICATIONS].find_one_and_update(
             {"user_id": user_id, "dedupe_key": document["dedupe_key"]},
             {"$set": {**document, "read_at": None}, "$setOnInsert": {"_id": new_id("not")}},
             upsert=True,
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": 1},
         )
         await announce(redis, user_id, kind)
+        push_soon(mongo, merged["_id"], redis)
         return
 
     notification_id = new_id("not")
@@ -71,6 +85,34 @@ async def notify(
         }
     )
     await announce(redis, user_id, kind)
+    push_soon(mongo, notification_id, redis)
+
+
+def push_soon(
+    mongo: AsyncIOMotorDatabase, notification_id: str, redis: Redis | None
+) -> None:
+    settings = get_settings()
+    if settings.PUSH_PROVIDER == "none":
+        return
+
+    try:
+        push = build_push(settings)
+    except ValueError as exc:
+        logger.error("push_misconfigured", error=str(exc))
+        return
+
+    task = asyncio.create_task(
+        deliver_now(
+            notification_id,
+            mongo=mongo,
+            push=push,
+            redis=redis,
+            lease_seconds=settings.PUSH_LEASE_SECONDS,
+            max_tries=settings.PUSH_MAX_TRIES,
+        )
+    )
+    _IN_FLIGHT.add(task)
+    task.add_done_callback(_IN_FLIGHT.discard)
 
 
 async def announce(redis: Redis | None, user_id: str, kind: str) -> None:

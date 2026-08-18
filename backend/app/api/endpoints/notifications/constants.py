@@ -1,7 +1,16 @@
 NOTIFICATIONS = "notifications"
+PUSH_TOKENS = "push_tokens"
 
 PREVIEW_LENGTH = 80
 DEFAULT_LIMIT = 30
 MAX_LIMIT = 50
 
-KINDS = ("story_like", "story_comment", "comment_reply", "comment_like", "system")
+KINDS = (
+    "story_like",
+    "story_comment",
+    "comment_reply",
+    "comment_like",
+    "community_story",
+    "new_follower",
+    "system",
+)

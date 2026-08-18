@@ -126,6 +126,7 @@ async def erase_account(
     await mongo["vault_items"].delete_many({"user_id": user_id})
     await mongo["user_passcodes"].delete_many({"user_id": user_id})
     await mongo["devices"].delete_many({"user_id": user_id})
+    await mongo["push_tokens"].delete_many({"user_id": user_id})
     await mongo["user_keys"].delete_many({"$or": [{"_id": user_id}, {"user_id": user_id}]})
     await mongo["reports"].delete_many({"reporter_id": user_id})
 

@@ -35,4 +35,19 @@ class NotificationRepository {
     Endpoints.markAllNotificationsRead,
     parse: (data) => data['read'] as bool? ?? true,
   );
+
+  Future<Result<bool>> registerPushToken({
+    required String token,
+    required String platform,
+  }) => _client.post(
+    Endpoints.pushTokens,
+    body: {'token': token, 'platform': platform},
+    parse: (data) => data['registered'] as bool? ?? true,
+  );
+
+  Future<Result<bool>> forgetPushToken(String token) => _client.delete(
+    Endpoints.pushTokens,
+    body: {'token': token},
+    parse: (data) => data['forgotten'] as bool? ?? true,
+  );
 }

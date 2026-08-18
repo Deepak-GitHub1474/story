@@ -13,3 +13,7 @@ __pycache__/
 storage.local
 
 .DS_Store
+
+*-firebase-adminsdk-*.json
+firebase-service-account*.json
+service-account*.json

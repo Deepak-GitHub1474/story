@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_MODEL: str = "gemini-3.5-flash-lite"
     AI_TIMEOUT_SECONDS: float = 20.0
+    PUSH_PROVIDER: Literal["none", "fcm"] = "none"
+    FCM_SERVICE_ACCOUNT: str = ""
+    PUSH_TIMEOUT_SECONDS: float = 10.0
+    PUSH_LEASE_SECONDS: int = 60
+    PUSH_MAX_TRIES: int = 5
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
     VAULT_QUOTA_BYTES: int = 2 * 1024**3

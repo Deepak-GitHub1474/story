@@ -130,6 +130,7 @@ class Endpoints {
   static const String notifications = '/notifications';
   static const String unreadCount = '/notifications/unread-count';
   static const String markAllNotificationsRead = '/notifications/read-all';
+  static const String pushTokens = '/notifications/push-tokens';
 
   static String markNotificationRead(String id) => '/notifications/$id/read';
 }

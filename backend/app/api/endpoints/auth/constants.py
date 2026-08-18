@@ -56,6 +56,7 @@ DEFAULT_PREFS = {
     "reading_size": "reading",
     "notify_in_app": True,
     "notify_email": False,
+    "notify_push": False,
 }
 
 DEFAULT_COUNTS = {"stories": 0, "connections": 0, "followers": 0, "communities": 0}

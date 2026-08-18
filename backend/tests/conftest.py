@@ -12,6 +12,7 @@ os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 os.environ.setdefault("RUN_BACKGROUND_JOBS", "false")
 os.environ["AI_PROVIDER"] = "none"
 os.environ["MAIL_PROVIDER"] = "console"
+os.environ["PUSH_PROVIDER"] = "none"
 
 
 @pytest_asyncio.fixture
@@ -52,6 +53,7 @@ MUTABLE_COLLECTIONS = (
     "user_passcodes",
     "support_tickets",
     "media",
+    "push_tokens",
 )
 
 

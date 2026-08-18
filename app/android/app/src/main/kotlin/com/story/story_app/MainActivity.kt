@@ -1,8 +1,12 @@
 package com.story.story_app
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
@@ -12,9 +16,27 @@ import io.flutter.plugin.common.MethodChannel
 private const val SECURE_CHANNEL = "story/secure_screen"
 private const val FILES_CHANNEL = "story/files"
 private const val PICK_REQUEST = 8411
+private const val NOTIFICATION_CHANNEL = "story_default"
 
 class MainActivity : FlutterActivity() {
     private var pending: MethodChannel.Result? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        openNotificationChannel()
+    }
+
+    private fun openNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL,
+            "Story",
+            NotificationManager.IMPORTANCE_HIGH,
+        )
+        channel.description = "Likes, comments, replies, follows and messages."
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

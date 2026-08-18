@@ -1,11 +1,20 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/push/push_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/notification_repository.dart';
 import '../models/notification_models.dart';
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => NotificationRepository(ref.watch(apiClientProvider)),
+);
+
+final pushServiceProvider = Provider<PushService>(
+  (ref) => PushService(
+    ref.watch(notificationRepositoryProvider),
+    FirebaseMessaging.instance,
+  ),
 );
 
 final unreadCountProvider = NotifierProvider<UnreadCountNotifier, int>(

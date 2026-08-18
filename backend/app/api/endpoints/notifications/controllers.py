@@ -3,8 +3,13 @@ from typing import Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.notifications import constants as c
+from app.api.endpoints.notifications.models import (
+    ForgetPushTokenRequest,
+    RegisterPushTokenRequest,
+)
 from app.api.endpoints.notifications.service import serialize
 from app.core.errors import ErrorCode, api_error
+from app.core.ids import new_id
 from app.core.time import utc_now
 
 
@@ -72,3 +77,35 @@ async def mark_all_read(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any
         {"user_id": claims.user_id, "read_at": None}, {"$set": {"read_at": utc_now()}}
     )
     return {"read": True, "count": result.modified_count}
+
+
+async def register_push_token(
+    body: RegisterPushTokenRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    now = utc_now()
+    await mongo[c.PUSH_TOKENS].update_one(
+        {"token": body.token},
+        {
+            "$set": {
+                "user_id": claims.user_id,
+                "platform": body.platform,
+                "last_seen_at": now,
+            },
+            "$setOnInsert": {
+                "_id": new_id("psh"),
+                "token": body.token,
+                "created_at": now,
+            },
+        },
+        upsert=True,
+    )
+    return {"registered": True}
+
+
+async def forget_push_token(
+    body: ForgetPushTokenRequest, *, claims, mongo: AsyncIOMotorDatabase
+) -> dict[str, Any]:
+    result = await mongo[c.PUSH_TOKENS].delete_one(
+        {"token": body.token, "user_id": claims.user_id}
+    )
+    return {"forgotten": result.deleted_count == 1}

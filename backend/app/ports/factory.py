@@ -4,11 +4,14 @@ from app.adapters.ai_gemini import GeminiAdapter
 from app.adapters.ai_none import NoAIAdapter
 from app.adapters.mail_console import ConsoleMailAdapter
 from app.adapters.mail_smtp import SmtpMailAdapter
+from app.adapters.push_fcm import FcmAdapter, read_service_account
+from app.adapters.push_none import NoPushAdapter
 from app.adapters.storage_local import LocalDiskAdapter
 from app.adapters.storage_s3 import S3Adapter
 from app.config import Settings
 from app.ports.ai import AIPort
 from app.ports.mail import MailPort
+from app.ports.push import PushPort
 from app.ports.storage import StoragePort
 
 
@@ -138,3 +141,26 @@ def build_ai(settings: Settings) -> AIPort:
             )
         return _gemini(settings.AI_API_KEY, settings.AI_MODEL, settings.AI_TIMEOUT_SECONDS)
     raise ValueError(f"Unknown AI provider: {settings.AI_PROVIDER}")
+
+
+@lru_cache
+def _no_push() -> NoPushAdapter:
+    return NoPushAdapter()
+
+
+@lru_cache
+def _fcm(service_account: str, timeout: float) -> FcmAdapter:
+    return FcmAdapter(service_account=read_service_account(service_account), timeout=timeout)
+
+
+def build_push(settings: Settings) -> PushPort:
+    if settings.PUSH_PROVIDER == "none":
+        return _no_push()
+    if settings.PUSH_PROVIDER == "fcm":
+        if not settings.FCM_SERVICE_ACCOUNT:
+            raise ValueError(
+                "PUSH_PROVIDER=fcm needs FCM_SERVICE_ACCOUNT, the service account JSON "
+                "from console.firebase.google.com project settings"
+            )
+        return _fcm(settings.FCM_SERVICE_ACCOUNT, settings.PUSH_TIMEOUT_SECONDS)
+    raise ValueError(f"Unknown push provider: {settings.PUSH_PROVIDER}")
