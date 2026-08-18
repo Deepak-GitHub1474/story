@@ -417,17 +417,32 @@ class _PrefSwitch extends StatefulWidget {
 
 class _PrefSwitchState extends State<_PrefSwitch> {
   bool? _wanted;
+  int _turn = 0;
+  Future<void>? _inFlight;
 
   @override
   void didUpdateWidget(covariant _PrefSwitch old) {
     super.didUpdateWidget(old);
-    if (widget.value != old.value) _wanted = null;
+    if (_wanted != null && widget.value == _wanted) _wanted = null;
   }
 
   Future<void> _flip(bool next) async {
+    final turn = ++_turn;
     setState(() => _wanted = next);
+
+    final earlier = _inFlight;
+    final run = _settle(turn, next, earlier);
+    _inFlight = run;
+    await run;
+  }
+
+  Future<void> _settle(int turn, bool next, Future<void>? earlier) async {
+    if (earlier != null) await earlier;
+    if (!mounted || turn != _turn) return;
+
     final stuck = await widget.onChanged(next);
-    if (!mounted) return;
+    if (!mounted || turn != _turn) return;
+
     setState(() => _wanted = stuck ? next : null);
   }
 

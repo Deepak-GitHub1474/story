@@ -34,6 +34,8 @@ class SlowProfile implements ProfileRepository {
 
   final bool succeeds;
   final answered = Completer<void>();
+  final gates = <Completer<void>>[];
+  final landed = <bool>[];
   int calls = 0;
 
   @override
@@ -45,11 +47,17 @@ class SlowProfile implements ProfileRepository {
     Map<String, dynamic>? prefs,
   }) async {
     calls += 1;
-    await answered.future;
+    if (gates.isNotEmpty) {
+      await gates.removeAt(0).future;
+    } else {
+      await answered.future;
+    }
     if (!succeeds) {
       return const Failure(code: 'OFFLINE', message: 'Not now.');
     }
-    return Success(reader(inApp: prefs?['notify_in_app'] as bool? ?? true));
+    final value = prefs?['notify_in_app'] as bool? ?? true;
+    landed.add(value);
+    return Success(reader(inApp: value));
   }
 
   @override
@@ -138,5 +146,33 @@ void main() {
       1,
       reason: 'updateProfile already returns the user, so re-fetching /me is waste',
     );
+  });
+
+  testWidgets('a slow first save cannot land after a quick second one', (
+    tester,
+  ) async {
+    final profile = SlowProfile();
+    final slowFirst = Completer<void>();
+    final quickSecond = Completer<void>();
+    profile.gates.addAll([slowFirst, quickSecond]);
+    await openSettings(tester, profile);
+
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+
+    quickSecond.complete();
+    await tester.pumpAndSettle();
+    slowFirst.complete();
+    await tester.pumpAndSettle();
+
+    expect(
+      profile.landed.last,
+      isTrue,
+      reason: 'the server must finish on the value the reader last asked for, '
+          'or the screen and the account disagree until the next reload',
+    );
+    expect(switchIsOn(tester), isTrue);
   });
 }
