@@ -122,7 +122,6 @@ class FcmAdapter:
                     "notification": {
                         "icon": "ic_notification",
                         "tag": thread,
-                        "click_action": "FLUTTER_NOTIFICATION_CLICK",
                     },
                 },
                 "apns": {

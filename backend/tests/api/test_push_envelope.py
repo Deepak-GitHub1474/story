@@ -71,3 +71,25 @@ def test_a_wobbly_server_is_retried():
 
 def test_success_is_success():
     assert classify(200, "", "") == "delivered"
+
+
+def test_the_tap_uses_the_normal_launcher():
+    envelope = an_adapter()._envelope(
+        PushMessage(token="t", title="T", body="B", data={"thread": "x"})
+    )
+    android = envelope["message"]["android"]["notification"]
+
+    assert "click_action" not in android, (
+        "FLUTTER_NOTIFICATION_CLICK needs a matching intent-filter; without one "
+        "Android cannot resolve the tap and the app either stays shut or opens "
+        "with no payload to route on"
+    )
+
+
+def test_the_notification_still_says_which_icon_and_thread():
+    android = an_adapter()._envelope(
+        PushMessage(token="t", title="T", body="B", data={"thread": "abc"})
+    )["message"]["android"]["notification"]
+
+    assert android["icon"] == "ic_notification"
+    assert android["tag"] == "abc"
