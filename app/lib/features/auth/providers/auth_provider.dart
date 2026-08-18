@@ -117,6 +117,10 @@ class AuthNotifier extends Notifier<AuthState> {
     return null;
   }
 
+  void adoptUser(AppUser user) {
+    state = state.copyWith(status: AuthStatus.signedIn, user: user);
+  }
+
   Future<void> refreshUser() async {
     final result = await _repository.me();
     final user = result.valueOrNull;

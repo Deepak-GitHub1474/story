@@ -95,23 +95,17 @@ class SettingsScreen extends ConsumerWidget {
                       AppListRow(
                         label: 'In-app notifications',
                         icon: Icons.notifications_outlined,
-                        trailing: Switch.adaptive(
+                        trailing: _PrefSwitch(
                           value: user?.prefs['notify_in_app'] as bool? ?? true,
-                          activeThumbColor: colors.accent,
-                          onChanged: (value) async {
-                            await ref
-                                .read(profileRepositoryProvider)
-                                .updateProfile(prefs: {'notify_in_app': value});
-                            await ref.read(authProvider.notifier).refreshUser();
-                          },
+                          onChanged: (value) =>
+                              _savePref(ref, 'notify_in_app', value),
                         ),
                       ),
                       AppListRow(
                         label: 'On my phone',
                         icon: Icons.phone_iphone_outlined,
-                        trailing: Switch.adaptive(
+                        trailing: _PrefSwitch(
                           value: user?.prefs['notify_push'] as bool? ?? false,
-                          activeThumbColor: colors.accent,
                           onChanged: (value) async {
                             final push = ref.read(pushServiceProvider);
                             if (value) {
@@ -124,15 +118,12 @@ class SettingsScreen extends ConsumerWidget {
                                     kind: AppToastKind.error,
                                   );
                                 }
-                                return;
+                                return false;
                               }
                             } else {
                               await push.disable();
                             }
-                            await ref
-                                .read(profileRepositoryProvider)
-                                .updateProfile(prefs: {'notify_push': value});
-                            await ref.read(authProvider.notifier).refreshUser();
+                            return _savePref(ref, 'notify_push', value);
                           },
                         ),
                       ),
@@ -148,19 +139,12 @@ class SettingsScreen extends ConsumerWidget {
                       AppListRow(
                         label: 'Show when I am online',
                         icon: Icons.circle_outlined,
-                        trailing: Switch.adaptive(
+                        trailing: _PrefSwitch(
                           value:
                               user?.prefs['show_online_status'] as bool? ??
                               true,
-                          activeThumbColor: colors.accent,
-                          onChanged: (value) async {
-                            await ref
-                                .read(profileRepositoryProvider)
-                                .updateProfile(
-                                  prefs: {'show_online_status': value},
-                                );
-                            await ref.read(authProvider.notifier).refreshUser();
-                          },
+                          onChanged: (value) =>
+                              _savePref(ref, 'show_online_status', value),
                         ),
                       ),
                       const AppListRow(
@@ -409,4 +393,50 @@ class _SwatchPainter extends CustomPainter {
   @override
   bool shouldRepaint(_SwatchPainter old) =>
       old.colors != colors || old.second != second;
+}
+
+Future<bool> _savePref(WidgetRef ref, String key, bool value) async {
+  final result = await ref
+      .read(profileRepositoryProvider)
+      .updateProfile(prefs: {key: value});
+  final user = result.valueOrNull;
+  if (user == null) return false;
+  ref.read(authProvider.notifier).adoptUser(user);
+  return true;
+}
+
+class _PrefSwitch extends StatefulWidget {
+  const _PrefSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final Future<bool> Function(bool value) onChanged;
+
+  @override
+  State<_PrefSwitch> createState() => _PrefSwitchState();
+}
+
+class _PrefSwitchState extends State<_PrefSwitch> {
+  bool? _wanted;
+
+  @override
+  void didUpdateWidget(covariant _PrefSwitch old) {
+    super.didUpdateWidget(old);
+    if (widget.value != old.value) _wanted = null;
+  }
+
+  Future<void> _flip(bool next) async {
+    setState(() => _wanted = next);
+    final stuck = await widget.onChanged(next);
+    if (!mounted) return;
+    setState(() => _wanted = stuck ? next : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Switch.adaptive(
+      value: _wanted ?? widget.value,
+      activeThumbColor: context.colors.accent,
+      onChanged: _flip,
+    );
+  }
 }

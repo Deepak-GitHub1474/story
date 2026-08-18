@@ -33,6 +33,18 @@ async def _load(user_id: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     return user
 
 
+async def _serialized(user_id: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    user = await _load(user_id, mongo)
+    keys = await mongo["user_keys"].find_one(
+        {"_id": user_id}, {"email_masked": 1, "email_verified": 1}
+    )
+    return serialize_user(
+        user,
+        email_masked=(keys or {}).get("email_masked"),
+        email_verified=(keys or {}).get("email_verified", False),
+    )
+
+
 async def update_profile(
     body: UpdateProfileRequest, *, claims, mongo: AsyncIOMotorDatabase
 ) -> dict[str, Any]:
@@ -70,7 +82,7 @@ async def update_profile(
             update[f"prefs.{key}"] = value
 
     await mongo[USERS].update_one({"_id": claims.user_id}, {"$set": update})
-    return {"user": serialize_user(await _load(claims.user_id, mongo))}
+    return {"user": await _serialized(claims.user_id, mongo)}
 
 
 async def regenerate_avatar(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -78,7 +90,7 @@ async def regenerate_avatar(*, claims, mongo: AsyncIOMotorDatabase) -> dict[str,
         {"_id": claims.user_id},
         {"$set": {"avatar_seed": new_avatar_seed(), "updated_at": utc_now()}},
     )
-    return {"user": serialize_user(await _load(claims.user_id, mongo))}
+    return {"user": await _serialized(claims.user_id, mongo)}
 
 
 async def public_profile(username: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
