@@ -77,6 +77,27 @@ async def test_a_moderator_sees_the_report_queue(client, signup_payload, writer,
     assert items[0]["target"]["excerpt"]
 
 
+async def test_the_queue_names_the_author_as_they_are_now(
+    client, signup_payload, writer, app_instance
+):
+    """A moderator must be able to find the account, not the name it once had."""
+    author = await auth_headers(client, writer)
+    story = await publish(client, author)
+
+    reporter = await auth_headers(client, signup_payload)
+    await client.post(
+        "/v1/reports",
+        json={"target_kind": "story", "target_id": story["story_id"], "reason": "spam"},
+        headers=reporter,
+    )
+    await client.patch("/v1/users/me", json={"display_name": "Heron"}, headers=author)
+
+    staff = await make_staff(client, app_instance, account("mod_five"), "moderator")
+    items = (await client.get("/v1/admin/reports", headers=staff)).json()["data"]["items"]
+
+    assert items[0]["target"]["author"] == "Heron"
+
+
 async def test_a_report_can_be_dismissed(client, signup_payload, writer, app_instance):
     author = await auth_headers(client, writer)
     story = await publish(client, author)
