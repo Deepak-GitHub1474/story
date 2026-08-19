@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.connections import controllers as connection_controllers
 from app.api.endpoints.stories.utils import serialize_story
+from app.core.cards import cards
 
 RESULT_LIMIT = 20
 
@@ -23,7 +24,6 @@ COMMUNITY_PROJECTION = {
 STORY_PROJECTION = {
     "_id": 1,
     "author_id": 1,
-    "author_snapshot": 1,
     "community": 1,
     "title": 1,
     "excerpt": 1,
@@ -121,6 +121,9 @@ async def search(*, query: str, kind: str, claims, mongo: AsyncIOMotorDatabase) 
             .limit(RESULT_LIMIT)
             .to_list(length=RESULT_LIMIT)
         )
-        stories = [serialize_story(doc, include_body=False) for doc in docs]
+        people = await cards([doc.get("author_id") for doc in docs], mongo=mongo)
+        stories = [
+            serialize_story(doc, people=people, include_body=False) for doc in docs
+        ]
 
     return {"users": users, "communities": communities, "stories": stories}

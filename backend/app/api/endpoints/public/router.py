@@ -11,7 +11,6 @@ router = APIRouter(prefix="/public", tags=["public"])
 PROJECTION = {
     "_id": 1,
     "author_id": 1,
-    "author_snapshot": 1,
     "community": 1,
     "title": 1,
     "body": 1,
@@ -39,12 +38,11 @@ async def public_story(slug: str, mongo: MongoDatabase):
 
     author = await mongo[USERS].find_one(
         {"_id": story["author_id"], "deleted_at": None},
-        {"blocked": 1, "status": 1, "username": 1},
+        {"blocked": 1, "status": 1, "username": 1, "display_name": 1, "avatar_seed": 1},
     )
     if author is None or author.get("blocked") or author.get("status") != "active":
         raise api_error(ErrorCode.STORY_NOT_FOUND)
 
-    snapshot = story.get("author_snapshot", {})
     return ok_response(
         "Story loaded.",
         data={
@@ -54,8 +52,8 @@ async def public_story(slug: str, mongo: MongoDatabase):
                 "body": story.get("body", ""),
                 "excerpt": story.get("excerpt", ""),
                 "author": {
-                    "display_name": snapshot.get("display_name", "Someone"),
-                    "avatar_seed": snapshot.get("avatar_seed", ""),
+                    "display_name": author.get("display_name", "Someone"),
+                    "avatar_seed": author.get("avatar_seed", ""),
                     "username": author["username"],
                 },
                 "community": story.get("community"),

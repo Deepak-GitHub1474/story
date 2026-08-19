@@ -213,8 +213,7 @@ The core content unit.
 | Field | Type | Default | Notes |
 |---|---|---|---|
 | `_id` | `str` (`sto_…`) | generated | |
-| `author_id` | `str` | required | → `users._id` |
-| `author_snapshot` | `{display_name: str, avatar_seed: str}` | required | Denormalized for single-query feed rendering. |
+| `author_id` | `str` | required | → `users._id`. The only identity a story stores; name and face are read from that row. |
 | `title` | `str \| None` | `None` | Max 120 chars. Optional — many stories have no title. |
 | `body` | `str` | required | 1–20,000 chars. Plain text with a minimal formatting allowlist. Emoji permitted. |
 | `excerpt` | `str` | derived | First 240 chars, server-computed, so feeds never transfer full bodies. |
@@ -223,6 +222,7 @@ The core content unit.
 | `slug` | `str \| None` | `None` | Opaque URL slug for public stories. Random, not derived from the title — a title-derived slug leaks content into the URL. |
 | `media` | `list[StoryMedia]` | `[]` | Embedded, max 4. See below. |
 | `counts` | `{likes: int, comments: int, shares: int, views: int}` | zeros | Maintained by `$inc`. |
+| `likers` | `[str]` | absent | Up to three `users._id`, newest first — the faces under a story card. Ids only; the names and faces come from `users`. |
 | `reading_minutes` | `int` | derived | For the "6 min read" affordance. |
 | `language` | `str \| None` | `None` | Detected, used for feed filtering. |
 | `moderation` | `Moderation` | see below | The sanity-layer state. Replaces the earlier `content_flags`. |
@@ -291,8 +291,7 @@ Embedded `StoryMedia`:
 |---|---|---|---|
 | `_id` | `str` (`cmt_…`) | generated | |
 | `story_id` | `str` | required | → `stories._id` |
-| `author_id` | `str \| None` | required | `None` after the author deletes their account — the comment becomes a tombstone so threads keep their shape. |
-| `author_snapshot` | `{display_name, avatar_seed} \| None` | required | `None` for tombstones. |
+| `author_id` | `str \| None` | required | → `users._id`. `None` after the author deletes their account — the comment becomes a tombstone so threads keep their shape. |
 | `parent_id` | `str \| None` | `None` | One level of nesting only. Deeper threads become unreadable on a phone. |
 | `body` | `str` | required | 1–2,000 chars. |
 | `counts` | `{likes: int, replies: int}` | zeros | |
@@ -655,7 +654,7 @@ Indexes: `{user_id: 1, last_seen_at: -1}`, `{user_id: 1, fingerprint: 1}` unique
 | `_id` | `str` (`not_…`) | |
 | `user_id` | `str` | |
 | `kind` | `"story_like" \| "story_comment" \| "new_follower" \| "community_story" \| "security_alert" \| "ticket_update" \| "system"` | |
-| `actor_snapshot` | `{display_name, avatar_seed} \| None` | `None` for system notifications |
+| `actor_id` | `str \| None` | → `users._id`. `None` for system notifications. Name and face are read from that row, never copied here. |
 | `target` | `{kind, id} \| None` | Deep-link destination |
 | `body` | `str` | Pre-rendered text |
 | `read_at` | `datetime \| None` | |
@@ -729,9 +728,6 @@ Every copied field, in one table, with its refresh trigger. Undocumented denorma
 
 | Field | Source of truth | Refreshed when |
 |---|---|---|
-| `stories.author_snapshot` | `users.display_name`, `users.avatar_seed` | Backfill job on profile change; stale for at most 5 minutes |
-| `comments.author_snapshot` | same | same |
-| `notifications.actor_snapshot` | same | Never — a notification is a historical statement |
 | `users.counts.*` | Aggregates over `stories`, `connections`, `community_members` | Atomic `$inc` on write; reconciled nightly |
 | `stories.counts.*` | Aggregates over `reactions`, `comments` | Atomic `$inc` on write; reconciled nightly |
 | `communities.counts.*` | Aggregates over `community_members`, `stories` | Atomic `$inc` on write; reconciled nightly |
@@ -741,7 +737,9 @@ Every copied field, in one table, with its refresh trigger. Undocumented denorma
 
 **Counts are eventually consistent and that is acceptable.** A like count that is briefly off by one is invisible. A comment thread missing a comment is not — which is why threads are read from `comments` directly and never reconstructed from a count.
 
-`notifications.actor_snapshot` is deliberately frozen. A notification saying "Quiet Fox liked your story" should keep saying that even after the user renames themselves, because the notification records what happened at a point in time.
+**Identity is never copied.** A story, a comment, a liked-by row and an activity row each name a person by id and nothing else. `app/core/cards.py` turns a set of ids into names and faces in a single indexed `_id` look-up, so a page costs one extra read however many people appear on it, and a rename or a new avatar is visible everywhere on the next read with no fan-out and no refresh window.
+
+Earlier versions froze `display_name` and `avatar_seed` into each row. That made every rename leave stale copies behind on every surface except the profile and chat, which read live. `backfill_identity` in `app/db/backfill.py` drops those copies and rewrites `stories.likers` from cards to ids; it is filtered so re-running it is a no-op. `liker_ids` in the story serializer reads both shapes, so pages served while the migration is still running stay correct.
 
 ---
 

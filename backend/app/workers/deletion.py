@@ -41,7 +41,7 @@ async def _give_back_likes(mongo: AsyncIOMotorDatabase, user_id: str, mine: list
                 continue
             await mongo["stories"].update_one(
                 {"_id": target_id},
-                {"$inc": {"counts.likes": -1}, "$pull": {"likers": {"user_id": user_id}}},
+                {"$inc": {"counts.likes": -1}, "$pull": {"likers": user_id}},
             )
         else:
             await mongo["comments"].update_one(

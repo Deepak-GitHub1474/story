@@ -19,12 +19,14 @@ from app.api.endpoints.stories.models import (
 )
 from app.api.endpoints.stories.utils import (
     build_excerpt,
+    liker_ids,
     new_slug,
     reading_minutes,
     serialize_comment,
     serialize_story,
 )
 from app.core.accounts import GONE_STATUSES
+from app.core.cards import card_for, cards
 from app.core.care import sounds_at_risk
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
@@ -37,17 +39,14 @@ def _to_minute(value):
     return value.replace(second=0, microsecond=0)
 
 
-async def _author_snapshot(user_id: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
-    user = await mongo[c.USERS].find_one(
-        {"_id": user_id}, {"display_name": 1, "avatar_seed": 1, "username": 1}
-    )
-    if user is None:
-        raise api_error(ErrorCode.USER_NOT_FOUND)
-    return {
-        "display_name": user["display_name"],
-        "avatar_seed": user["avatar_seed"],
-        "username": user["username"],
-    }
+async def _people_in(docs: list[dict[str, Any]], mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
+    """Every face a page of stories or comments needs, in one look-up."""
+    wanted: set[str] = set()
+    for doc in docs:
+        if doc.get("author_id"):
+            wanted.add(doc["author_id"])
+        wanted.update(liker_ids(doc))
+    return await cards(wanted, mongo=mongo)
 
 
 async def _owned_story(story_id: str, user_id: str, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -101,7 +100,6 @@ async def create_story(
     story = {
         "_id": new_id("sto"),
         "author_id": claims.user_id,
-        "author_snapshot": await _author_snapshot(claims.user_id, mongo),
         "title": body.title or None,
         "body": body.body,
         "excerpt": build_excerpt(body.body),
@@ -123,26 +121,21 @@ async def create_story(
         "deleted_at": None,
     }
     await mongo[c.STORIES].insert_one(story)
+    people = await _people_in([story], mongo)
     return {
         "story": await _with_shared(
-            serialize_story(story, include_body=True), story, mongo
+            serialize_story(story, people=people, include_body=True), story, mongo
         )
     }
 
 
-def _shared_payload(source: dict[str, Any]) -> dict[str, Any]:
-    snapshot = source.get("author_snapshot") or {}
+def _shared_payload(source: dict[str, Any], people: dict[str, Any]) -> dict[str, Any]:
     return {
         "story_id": source["_id"],
         "title": source.get("title"),
         "excerpt": source.get("excerpt", ""),
         "slug": source.get("slug"),
-        "author": {
-            "user_id": source.get("author_id"),
-            "username": snapshot.get("username", ""),
-            "display_name": snapshot.get("display_name", "Someone"),
-            "avatar_seed": snapshot.get("avatar_seed", ""),
-        },
+        "author": card_for(people, source.get("author_id")),
     }
 
 
@@ -155,7 +148,7 @@ async def _with_shared(payload, story, mongo) -> dict[str, Any]:
     if source is None:
         return payload
 
-    payload["shared"] = _shared_payload(source)
+    payload["shared"] = _shared_payload(source, await _people_in([source], mongo))
     return payload
 
 
@@ -170,11 +163,12 @@ async def _attach_shared(payloads, docs, mongo) -> list[dict[str, Any]]:
         .to_list(length=len(wanted))
     )
     by_id = {source["_id"]: source for source in sources}
+    people = await _people_in(sources, mongo)
 
     for payload, doc in zip(payloads, docs, strict=True):
         source = by_id.get(doc.get("shared_story_id"))
         if source is not None:
-            payload["shared"] = _shared_payload(source)
+            payload["shared"] = _shared_payload(source, people)
     return payloads
 
 
@@ -213,7 +207,8 @@ async def update_story(
         await drop_unused(dropped, mongo=mongo, storage=storage)
 
     story.update(update)
-    return {"story": serialize_story(story, include_body=True)}
+    people = await _people_in([story], mongo)
+    return {"story": serialize_story(story, people=people, include_body=True)}
 
 
 async def publish_story(
@@ -285,8 +280,9 @@ async def publish_story(
             )
 
     story.update(update)
+    people = await _people_in([story], mongo)
     return {
-        "story": serialize_story(story, include_body=True),
+        "story": serialize_story(story, people=people, include_body=True),
         "suggested_community": review.suggested_community,
         "needs_care": review.needs_care or sounds_at_risk(story.get("body") or ""),
     }
@@ -361,7 +357,6 @@ async def _notify_community(
     community_name: str,
     redis=None,
 ) -> None:
-    snapshot = await _author_snapshot(claims.user_id, mongo)
     members = (
         await mongo["community_members"]
         .find({"community_slug": slug, "user_id": {"$ne": claims.user_id}}, {"user_id": 1})
@@ -373,7 +368,6 @@ async def _notify_community(
             mongo=mongo,
             user_id=member["user_id"],
             actor_id=claims.user_id,
-            actor_snapshot=snapshot,
             kind="community_story",
             target_kind="story",
             target_id=story_id,
@@ -391,7 +385,8 @@ async def unpublish_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase)
     update = {"visibility": "draft", "updated_at": utc_now()}
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$set": update})
     story.update(update)
-    return {"story": serialize_story(story, include_body=True)}
+    people = await _people_in([story], mongo)
+    return {"story": serialize_story(story, people=people, include_body=True)}
 
 
 async def delete_story(
@@ -427,9 +422,12 @@ async def share_story(
 async def get_story(story_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
     story = await _readable_story(story_id, claims.user_id, mongo)
     liked = await _has_liked(claims.user_id, "story", story_id, mongo)
+    people = await _people_in([story], mongo)
     return {
         "story": await _with_shared(
-            serialize_story(story, include_body=True, is_liked=liked), story, mongo
+            serialize_story(story, people=people, include_body=True, is_liked=liked),
+            story,
+            mongo,
         )
     }
 
@@ -618,10 +616,13 @@ async def _fetch(query: dict[str, Any], *, mongo, limit: int) -> list[dict[str, 
 
 async def _page(docs, next_cursor, has_more, *, viewer_id=None, mongo=None) -> dict[str, Any]:
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in docs], mongo)
+    people = await _people_in(docs, mongo)
     return {
         "items": await _attach_shared(
             [
-                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                serialize_story(
+                    doc, people=people, include_body=False, is_liked=doc["_id"] in liked
+                )
                 for doc in docs
             ],
             docs,
@@ -691,10 +692,13 @@ async def _paginate(
     has_more = len(docs) > limit
     page = docs[:limit]
     liked = await _liked_story_ids(viewer_id, [doc["_id"] for doc in page], mongo)
+    people = await _people_in(page, mongo)
     return {
         "items": await _attach_shared(
             [
-                serialize_story(doc, include_body=False, is_liked=doc["_id"] in liked)
+                serialize_story(
+                    doc, people=people, include_body=False, is_liked=doc["_id"] in liked
+                )
                 for doc in page
             ],
             page,
@@ -705,18 +709,9 @@ async def _paginate(
     }
 
 
-def _liker_card(user_id: str, snapshot: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "user_id": user_id,
-        "display_name": snapshot["display_name"],
-        "avatar_seed": snapshot["avatar_seed"],
-        "username": snapshot.get("username"),
-    }
-
-
 async def _fill_the_gap(story: dict[str, Any], user_id: str, mongo: AsyncIOMotorDatabase) -> None:
-    shown = story.get("likers") or []
-    if not any(person.get("user_id") == user_id for person in shown):
+    shown = liker_ids(story)
+    if user_id not in shown:
         return
 
     left_standing = len(shown) - 1
@@ -727,7 +722,7 @@ async def _fill_the_gap(story: dict[str, Any], user_id: str, mongo: AsyncIOMotor
     fresh, _, _ = await people_who_liked(story["_id"], mongo, limit=c.LIKERS_PREVIEW)
     await mongo[c.STORIES].update_one(
         {"_id": story["_id"]},
-        {"$set": {"likers": [_liker_card(person["user_id"], person) for person in fresh]}},
+        {"$set": {"likers": [person["user_id"] for person in fresh]}},
     )
 
 
@@ -848,18 +843,17 @@ async def set_like(
         delta = -1 if result.deleted_count else 0
 
     if delta:
-        snapshot = await _author_snapshot(claims.user_id, mongo) if delta > 0 else None
         changes: dict[str, Any] = {"$inc": {"counts.likes": delta}}
-        if snapshot is not None:
+        if delta > 0:
             changes["$push"] = {
                 "likers": {
-                    "$each": [_liker_card(claims.user_id, snapshot)],
+                    "$each": [claims.user_id],
                     "$position": 0,
                     "$slice": c.LIKERS_PREVIEW,
                 }
             }
         else:
-            changes["$pull"] = {"likers": {"user_id": claims.user_id}}
+            changes["$pull"] = {"likers": claims.user_id}
 
         await mongo[c.STORIES].update_one({"_id": story_id}, changes)
 
@@ -871,7 +865,6 @@ async def set_like(
                 mongo=mongo,
                 user_id=story["author_id"],
                 actor_id=claims.user_id,
-                actor_snapshot=snapshot,
                 kind="story_like",
                 target_kind="story",
                 target_id=story_id,
@@ -917,7 +910,6 @@ async def create_comment(
         "_id": new_id("cmt"),
         "story_id": story_id,
         "author_id": claims.user_id,
-        "author_snapshot": await _author_snapshot(claims.user_id, mongo),
         "parent_id": body.parent_id,
         "body": body.body,
         "counts": {"likes": 0, "replies": 0},
@@ -930,15 +922,12 @@ async def create_comment(
     await mongo[c.COMMENTS].insert_one(comment)
     await mongo[c.STORIES].update_one({"_id": story_id}, {"$inc": {"counts.comments": 1}})
 
-    snapshot = comment["author_snapshot"]
-
     if parent is not None:
         await mongo[c.COMMENTS].update_one({"_id": body.parent_id}, {"$inc": {"counts.replies": 1}})
         await notify(
             mongo=mongo,
             user_id=parent["author_id"],
             actor_id=claims.user_id,
-            actor_snapshot=snapshot,
             kind="comment_reply",
             target_kind="story",
             target_id=story_id,
@@ -951,7 +940,6 @@ async def create_comment(
             mongo=mongo,
             user_id=story["author_id"],
             actor_id=claims.user_id,
-            actor_snapshot=snapshot,
             kind="story_comment",
             target_kind="story",
             target_id=story_id,
@@ -959,7 +947,8 @@ async def create_comment(
             redis=redis,
 )
 
-    return {"comment": serialize_comment(comment, can_delete=True)}
+    people = await _people_in([comment], mongo)
+    return {"comment": serialize_comment(comment, people=people, can_delete=True)}
 
 
 async def list_comments(
@@ -1001,17 +990,23 @@ async def list_comments(
         mongo,
     )
 
+    people = await _people_in(
+        page + [reply for group in replies_by_parent.values() for reply in group], mongo
+    )
+
     items = []
     for doc in page:
         replies = replies_by_parent.get(doc["_id"], [])
         payload = serialize_comment(
             doc,
+            people=people,
             is_liked=doc["_id"] in liked_ids,
             can_delete=owns_story or doc["author_id"] == claims.user_id,
         )
         payload["replies"] = [
             serialize_comment(
                 reply,
+                people=people,
                 is_liked=reply["_id"] in liked_ids,
                 can_delete=owns_story or reply["author_id"] == claims.user_id,
             )
@@ -1071,11 +1066,13 @@ async def list_replies(
     has_more = len(docs) > limit
     page = docs[:limit]
     liked_ids = await _liked_comment_ids(claims.user_id, [doc["_id"] for doc in page], mongo)
+    people = await _people_in(page, mongo)
 
     return {
         "items": [
             serialize_comment(
                 doc,
+                people=people,
                 is_liked=doc["_id"] in liked_ids,
                 can_delete=owns_story or doc["author_id"] == claims.user_id,
             )
@@ -1105,7 +1102,8 @@ async def update_comment(
         {"$set": {"body": body.body, "edited_at": now, "updated_at": now}},
     )
     comment.update({"body": body.body, "edited_at": now})
-    return {"comment": serialize_comment(comment, can_delete=True)}
+    people = await _people_in([comment], mongo)
+    return {"comment": serialize_comment(comment, people=people, can_delete=True)}
 
 
 async def delete_comment(comment_id: str, *, claims, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -1174,7 +1172,6 @@ async def set_comment_like(
                 mongo=mongo,
                 user_id=comment["author_id"],
                 actor_id=claims.user_id,
-                actor_snapshot=await _author_snapshot(claims.user_id, mongo),
                 kind="comment_like",
                 target_kind="story",
                 target_id=comment["story_id"],

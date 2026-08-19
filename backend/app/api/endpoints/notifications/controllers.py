@@ -8,6 +8,7 @@ from app.api.endpoints.notifications.models import (
     RegisterPushTokenRequest,
 )
 from app.api.endpoints.notifications.service import serialize
+from app.core.cards import cards
 from app.core.errors import ErrorCode, api_error
 from app.core.ids import new_id
 from app.core.time import utc_now
@@ -33,8 +34,10 @@ async def list_notifications(
     has_more = len(docs) > limit
     page = docs[:limit]
 
+    people = await cards([doc.get("actor_id") for doc in page], mongo=mongo)
+
     return {
-        "items": [serialize(doc) for doc in page],
+        "items": [serialize(doc, people=people) for doc in page],
         "next_cursor": page[-1]["_id"] if page and has_more else None,
         "has_more": has_more,
     }

@@ -21,7 +21,6 @@ FEED_PROJECTION = {
     "_id": 1,
     "community": 1,
     "author_id": 1,
-    "author_snapshot": 1,
     "title": 1,
     "excerpt": 1,
     "visibility": 1,

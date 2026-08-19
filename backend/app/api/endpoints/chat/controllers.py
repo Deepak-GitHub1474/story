@@ -585,18 +585,10 @@ async def send_message(
         {"$set": {"last_message_at": now, "updated_at": now}, "$pull": {"deleted_by": other_id}},
     )
 
-    sender = await mongo[c.USERS].find_one(
-        {"_id": claims.user_id}, {"display_name": 1, "avatar_seed": 1, "username": 1}
-    )
     await notify(
         mongo=mongo,
         user_id=other_id,
         actor_id=claims.user_id,
-        actor_snapshot={
-            "display_name": (sender or {}).get("display_name", "Someone"),
-            "avatar_seed": (sender or {}).get("avatar_seed", ""),
-            "username": (sender or {}).get("username"),
-        },
         kind="chat_message",
         target_kind="conversation",
         target_id=conversation_id,

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.config import get_settings
-from app.db.backfill import backfill_likers
+from app.db.backfill import backfill_identity, backfill_likers
 from app.db.indexes import ensure_indexes
 from app.db.mongo import connect_mongo, disconnect_mongo
 from app.db.redis import connect_redis, disconnect_redis
@@ -22,6 +22,12 @@ configure_logging(env=settings.API_ENV, level=settings.LOG_LEVEL)
 logger = get_logger("story.main")
 
 
+async def _migrate(db) -> None:
+    """Bring stored rows onto the current shape, oldest change first."""
+    await backfill_likers(db)
+    await backfill_identity(db)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_mongo(app, settings)
@@ -34,7 +40,7 @@ async def lifespan(app: FastAPI):
     seeded = await seed_reference_data(app.state.mongo_db)
     logger.info("startup_seed", count=sum(seeded.values()))
 
-    app.state.likers_backfill = asyncio.create_task(backfill_likers(app.state.mongo_db))
+    app.state.migrations = asyncio.create_task(_migrate(app.state.mongo_db))
 
     if settings.RUN_BACKGROUND_JOBS:
         scheduler.start(app, app.state.mongo_db)
@@ -56,11 +62,11 @@ async def lifespan(app: FastAPI):
             with suppress(asyncio.CancelledError):
                 await listener
 
-        backfill = getattr(app.state, "likers_backfill", None)
-        if backfill is not None:
-            backfill.cancel()
+        migrations = getattr(app.state, "migrations", None)
+        if migrations is not None:
+            migrations.cancel()
             with suppress(asyncio.CancelledError):
-                await backfill
+                await migrations
 
         await scheduler.stop(app)
         for name, close in (("redis", disconnect_redis), ("mongodb", disconnect_mongo)):

@@ -34,7 +34,15 @@ class FakePush:
 async def a_reader(mongo, user_id="usr_reader", *, wants_push=True):
     await mongo["users"].update_one(
         {"_id": user_id},
-        {"$set": {"prefs": {"notify_in_app": True, "notify_push": wants_push}}},
+        {
+            "$set": {
+                "username": user_id,
+                "username_lower": user_id,
+                "referral_code": user_id,
+                "display_name": "The Reader",
+                "prefs": {"notify_in_app": True, "notify_push": wants_push},
+            }
+        },
         upsert=True,
     )
     return user_id
@@ -47,13 +55,30 @@ async def a_phone(mongo, user_id, token="tok_" + "a" * 40):
     return token
 
 
+async def a_writer(mongo, user_id="usr_writer", display_name="Deepak"):
+    await mongo["users"].update_one(
+        {"_id": user_id},
+        {
+            "$set": {
+                "display_name": display_name,
+                "username": "deepak",
+                "username_lower": "deepak",
+                "referral_code": "deepak",
+                "avatar_seed": "a" * 16,
+            }
+        },
+        upsert=True,
+    )
+    return user_id
+
+
 async def a_notification(mongo, user_id, **overrides):
+    await a_writer(mongo)
     await service.notify(
         mongo=mongo,
         redis=None,
         user_id=user_id,
         actor_id="usr_writer",
-        actor_snapshot={"display_name": "Deepak", "avatar_seed": "a"},
         kind=overrides.pop("kind", "story_like"),
         target_kind="story",
         target_id=overrides.pop("target_id", "sto_1"),

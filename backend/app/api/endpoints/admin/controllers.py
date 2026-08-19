@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.admin import audit
 from app.api.endpoints.admin.models import ResolveReportRequest
+from app.core.cards import cards
 from app.core.errors import ErrorCode, api_error
 from app.core.time import to_wire, utc_now
 
@@ -25,7 +26,7 @@ async def _target_preview(kind: str, target_id: str, mongo: AsyncIOMotorDatabase
 
     document = await mongo[collection].find_one(
         {"_id": target_id},
-        {"excerpt": 1, "body": 1, "title": 1, "username": 1, "author_snapshot": 1},
+        {"excerpt": 1, "body": 1, "title": 1, "username": 1, "author_id": 1},
     )
     if document is None:
         return {"kind": kind, "id": target_id, "excerpt": "(removed)", "author": None}
@@ -35,13 +36,14 @@ async def _target_preview(kind: str, target_id: str, mongo: AsyncIOMotorDatabase
     else:
         excerpt = document.get("excerpt") or (document.get("body") or "")[:200]
 
-    snapshot = document.get("author_snapshot") or {}
+    people = await cards([document.get("author_id")], mongo=mongo)
+    author = people.get(document.get("author_id") or "")
     return {
         "kind": kind,
         "id": target_id,
         "title": document.get("title"),
         "excerpt": excerpt or "(empty)",
-        "author": snapshot.get("display_name"),
+        "author": author["display_name"] if author else None,
     }
 
 

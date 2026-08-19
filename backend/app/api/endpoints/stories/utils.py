@@ -2,6 +2,7 @@ import re
 import secrets
 
 from app.api.endpoints.stories.constants import EXCERPT_LENGTH, WORDS_PER_MINUTE
+from app.core.cards import card_for
 from app.core.time import to_wire
 
 WHITESPACE = re.compile(r"\s+")
@@ -34,24 +35,33 @@ def new_slug() -> str:
     return secrets.token_urlsafe(9).replace("-", "").replace("_", "")[:12]
 
 
-def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) -> dict:
-    snapshot = doc.get("author_snapshot", {})
+def liker_ids(doc: dict) -> list[str]:
+    """The people in a story's liked-by row, as ids.
+
+    Rows written before identity moved to a reference hold a whole card here.
+    The migration rewrites them, but a page served while it is still running
+    must not fall over, so both shapes are read.
+    """
+    return [
+        person.get("user_id") if isinstance(person, dict) else person
+        for person in doc.get("likers") or []
+    ]
+
+
+def serialize_story(
+    doc: dict, *, people: dict, include_body: bool, is_liked: bool = False
+) -> dict:
     community = doc.get("community")
     payload = {
         "story_id": doc["_id"],
         "community": community,
-        "author": {
-            "user_id": doc.get("author_id"),
-            "display_name": snapshot.get("display_name", "A deleted account"),
-            "avatar_seed": snapshot.get("avatar_seed", ""),
-            "username": snapshot.get("username"),
-        },
+        "author": card_for(people, doc.get("author_id")),
         "title": doc.get("title"),
         "excerpt": doc.get("excerpt", ""),
         "visibility": doc["visibility"],
         "slug": doc.get("slug"),
         "counts": doc.get("counts", {}),
-        "liked_by": doc.get("likers", []),
+        "liked_by": [card_for(people, user_id) for user_id in liker_ids(doc)],
         "reading_minutes": doc.get("reading_minutes", 1),
         "images": doc.get("images", []),
         "image_ratio": doc.get("image_ratio"),
@@ -68,18 +78,14 @@ def serialize_story(doc: dict, *, include_body: bool, is_liked: bool = False) ->
     return payload
 
 
-def serialize_comment(doc: dict, *, is_liked: bool = False, can_delete: bool = False) -> dict:
-    snapshot = doc.get("author_snapshot") or {}
+def serialize_comment(
+    doc: dict, *, people: dict, is_liked: bool = False, can_delete: bool = False
+) -> dict:
     return {
         "comment_id": doc["_id"],
         "story_id": doc["story_id"],
         "parent_id": doc.get("parent_id"),
-        "author": {
-            "user_id": doc.get("author_id"),
-            "display_name": snapshot.get("display_name", "A deleted account"),
-            "avatar_seed": snapshot.get("avatar_seed", ""),
-            "username": snapshot.get("username"),
-        },
+        "author": card_for(people, doc.get("author_id")),
         "body": doc["body"],
         "counts": doc.get("counts", {}),
         "is_liked": is_liked,

@@ -6,6 +6,7 @@ from pymongo import ReturnDocument
 from redis.asyncio import Redis
 
 from app.api.endpoints.notifications.constants import NOTIFICATIONS, PUSH_TOKENS
+from app.core.cards import card_for, cards
 from app.core.time import utc_now
 from app.db import keys
 from app.logging import get_logger
@@ -17,20 +18,18 @@ USERS = "users"
 SWEEP_BATCH = 200
 
 
-def compose(doc: dict[str, Any]) -> tuple[str, str]:
-    snapshot = doc.get("actor_snapshot") or {}
-    return snapshot.get("display_name") or "Story", doc.get("body") or ""
+def compose(doc: dict[str, Any], actor: dict[str, Any]) -> tuple[str, str]:
+    return actor.get("display_name") or "Story", doc.get("body") or ""
 
 
-def payload(doc: dict[str, Any]) -> dict[str, str]:
+def payload(doc: dict[str, Any], actor: dict[str, Any]) -> dict[str, str]:
     target = doc.get("target") or {}
-    snapshot = doc.get("actor_snapshot") or {}
     return {
         "notification_id": str(doc["_id"]),
         "kind": str(doc.get("kind") or ""),
         "target_kind": str(target.get("kind") or ""),
         "target_id": str(target.get("id") or ""),
-        "username": str(snapshot.get("username") or ""),
+        "username": str(actor.get("username") or ""),
         "thread": str(doc.get("dedupe_key") or doc["_id"]),
     }
 
@@ -95,8 +94,10 @@ async def deliver(
         await _settle(mongo, notification_id, sent=False)
         return 0
 
-    title, body = compose(doc)
-    data = payload(doc)
+    actor_id = doc.get("actor_id")
+    actor = card_for(await cards([actor_id], mongo=mongo), actor_id)
+    title, body = compose(doc, actor)
+    data = payload(doc, actor)
     outcome = await push.send(
         [PushMessage(token=token, title=title, body=body, data=data) for token in tokens]
     )

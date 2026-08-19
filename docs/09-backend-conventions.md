@@ -471,7 +471,7 @@ STORY_EDIT_WINDOW_HOURS = 24
 STORY_EXCERPT_CHARS = 240
 
 STORY_FEED_PROJECTION = {
-    "_id": 1, "author_id": 1, "author_snapshot": 1, "title": 1, "excerpt": 1,
+    "_id": 1, "author_id": 1, "likers": 1, "title": 1, "excerpt": 1,
     "visibility": 1, "community_id": 1, "slug": 1, "media": 1, "counts": 1,
     "reading_minutes": 1, "published_at": 1, "created_at": 1,
 }

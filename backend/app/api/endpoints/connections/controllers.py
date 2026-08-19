@@ -91,19 +91,10 @@ async def follow(
         await mongo[USERS].update_one({"_id": claims.user_id}, {"$inc": {"counts.connections": 1}})
         await mongo[USERS].update_one({"_id": target["_id"]}, {"$inc": {"counts.followers": 1}})
 
-        actor = await mongo[USERS].find_one(
-            {"_id": claims.user_id},
-            {"display_name": 1, "avatar_seed": 1, "username": 1},
-        )
         await notify(
             mongo=mongo,
             user_id=target["_id"],
             actor_id=claims.user_id,
-            actor_snapshot={
-                "display_name": actor["display_name"],
-                "avatar_seed": actor["avatar_seed"],
-                "username": actor["username"],
-            },
             kind="new_follower",
             target_kind="user",
             target_id=claims.user_id,
