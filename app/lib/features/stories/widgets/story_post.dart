@@ -15,7 +15,6 @@ import 'liked_by_row.dart';
 import 'likes_sheet.dart';
 import 'shared_story_card.dart';
 import 'story_images.dart';
-import 'story_text_sheet.dart';
 
 class StoryPost extends StatefulWidget {
   const StoryPost({
@@ -122,6 +121,7 @@ class _StoryPostState extends State<StoryPost> {
           DoubleTapLike(
             isLiked: story.isLiked,
             onLike: widget.onLike,
+            onTap: widget.onTap,
             child: StoryImages(
               images: story.images,
               ratio: story.imageRatio,
@@ -290,15 +290,6 @@ class _CaptionState extends ConsumerState<_Caption> {
     ],
   );
 
-  TextSpan _readingSpan(AppColors colors) => TextSpan(
-    text: _whole ?? story.excerpt,
-    style: TextStyle(
-      color: colors.textSecondary,
-      fontSize: AppTypeScale.body,
-      height: 1.6,
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -313,13 +304,7 @@ class _CaptionState extends ConsumerState<_Caption> {
       onTapWhenShort: widget.onOpen,
       onExpand: _isTrimmed ? _readTheRest : null,
       maxExpandedHeight: MediaQuery.sizeOf(context).height * 0.5,
-      onTooLong: (whole) => showStoryTextSheet(
-        context,
-        title: title != null && title.isNotEmpty
-            ? title
-            : story.author.handle,
-        text: _readingSpan(colors),
-      ),
+      onTooLong: (_) => widget.onOpen?.call(),
       text: _span(story.excerpt, colors),
       expandedText: _whole == null ? null : _span(_whole!, colors),
     );

@@ -10,6 +10,8 @@ import '../../../core/utils/avatar_seeds.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../stories/models/story_models.dart';
+import '../../stories/providers/story_providers.dart';
 import '../providers/settings_provider.dart';
 
 class AvatarScreen extends ConsumerStatefulWidget {
@@ -44,6 +46,18 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
 
     await ref.read(authProvider.notifier).refreshUser();
     if (!mounted) return;
+    final me = ref.read(authProvider).user;
+    if (me != null) {
+      retintAuthorEverywhere(
+        ref,
+        StoryAuthor(
+          userId: me.userId,
+          username: me.username,
+          displayName: me.displayName,
+          avatarSeed: me.avatarSeed,
+        ),
+      );
+    }
 
     result.fold(
       onSuccess: (_) {

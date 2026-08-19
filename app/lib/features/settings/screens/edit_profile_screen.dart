@@ -10,6 +10,8 @@ import '../../../components/app_text_field.dart';
 import '../../../components/app_toast.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../stories/models/story_models.dart';
+import '../../stories/providers/story_providers.dart';
 import '../providers/settings_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -61,6 +63,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (failure == null) {
       await ref.read(authProvider.notifier).refreshUser();
       if (!mounted) return;
+      final me = ref.read(authProvider).user;
+      if (me != null) {
+        retintAuthorEverywhere(
+            ref,
+            StoryAuthor(
+              userId: me.userId,
+              username: me.username,
+              displayName: me.displayName,
+              avatarSeed: me.avatarSeed,
+            ),
+        );
+      }
       AppToast.show(context, 'Profile updated.', kind: AppToastKind.success);
       context.pop();
       return;

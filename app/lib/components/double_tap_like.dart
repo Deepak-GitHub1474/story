@@ -8,12 +8,16 @@ class DoubleTapLike extends StatefulWidget {
     required this.child,
     required this.isLiked,
     this.onLike,
+    this.onTap,
     this.size = 96,
   });
 
   final Widget child;
   final bool isLiked;
   final VoidCallback? onLike;
+
+  /// A single tap, once the gesture arena has ruled out a second one.
+  final VoidCallback? onTap;
   final double size;
 
   @override
@@ -73,6 +77,7 @@ class _DoubleTapLikeState extends State<DoubleTapLike>
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
       onDoubleTap: widget.onLike == null ? null : _handleDoubleTap,
       child: Stack(
         alignment: Alignment.center,

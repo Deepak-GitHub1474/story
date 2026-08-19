@@ -94,6 +94,18 @@ abstract class StoryListNotifier extends Notifier<StoryListState> {
     );
   }
 
+  void retintAuthor(StoryAuthor author) {
+    state = state.copyWith(
+      items: [
+        for (final item in state.items)
+          if (item.author.userId == author.userId)
+            item.copyWith(author: author)
+          else
+            item,
+      ],
+    );
+  }
+
   void remove(String storyId) {
     state = state.copyWith(
       items: state.items.where((item) => item.storyId != storyId).toList(),
@@ -329,4 +341,15 @@ class CommentsNotifier extends FamilyAsyncNotifier<List<Comment>, String> {
               .toList(),
         ),
   ];
+}
+
+
+/// Repaint a person on every card already in hand.
+///
+/// Changing your face or your name is answered by the server on the next
+/// read, but the lists on screen were fetched before it happened. This
+/// spares the reader a pull to refresh to see themselves.
+void retintAuthorEverywhere(WidgetRef ref, StoryAuthor author) {
+  ref.read(feedProvider.notifier).retintAuthor(author);
+  ref.read(myStoriesProvider.notifier).retintAuthor(author);
 }

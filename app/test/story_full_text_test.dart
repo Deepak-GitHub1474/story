@@ -12,6 +12,11 @@ const _opening =
     'sudden lightning strike of genius, no dramatic inheritance, and no moment '
     'where I looked out over a vast empire I had built from the dust. ';
 
+final _middling =
+    '$_opening**The turn came quietly.** I started with empty pockets and a '
+    'borrowed desk, and every ordinary morning after that asked the same '
+    'small question of me.';
+
 final _whole =
     '$_opening**The turn came quietly.** I started with empty pockets and a '
     'borrowed desk, and every ordinary morning after that one asked the same '
@@ -49,6 +54,7 @@ Future<void> showCard(
   Story? story,
   Story? served,
   int fetches = 0,
+  VoidCallback? onOpen,
 }) async {
   final card = story ?? _card();
   await tester.pumpWidget(
@@ -59,7 +65,7 @@ Future<void> showCard(
       ],
       child: MaterialApp(
         theme: midnightTheme,
-        home: Scaffold(body: StoryPost(story: card)),
+        home: Scaffold(body: StoryPost(story: card, onTap: onOpen)),
       ),
     ),
   );
@@ -79,7 +85,7 @@ void main() {
   testWidgets('tapping more brings back everything that was written', (
     tester,
   ) async {
-    await showCard(tester, served: _card(body: _whole));
+    await showCard(tester, served: _card(body: _middling));
 
     await tester.tap(find.text('more'));
     await tester.pumpAndSettle();
@@ -90,16 +96,16 @@ void main() {
       reason: 'the reader asked for the whole thing, not the first 240 letters',
     );
     expect(
-      richTextWith('the whole secret'),
+      richTextWith('small question'),
       findsOneWidget,
-      reason: 'the tail of a long story must survive',
+      reason: 'the tail of the story must survive',
     );
   });
 
   testWidgets('the markup never reaches the reader as asterisks', (
     tester,
   ) async {
-    await showCard(tester, served: _card(body: _whole));
+    await showCard(tester, served: _card(body: _middling));
 
     await tester.tap(find.text('more'));
     await tester.pumpAndSettle();
@@ -108,14 +114,29 @@ void main() {
     expect(richTextWith('**'), findsNothing);
   });
 
-  testWidgets('a long story is given a room of its own', (tester) async {
-    await showCard(tester, served: _card(body: _whole));
+  testWidgets('a long story opens the screen built for reading', (
+    tester,
+  ) async {
+    var opened = 0;
+    await showCard(
+      tester,
+      served: _card(body: _whole),
+      onOpen: () => opened++,
+    );
 
     await tester.tap(find.text('more'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppSheet), findsOneWidget);
-    expect(find.text('Quiet Steps on Ordinary Ground'), findsWidgets);
+    expect(
+      opened,
+      1,
+      reason: 'more means read it, and reading happens on the story screen',
+    );
+    expect(
+      find.byType(AppSheet),
+      findsNothing,
+      reason: 'a sheet cannot like, comment, share, or show a heading',
+    );
     expect(
       find.text('less'),
       findsNothing,
@@ -124,11 +145,17 @@ void main() {
   });
 
   testWidgets('a middling story still opens where it stands', (tester) async {
-    await showCard(tester, served: _card(body: _opening));
+    var opened = 0;
+    await showCard(
+      tester,
+      served: _card(body: _opening),
+      onOpen: () => opened++,
+    );
 
     await tester.tap(find.text('more'));
     await tester.pumpAndSettle();
 
+    expect(opened, 0, reason: 'it fits, so it never leaves the feed');
     expect(find.byType(AppSheet), findsNothing);
     expect(find.text('less'), findsOneWidget);
     expect(richTextWith('vast empire'), findsOneWidget);
@@ -137,7 +164,7 @@ void main() {
   testWidgets('a story the card already holds needs no second trip', (
     tester,
   ) async {
-    await showCard(tester, story: _card(body: _whole));
+    await showCard(tester, story: _card(body: _middling));
 
     await tester.tap(find.text('more'));
     await tester.pumpAndSettle();

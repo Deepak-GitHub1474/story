@@ -200,6 +200,7 @@ class Story {
     int? comments,
     bool? isLiked,
     String? visibility,
+    StoryAuthor? author,
   }) => Story(
     shared: shared,
     likedBy: likedBy,
@@ -207,7 +208,7 @@ class Story {
     imageRatio: imageRatio,
     imageFit: imageFit,
     storyId: storyId,
-    author: author,
+    author: author ?? this.author,
     title: title,
     excerpt: excerpt,
     body: body,

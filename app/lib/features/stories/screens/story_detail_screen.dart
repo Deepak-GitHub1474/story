@@ -3,11 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../components/app_back_button.dart';
-import '../../../components/double_tap_like.dart';
 
 import '../../../components/app_sheet.dart';
 import '../../../components/story_glyphs.dart';
-import '../../../components/story_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,8 +28,7 @@ import '../widgets/comment_tile.dart';
 import '../widgets/liked_by_row.dart';
 import '../widgets/likes_sheet.dart';
 import '../widgets/share_sheet.dart';
-import '../widgets/shared_story_card.dart';
-import '../widgets/story_images.dart';
+import '../widgets/story_article.dart';
 import '../widgets/story_post.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
@@ -436,44 +433,14 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    if (story.title != null && story.title!.isNotEmpty) ...[
-                      Text(
-                        story.title!,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: AppTypeScale.title,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
-                        ),
+                    StoryArticle(
+                      story: story,
+                      bodySize: bodySize,
+                      onLike: () => _toggleStoryLike(story),
+                      onSharedTap: () => context.push(
+                        '${Routes.story}/${story.shared!.storyId}',
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    if ((story.body ?? story.excerpt).isNotEmpty)
-                      StoryText(
-                        text: story.body ?? story.excerpt,
-                        fontSize: bodySize,
-                      ),
-                    if (story.images.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      DoubleTapLike(
-                        isLiked: story.isLiked,
-                        onLike: () => _toggleStoryLike(story),
-                        child: StoryImages(
-                          images: story.images,
-                          ratio: story.imageRatio,
-                          fit: story.imageFit,
-                        ),
-                      ),
-                    ],
-                    if (story.shared != null) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      SharedStoryCard(
-                        shared: story.shared!,
-                        onTap: () => context.push(
-                          '${Routes.story}/${story.shared!.storyId}',
-                        ),
-                      ),
-                    ],
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
