@@ -384,7 +384,23 @@ async def complete_item(
     item = await _owned_item(item_id, claims.user_id, mongo)
 
     actual = await storage.head(profile=c.VAULT_PROFILE, key=item["object_key"])
-    if actual is None or actual != body.total_size or body.chunk_count != item["chunk_count"]:
+    agreed = (
+        actual is not None
+        and actual == body.total_size
+        and actual == item["size_bytes"]
+        and body.chunk_count == item["chunk_count"]
+    )
+    if not agreed:
+        # The reservation is what the quota counted; storage is what the disk
+        # holds. When they disagree the bytes are unaccounted for, so they go,
+        # and the row goes with them — a reservation nothing backs would spend
+        # the owner's quota forever.
+        if actual is not None:
+            await storage.delete(profile=c.VAULT_PROFILE, key=item["object_key"])
+        await mongo[c.VAULT_ITEMS].update_one(
+            {"_id": item_id},
+            {"$set": {"deleted_at": utc_now(), "label_hash": None, "status": "failed"}},
+        )
         raise api_error(ErrorCode.UPLOAD_MISMATCH)
 
     now = utc_now()

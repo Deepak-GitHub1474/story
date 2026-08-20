@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -10,6 +11,7 @@ from app.ports.factory import build_push, build_storage
 from app.workers.deletion import purge_deleted_accounts
 from app.workers.maintenance import publish_scheduled_stories, reconcile_counts
 from app.workers.push import sweep_due
+from app.workers.vault_sweep import sweep_abandoned_uploads
 
 logger = get_logger("story.workers.scheduler")
 
@@ -18,6 +20,7 @@ RECONCILE_INTERVAL_SECONDS = 3600
 PURGE_INTERVAL_SECONDS = 3600
 MEDIA_SWEEP_INTERVAL_SECONDS = 3600
 PUSH_SWEEP_INTERVAL_SECONDS = 30
+VAULT_SWEEP_INTERVAL_SECONDS = 3600
 
 
 async def _every(seconds: int, job, mongo: AsyncIOMotorDatabase, name: str) -> None:
@@ -45,6 +48,15 @@ async def _sweep_media(mongo: AsyncIOMotorDatabase) -> int:
     return removed
 
 
+async def _sweep_vault(mongo: AsyncIOMotorDatabase) -> int:
+    settings = get_settings()
+    return await sweep_abandoned_uploads(
+        mongo=mongo,
+        storage=build_storage(settings),
+        grace_seconds=settings.VAULT_UPLOAD_GRACE_SECONDS,
+    )
+
+
 def _push_sweeper(app):
     async def run(mongo: AsyncIOMotorDatabase) -> int:
         settings = get_settings()
@@ -65,21 +77,21 @@ def _push_sweeper(app):
     return run
 
 
+def jobs(app) -> list[tuple[int, Any, str]]:
+    """Everything that runs on a timer, as data, so it can be read and tested."""
+    return [
+        (PUBLISH_INTERVAL_SECONDS, publish_scheduled_stories, "publish"),
+        (RECONCILE_INTERVAL_SECONDS, reconcile_counts, "reconcile"),
+        (PURGE_INTERVAL_SECONDS, _purge, "purge"),
+        (MEDIA_SWEEP_INTERVAL_SECONDS, _sweep_media, "media_sweep"),
+        (PUSH_SWEEP_INTERVAL_SECONDS, _push_sweeper(app), "push_sweep"),
+        (VAULT_SWEEP_INTERVAL_SECONDS, _sweep_vault, "vault_sweep"),
+    ]
+
+
 def start(app, mongo: AsyncIOMotorDatabase) -> None:
     app.state.background_jobs = [
-        asyncio.create_task(
-            _every(PUBLISH_INTERVAL_SECONDS, publish_scheduled_stories, mongo, "publish")
-        ),
-        asyncio.create_task(
-            _every(RECONCILE_INTERVAL_SECONDS, reconcile_counts, mongo, "reconcile")
-        ),
-        asyncio.create_task(_every(PURGE_INTERVAL_SECONDS, _purge, mongo, "purge")),
-        asyncio.create_task(
-            _every(MEDIA_SWEEP_INTERVAL_SECONDS, _sweep_media, mongo, "media_sweep")
-        ),
-        asyncio.create_task(
-            _every(PUSH_SWEEP_INTERVAL_SECONDS, _push_sweeper(app), mongo, "push_sweep")
-        ),
+        asyncio.create_task(_every(seconds, job, mongo, name)) for seconds, job, name in jobs(app)
     ]
     logger.info("scheduler_started", count=len(app.state.background_jobs))
 

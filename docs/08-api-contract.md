@@ -182,7 +182,7 @@ Publication is gated, so the publish endpoint has its own outcomes. See [12-ai-l
 | `ITEM_TOO_LARGE` | 413 | |
 | `ITEM_NOT_READY` | 400 | Upload not confirmed. |
 | `ITEM_ORPHANED` | 400 | Key destroyed by a password reset. Undecryptable. |
-| `UPLOAD_MISMATCH` | 400 | Confirmed size or chunk count does not match the object. |
+| `UPLOAD_MISMATCH` | 400 | Confirmed size or chunk count does not match the object, or the object does not match what was reserved. The bytes are erased. |
 
 ### Tickets and admin
 

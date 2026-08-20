@@ -135,8 +135,21 @@ INDEXES: dict[str, list[IndexSpec]] = {
             unique=True,
             partial={"label_hash": {"$type": "string"}},
         ),
+        # Every upload sums this user's sizes. Carrying size_bytes in the index
+        # keeps that sum an index scan, with no documents fetched to add it up.
+        IndexSpec(
+            [("user_id", ASCENDING), ("size_bytes", ASCENDING)],
+            "ix_user_size",
+            partial={"deleted_at": None},
+        ),
         IndexSpec([("user_id", ASCENDING), ("passcode_id", ASCENDING)], "ix_user_passcode"),
         IndexSpec([("user_id", ASCENDING), ("key_state", ASCENDING)], "ix_user_keystate"),
+        # The hourly sweep asks for old reservations across everybody at once.
+        IndexSpec(
+            [("status", ASCENDING), ("created_at", ASCENDING)],
+            "ix_stale_uploads",
+            partial={"deleted_at": None},
+        ),
     ],
     "user_passcodes": [
         IndexSpec([("user_id", ASCENDING), ("scope", ASCENDING)], "ix_user_scope"),

@@ -106,12 +106,13 @@ class Settings(BaseSettings):
     PUSH_MAX_TRIES: int = 5
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
-    VAULT_QUOTA_BYTES: int = 2 * 1024**3
+    VAULT_QUOTA_BYTES: int = 100 * 1024**2
     VAULT_MAX_ITEM_BYTES: int = 10 * 1024**2
     VAULT_MAX_IMAGE_BYTES: int = 10 * 1024**2
     VAULT_MAX_VIDEO_BYTES: int = 10 * 1024**2
     VAULT_MAX_PDF_BYTES: int = 10 * 1024**2
     VAULT_MAX_ITEMS: int = 2000
+    VAULT_UPLOAD_GRACE_SECONDS: int = 3600
     COMPRESS_ABOVE_BYTES: int = 1024**2
 
     def limit_for(self, kind: str) -> int:

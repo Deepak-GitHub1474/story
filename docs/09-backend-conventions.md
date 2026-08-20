@@ -166,7 +166,7 @@ class Settings(BaseSettings):
     OTP_RESEND_COOLDOWN_SECONDS: int = 30
 
     # --- Vault ---
-    VAULT_QUOTA_BYTES: int = 2 * 1024**3
+    VAULT_QUOTA_BYTES: int = 100 * 1024**2
     VAULT_MAX_ITEM_BYTES: int = 512 * 1024**2
     VAULT_MAX_ITEMS: int = 2000
 

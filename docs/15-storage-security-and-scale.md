@@ -227,13 +227,37 @@ out loud before anyone makes it on autopilot.
 
 ## 6. Quotas, so one person cannot fill the disk
 
-`VAULT_QUOTA_BYTES` already exists at 2 GB per user, but there is no equivalent
-for media, and neither can be enforced without size accounting.
+**Built for the vault.** `VAULT_QUOTA_BYTES` is 100 MB per account, and it is
+enforced in two places, because one is not enough:
 
-- Sum `bytes` for the owner at upload; refuse past the limit with a clear error.
+- **At reservation.** `create_item` sums `size_bytes` across the owner's live
+  items — hidden ones included, or hiding would be a way around the ceiling —
+  and refuses past the limit with `QUOTA_EXCEEDED`, reporting used and limit.
+- **At completion.** `complete_item` compares what storage actually holds
+  against what was reserved. They must be equal. A reservation of two kilobytes
+  followed by an upload of twenty is the whole disk one item at a time, so the
+  bytes are erased and the row is closed rather than left spending quota it no
+  longer backs.
+
+- **An hour later.** `workers/vault_sweep.py` collects reservations that were
+  never completed. An upload URL is handed out before any bytes move and nothing
+  obliges the client to come back, so bytes can land against a reservation that
+  is never finished — counted by nobody. The sweep erases those bytes and closes
+  the row. `VAULT_UPLOAD_GRACE_SECONDS` must stay above
+  `PRESIGN_UPLOAD_TTL_SECONDS`, or an upload still in flight would lose the
+  bytes underneath it.
+
+The sum is served by `ix_user_size`, which carries `size_bytes` in the index so
+the running total is read without fetching a single document. The sweep's own
+query is served by `ix_stale_uploads`.
+
+Raising the ceiling for everyone is one environment variable. Media has no
+equivalent yet, and still needs the size accounting in §5.
+
 - Keep the media allowance far smaller than the vault allowance — story images
   are incidental, vault is the storage product.
-- Show usage in the UI before the refusal, not after.
+- Show usage in the UI before the refusal, not after. `/vault/overview` returns
+  `used_bytes` and `limit_bytes` for exactly this.
 
 ---
 
