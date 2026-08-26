@@ -8,6 +8,7 @@ class PushMessage:
     title: str
     body: str
     data: dict[str, str] = field(default_factory=dict)
+    data_only: bool = False
 
 
 @dataclass(frozen=True)

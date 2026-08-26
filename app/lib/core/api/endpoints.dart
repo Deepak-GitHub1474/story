@@ -76,6 +76,8 @@ class Endpoints {
 
   static String call(String id) => '/calls/$id';
 
+  static String pendingCall(String id) => '/calls/$id/pending';
+
   static const String chatIdentity = '/chat/identity';
   static const String chatBackup = '/chat/backup';
   static const String chatUnread = '/chat/unread-count';

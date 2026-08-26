@@ -14,6 +14,11 @@ class CallRepository {
     parse: CallStart.fromJson,
   );
 
+  Future<Result<CallInvite>> pending(String callId) => _client.get(
+    Endpoints.pendingCall(callId),
+    parse: CallInvite.fromJson,
+  );
+
   Future<Result<CallHistoryPage>> history({String? cursor, int limit = 30}) =>
       _client.get(
         Endpoints.calls,

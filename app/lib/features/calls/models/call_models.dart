@@ -160,3 +160,23 @@ class CallHistoryPage {
   final String? nextCursor;
   final bool hasMore;
 }
+
+
+class CallInvite {
+  const CallInvite({required this.start, required this.sdp});
+
+  factory CallInvite.fromJson(Map<String, dynamic> json) => CallInvite(
+    start: CallStart.fromJson({
+      'call_id': json['call_id'],
+      'conversation_id': json['conversation_id'] ?? '',
+      'media': json['media'] ?? const ['audio'],
+      'peer': json['peer'] ?? const {'user_id': '', 'username': '', 'display_name': 'Someone'},
+      'ice_servers': json['ice_servers'] ?? const [],
+      'ring_timeout_seconds': json['ring_timeout_seconds'] ?? 45,
+    }),
+    sdp: json['sdp'] as String,
+  );
+
+  final CallStart start;
+  final String sdp;
+}

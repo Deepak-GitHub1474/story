@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/cache/feed_cache.dart';
+import 'core/push/call_push.dart';
 import 'core/prefs/prefs_store.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/settings/providers/theme_provider.dart';
@@ -33,6 +35,7 @@ Future<void> main() async {
 Future<void> _startFirebase() async {
   try {
     await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(onBackgroundCall);
   } on Exception {
     return;
   }

@@ -49,6 +49,16 @@ class CallUi {
     }
   }
 
+  static Future<String?> pendingCallId() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final found = await _channel.invokeMapMethod<String, String?>('pendingCall');
+      return found?['callId'];
+    } on PlatformException {
+      return null;
+    }
+  }
+
   static Future<void> startAudio() async {
     if (!Platform.isAndroid) return;
     try {

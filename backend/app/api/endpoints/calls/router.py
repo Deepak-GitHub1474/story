@@ -59,6 +59,12 @@ async def delete_calls(
     return ok_response("Gone from your history.", data=data)
 
 
+@router.get("/{call_id}/pending", status_code=status.HTTP_200_OK)
+async def pending_call(call_id: str, claims: CurrentClaims, redis: RedisClient):
+    data = await controllers.pending_call(call_id, claims=claims, redis=redis)
+    return ok_response("Someone is calling.", data=data)
+
+
 @router.delete("/{call_id}", status_code=status.HTTP_200_OK)
 async def delete_call(call_id: str, claims: CurrentClaims, mongo: MongoDatabase):
     data = await controllers.delete_call(call_id, claims=claims, mongo=mongo)

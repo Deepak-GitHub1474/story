@@ -278,3 +278,18 @@ async def set_retention(
         restamped += 1
 
     return {"call_history_days": body.days, "restamped": restamped}
+
+
+async def pending_call(call_id: str, *, claims, redis: Redis) -> dict[str, Any]:
+    from app.api.endpoints.calls.ring import pending_for
+    from app.api.endpoints.calls.signaling import load
+
+    state = await load(call_id, redis)
+    if state is None or state.get("callee") != claims.user_id:
+        raise api_error(ErrorCode.CALL_NOT_FOUND)
+
+    if not state.get("offer_sdp"):
+        raise api_error(ErrorCode.CALL_NOT_FOUND)
+
+    settings = get_settings()
+    return pending_for(state, ice_servers(claims.user_id, settings=settings))

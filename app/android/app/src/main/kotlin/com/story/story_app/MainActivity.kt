@@ -79,6 +79,9 @@ class MainActivity : FlutterActivity() {
                         CallUi.stopRinging(this)
                         result.success(null)
                     }
+                    "pendingCall" -> {
+                        result.success(takePendingCall())
+                    }
                     "startAudio" -> {
                         CallAudio.start(this)
                         result.success(null)
@@ -162,6 +165,19 @@ class MainActivity : FlutterActivity() {
         } catch (error: Exception) {
             result.error("unreadable", "That file could not be read.", null)
         }
+    }
+
+    private fun takePendingCall(): Map<String, String?>? {
+        val callId = intent?.getStringExtra(EXTRA_CALL_ID) ?: return null
+        val action = intent?.getStringExtra(EXTRA_CALL_ACTION)
+        intent?.removeExtra(EXTRA_CALL_ID)
+        intent?.removeExtra(EXTRA_CALL_ACTION)
+        return mapOf("callId" to callId, "action" to action)
+    }
+
+    override fun onNewIntent(incoming: Intent) {
+        super.onNewIntent(incoming)
+        intent = incoming
     }
 
     private fun requestPermission(name: String, code: Int): Boolean {

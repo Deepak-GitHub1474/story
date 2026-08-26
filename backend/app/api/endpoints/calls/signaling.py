@@ -8,7 +8,10 @@ from app.adapters.turn import ice_servers
 from app.api.endpoints.calls import constants as c
 from app.config import get_settings
 from app.core.time import utc_now
+from app.logging import get_logger
 from app.realtime import bus
+
+logger = get_logger("story.calls.signaling")
 
 SIGNAL_TYPES = frozenset(
     {"call.offer", "call.answer", "call.ice", "call.update", "call.end"}
@@ -103,6 +106,10 @@ async def handle(
     settings = get_settings()
 
     if kind == "call.offer":
+        state["offer_sdp"] = event.get("sdp")
+        state["media"] = event.get("media") or [c.AUDIO]
+        await save(call_id, state, redis, settings.CALL_RING_TIMEOUT_SECONDS)
+
         payload["conversation_id"] = state["conversation_id"]
         payload["ice_servers"] = ice_servers(peer, settings=settings)
         payload["ring_timeout_seconds"] = settings.CALL_RING_TIMEOUT_SECONDS
@@ -113,6 +120,21 @@ async def handle(
         await save(call_id, state, redis, settings.CALL_RING_TIMEOUT_SECONDS * 60)
 
     await bus.publish(redis, [peer], payload)
+
+    if kind == "call.offer" and mongo is not None:
+        from app.api.endpoints.calls.ring import ring_push
+        from app.ports.factory import build_push
+
+        try:
+            await ring_push(
+                callee_id=callee,
+                call_id=call_id,
+                caller=state.get("caller_profile", {}),
+                mongo=mongo,
+                push=build_push(settings),
+            )
+        except Exception:
+            logger.error("call_ring_push_failed", code="call_ring_push_failed")
 
     if kind == "call.end":
         if mongo is not None:

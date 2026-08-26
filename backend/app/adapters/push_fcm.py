@@ -112,6 +112,19 @@ class FcmAdapter:
 
     def _envelope(self, message: PushMessage) -> dict:
         thread = collapse_id(message.data.get("thread", ""))
+        if message.data_only:
+            return {
+                "message": {
+                    "token": message.token,
+                    "data": message.data,
+                    "android": {"priority": "high"},
+                    "apns": {
+                        "headers": {"apns-priority": "10", "apns-push-type": "background"},
+                        "payload": {"aps": {"content-available": 1}},
+                    },
+                }
+            }
+
         return {
             "message": {
                 "token": message.token,

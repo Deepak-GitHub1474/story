@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/realtime/realtime_client.dart';
+import '../../../core/push/call_push.dart';
 import '../../../core/security/call_ui.dart';
 import '../../../core/webrtc/webrtc_media.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -32,11 +34,14 @@ class _SocketSignal implements CallSignal {
 class CallController extends StateNotifier<CallSession?> {
   CallController(this._ref) : super(null) {
     _live = _ref.read(realtimeProvider).events.listen(_onEvent);
+    _pushes = FirebaseMessaging.onMessage.listen(_onPush);
     unawaited(CallUi.requestNotifications());
+    unawaited(_adoptAnythingWaiting());
   }
 
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _live;
+  StreamSubscription<RemoteMessage>? _pushes;
 
   CallSession _newSession() {
     final signal = _SocketSignal(_ref.read(realtimeProvider));
@@ -120,6 +125,47 @@ class CallController extends StateNotifier<CallSession?> {
     }
   }
 
+  Future<void> _onPush(RemoteMessage message) async {
+    final data = Map<String, dynamic>.from(message.data);
+    if (!isCallPush(data)) return;
+
+    if (data['kind'] == callCancelledKind) {
+      await CallUi.stopRinging();
+      return;
+    }
+
+    final callId = data['call_id'];
+    if (callId is String) await adopt(callId);
+  }
+
+  Future<void> _adoptAnythingWaiting() async {
+    final waiting = await CallUi.pendingCallId();
+    if (waiting != null) await adopt(waiting);
+  }
+
+  Future<void> adopt(String callId) async {
+    if (state != null && !state!.isOver) {
+      if (state!.callId == callId) return;
+      return;
+    }
+
+    final result = await _ref.read(callRepositoryProvider).pending(callId);
+    final invite = result.valueOrNull;
+    if (invite == null) {
+      await CallUi.stopRinging();
+      return;
+    }
+
+    final session = _newSession();
+    await session.receive(invite.start, offer: invite.sdp);
+    state = session;
+    await CallUi.ring(
+      callId: invite.start.callId,
+      caller: invite.start.peer.displayName,
+    );
+    onIncoming?.call();
+  }
+
   Future<void> _onEvent(RealtimeEvent event) async {
     final type = event['type'];
     if (type is! String || !type.startsWith('call.')) return;
@@ -179,6 +225,7 @@ class CallController extends StateNotifier<CallSession?> {
   @override
   void dispose() {
     _live?.cancel();
+    _pushes?.cancel();
     super.dispose();
   }
 }
