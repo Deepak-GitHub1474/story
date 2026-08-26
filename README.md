@@ -1,15 +1,181 @@
+<p align="center">
+  <img src="docs/screenshots/hero.webp" alt="STORY — anonymous long-form writing, an end-to-end encrypted vault, and chat the server holds no key to" width="900">
+</p>
+
 # STORY
 
 Anonymous long-form storytelling with an encrypted private vault.
 
 Full specification lives in [`docs/`](docs/). Read [`docs/00-product-overview.md`](docs/00-product-overview.md) first.
 
+## Download the app
+
+**[⬇ Get the latest APK](https://github.com/Deepak-GitHub1474/story/releases/latest)** — or browse [all releases](https://github.com/Deepak-GitHub1474/story/releases).
+
+| | |
+|---|---|
+| File | `story.apk`, 27.4 MB |
+| Requires | Android 7.0 or newer (`minSdk 24`, `targetSdk 36`) |
+| Built for | `arm64-v8a` — every phone shipped since about 2015 |
+| Signed with | a real release key, not the debug key |
+
+The APK is attached to a GitHub Release, not committed to the repository. Release
+assets live in separate storage, so cloning this repo never downloads it and no
+push rebuilds it.
+
+Android will warn about installing outside the Play Store. If an older build is
+already on the phone and the install is refused, uninstall it first — Android
+refuses to replace an app that was signed with a different key.
+
+Build it yourself instead:
+
+```bash
+cd app && make apk-release
+```
+
+## The app, screen by screen
+
+### Getting in
+
+A username, a password, and nothing else. No email is required to sign up, no
+phone number, no real name.
+
+| Sign in | Create account | Pick what you are into |
+|---|---|---|
+| <img src="docs/screenshots/signin.webp" width="240"> | <img src="docs/screenshots/signup.webp" width="240"> | <img src="docs/screenshots/interests.webp" width="240"> |
+| Your space. Your story. Always private. | "Pick a name nobody can trace back to you." | Up to 12 interests shape the feed. Nobody else can see the choices. |
+
+### Reading and writing
+
+| Feed | A story | The composer |
+|---|---|---|
+| <img src="docs/screenshots/feed.webp" width="240"> | <img src="docs/screenshots/story.webp" width="240"> | <img src="docs/screenshots/composer.webp" width="240"> |
+| Long-form posts, expanded in place. | Reactions are the six the product allows, and a comment box that says "Say something kind". | Drafts save as you type. The two icons in the bar are the AI draft and polish helpers. |
+
+### Writing with AI
+
+Two assistants sit in the composer bar. Both are opt-in — nothing runs unless you
+tap it — and both are rate limited per account.
+
+**Write it with AI** takes a subject and a brief and returns a finished story,
+title and all. You read it before it goes anywhere: the sheet is called *Read it
+first*, and the only ways out are **Use this** and **Ask for changes**. A change
+request rewrites the whole piece and leaves a **Back to the one before** link, so
+no revision is a one-way door. Ten drafts an hour.
+
+| Describe it | It writes | Ask for changes | The rewrite |
+|---|---|---|---|
+| <img src="docs/screenshots/ai-write-brief.webp" width="200"> | <img src="docs/screenshots/ai-draft.webp" width="200"> | <img src="docs/screenshots/ai-changes.webp" width="200"> | <img src="docs/screenshots/ai-rewritten.webp" width="200"> |
+
+**Ask for a tidier version** is the opposite job — it edits what you already
+wrote. The sheet states the boundary in its own words: *"It stays your story, in
+your words — nothing is added and nothing is softened."* Four presets cover most
+asks — fix the spelling and grammar, make it shorter, break it into paragraphs,
+keep it simple and plain — or type your own. Each pass builds on the last, and
+the result is a proposal: **Keep mine** throws it away, **Use this version**
+accepts it. Twenty passes an hour.
+
+| The ask | The proposal |
+|---|---|
+| <img src="docs/screenshots/ai-polish.webp" width="240"> | <img src="docs/screenshots/ai-polished.webp" width="240"> |
+
+### The gate every story passes
+
+Publishing runs one model call before anything becomes visible, and it decides
+five separate things. They are separate on purpose — different failure costs,
+different appeal paths. Full rules in [`docs/12-ai-layer.md`](docs/12-ai-layer.md).
+
+| Check | What it asks | May it block? |
+|---|---|---|
+| **Safety gate** | Does this break one of five named rules? | **Yes** — the only check that can |
+| **Fit check** | Is this in the right room? | No — suggests a better one |
+| **Exposure check** | Would this identify its own author? | No — warns, and the choice is recorded |
+| **Care signal** | Does the author sound at risk? | Never — shows helplines to the author alone |
+| **Suggestion** | Which rooms and people fit this person? | Not a gate |
+
+The five blocking rules are named, closed, and all about harm to someone else:
+targeted harassment, doxxing, sexual content involving minors, credible threats,
+and illegal goods. Everything else publishes. As the block sheet puts it: *"Hard,
+dark and painful writing is welcome here."* Sadness is not a rule violation.
+
+| Blocked | Routed |
+|---|---|
+| <img src="docs/screenshots/ai-blocked.webp" width="240"> | <img src="docs/screenshots/ai-suggestion.webp" width="240"> |
+
+The gate **fails closed**. If the model is unreachable or answers with something
+unreadable, publishing stops and the story stays a saved draft — the API returns
+`MODERATION_UNAVAILABLE` rather than letting anything through unchecked.
+
+All model access goes through one port (`backend/app/ports/ai.py`), with a Gemini
+adapter behind it and an `AI_PROVIDER=none` setting that disables the layer entirely. No
+model ranks a feed, and no model sees a private story, a draft, or anything in
+the vault.
+
+### Finding people
+
+| Communities | Inside one | Search | Someone's profile |
+|---|---|---|---|
+| <img src="docs/screenshots/communities.webp" width="200"> | <img src="docs/screenshots/community.webp" width="200"> | <img src="docs/screenshots/search.webp" width="200"> | <img src="docs/screenshots/public-profile.webp" width="200"> |
+
+The 46 communities are organised by feeling rather than topic — `quiet-grief`,
+`invisible-work`, `nine-month-gap`, `imposter-hours`, `first-year-without`.
+Search covers accounts, communities, and public stories only; private and draft
+stories never appear in it.
+
+### The vault
+
+Photos, videos, and PDFs, encrypted on the device before they leave it. The
+server stores ciphertext and never sees a filename or a key.
+
+| A new vault | Locked | Sealing a file | Open |
+|---|---|---|---|
+| <img src="docs/screenshots/vault-new.webp" width="200"> | <img src="docs/screenshots/vault-locked.webp" width="200"> | <img src="docs/screenshots/vault-seal.webp" width="200"> | <img src="docs/screenshots/vault-open.webp" width="200"> |
+
+One account can hold several vaults. Reuse a passcode and the new vault opens
+alongside the others; type a different one and it becomes separate, with its own
+key that nothing else can open. Forgetting a passcode is final — deleting that
+vault is the only way back, and its files go with it.
+
+A **sealed** file appears in no tab and no listing. It is found only by typing
+its secret word back, exactly, capitals included.
+
+Each account gets **100 MB**, set by `VAULT_QUOTA_BYTES` and enforced when space
+is reserved, again when the bytes land, and hourly by a sweeper that erases
+uploads nobody finished. See [`docs/15-storage-security-and-scale.md`](docs/15-storage-security-and-scale.md).
+
+### Chat and notifications
+
+| Notifications | Conversations | A thread |
+|---|---|---|
+| <img src="docs/screenshots/notifications.webp" width="240"> | <img src="docs/screenshots/chats.webp" width="240"> | <img src="docs/screenshots/chat.webp" width="240"> |
+
+Chat is end-to-end encrypted. The server stores ciphertext and cannot read any of it —
+which is why the conversation list shows no message previews. Message someone
+you follow; if you follow each other it opens straight away, otherwise it waits
+in their requests.
+
+### Your account
+
+| You | Settings | Active sessions | Leaving |
+|---|---|---|---|
+| <img src="docs/screenshots/profile.webp" width="200"> | <img src="docs/screenshots/settings.webp" width="200"> | <img src="docs/screenshots/sessions.webp" width="200"> | <img src="docs/screenshots/leaving.webp" width="200"> |
+
+Every signed-in device is listed and can be revoked, and revoking signs that
+device out within a minute. Deleting an account is scheduled 14 days out and can
+be cancelled by signing in before then; after that everything is erased and the
+username is released.
+
+> Screens captured on a Pixel 7 Pro emulator against a local API with seeded
+> content. The vault sets `FLAG_SECURE`, so Android blocks screenshots of it on
+> a real install — those four frames were taken with that flag disabled in a
+> local build.
+
 ## Status
 
 | Piece | State |
 |---|---|
-| Backend | Working, 800 tests |
-| Flutter app | Working, 168 tests |
+| Backend | Working, 1,000 tests |
+| Flutter app | Working, 549 tests |
 | Vault — encrypted files | Working, see [`docs/05-security-and-crypto.md`](docs/05-security-and-crypto.md) |
 | Chat — end-to-end encrypted | Working |
 | AI sanity layer | Working, see [`docs/12-ai-layer.md`](docs/12-ai-layer.md) |
@@ -35,7 +201,7 @@ story/
 ├── app/        Flutter. Makefile.
 ├── web/        Next.js, users, :3100. pnpm scripts.
 ├── admin/      Next.js, staff, :3200. pnpm scripts.
-├── docs/       The specification
+├── docs/       The specification, plus screenshots/
 └── README.md
 ```
 
