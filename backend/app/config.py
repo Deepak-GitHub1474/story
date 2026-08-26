@@ -104,6 +104,12 @@ class Settings(BaseSettings):
     PUSH_TIMEOUT_SECONDS: float = 10.0
     PUSH_LEASE_SECONDS: int = 60
     PUSH_MAX_TRIES: int = 5
+    TURN_SHARED_SECRET: str = ""
+    TURN_URLS: str = ""
+    TURN_CREDENTIAL_TTL_SECONDS: int = 300
+    STUN_URL: str = "stun:stun.l.google.com:19302"
+    CALL_RING_TIMEOUT_SECONDS: int = 45
+    CALL_HISTORY_RETENTION_DAYS: int = 30
     PRESIGN_UPLOAD_TTL_SECONDS: int = 900
     PRESIGN_DOWNLOAD_TTL_SECONDS: int = 300
     VAULT_QUOTA_BYTES: int = 100 * 1024**2

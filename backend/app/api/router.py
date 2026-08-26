@@ -4,6 +4,7 @@ from app.api.endpoints.admin.router import router as admin_router
 from app.api.endpoints.admin.vault_router import router as admin_vault_router
 from app.api.endpoints.ai.router import router as ai_router
 from app.api.endpoints.auth.router import router as auth_router
+from app.api.endpoints.calls.router import router as calls_router
 from app.api.endpoints.chat.router import router as chat_router
 from app.api.endpoints.communities.router import router as communities_router
 from app.api.endpoints.connections.router import router as connections_router
@@ -30,6 +31,7 @@ api_router.include_router(auth_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_vault_router)
 api_router.include_router(chat_router)
+api_router.include_router(calls_router)
 api_router.include_router(ai_router)
 api_router.include_router(media_router)
 api_router.include_router(realtime_router)

@@ -34,6 +34,8 @@ class ErrorCode(StrEnum):
     CHAT_BLOCKED = "CHAT_BLOCKED"
     CHAT_NOT_YOURS_TO_ACCEPT = "CHAT_NOT_YOURS_TO_ACCEPT"
     CONVERSATION_NOT_FOUND = "CONVERSATION_NOT_FOUND"
+    CALL_NOT_ALLOWED = "CALL_NOT_ALLOWED"
+    CALL_NOT_FOUND = "CALL_NOT_FOUND"
     CHAT_ALREADY_OPEN = "CHAT_ALREADY_OPEN"
     MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND"
     EDIT_WINDOW_CLOSED = "EDIT_WINDOW_CLOSED"
@@ -134,6 +136,8 @@ ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.CHAT_BLOCKED: (403, "You cannot message this account."),
     ErrorCode.CHAT_NOT_YOURS_TO_ACCEPT: (403, "Only the person who received it can accept."),
     ErrorCode.CONVERSATION_NOT_FOUND: (404, "We could not find that chat."),
+    ErrorCode.CALL_NOT_ALLOWED: (403, "You cannot call this person."),
+    ErrorCode.CALL_NOT_FOUND: (404, "We could not find that call."),
     ErrorCode.CHAT_ALREADY_OPEN: (409, "That chat is already open."),
     ErrorCode.MESSAGE_NOT_FOUND: (404, "We could not find that message."),
     ErrorCode.EDIT_WINDOW_CLOSED: (409, "That message is too old to edit."),

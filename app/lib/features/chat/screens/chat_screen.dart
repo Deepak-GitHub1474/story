@@ -21,6 +21,8 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/chat_models.dart';
+import '../../calls/providers/call_providers.dart';
+import '../../calls/screens/call_screen.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/message_bubble.dart';
 
@@ -517,6 +519,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
         actions: [
+          IconButton(
+            tooltip: 'Call',
+            icon: Icon(Icons.call_outlined, color: colors.textPrimary),
+            onPressed: () async {
+              final problem = await ref
+                  .read(callControllerProvider.notifier)
+                  .place(widget.conversationId);
+              if (!context.mounted) return;
+              if (problem != null) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(problem)));
+                return;
+              }
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const CallScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.delete_outline, color: colors.textMuted),
             onPressed: () async {

@@ -17,6 +17,9 @@ private const val SECURE_CHANNEL = "story/secure_screen"
 private const val FILES_CHANNEL = "story/files"
 private const val PICK_REQUEST = 8411
 private const val NOTIFICATION_CHANNEL = "story_default"
+private const val CALL_UI_CHANNEL = "story/call_ui"
+private const val AUDIO_REQUEST = 8412
+private const val NOTIFY_REQUEST = 8413
 
 class MainActivity : FlutterActivity() {
     private var pending: MethodChannel.Result? = null
@@ -24,6 +27,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         openNotificationChannel()
+        CallUi.openChannel(this)
     }
 
     private fun openNotificationChannel() {
@@ -54,6 +58,52 @@ class MainActivity : FlutterActivity() {
                     "disable" -> {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                         result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CALL_UI_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "ring" -> {
+                        CallUi.ring(
+                            this,
+                            call.argument<String>("callId") ?: "",
+                            call.argument<String>("caller") ?: "Someone",
+                        )
+                        result.success(null)
+                    }
+                    "stopRinging" -> {
+                        CallUi.stopRinging(this)
+                        result.success(null)
+                    }
+                    "startAudio" -> {
+                        CallAudio.start(this)
+                        result.success(null)
+                    }
+                    "stopAudio" -> {
+                        CallAudio.stop(this)
+                        result.success(null)
+                    }
+                    "setSpeaker" -> {
+                        CallAudio.setSpeaker(this, call.argument<Boolean>("on") ?: false)
+                        result.success(CallAudio.isSpeakerOn(this))
+                    }
+                    "startOngoing" -> {
+                        CallService.start(this, call.argument<String>("peer") ?: "Call")
+                        result.success(null)
+                    }
+                    "stopOngoing" -> {
+                        CallService.stop(this)
+                        result.success(null)
+                    }
+                    "requestMicrophone" -> {
+                        result.success(requestPermission(android.Manifest.permission.RECORD_AUDIO, AUDIO_REQUEST))
+                    }
+                    "requestNotifications" -> {
+                        result.success(requestNotifications())
                     }
                     else -> result.notImplemented()
                 }
@@ -112,6 +162,22 @@ class MainActivity : FlutterActivity() {
         } catch (error: Exception) {
             result.error("unreadable", "That file could not be read.", null)
         }
+    }
+
+    private fun requestPermission(name: String, code: Int): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+
+        val granted = checkSelfPermission(name) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            requestPermissions(arrayOf(name), code)
+        }
+        return granted
+    }
+
+    private fun requestNotifications(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return requestPermission(android.Manifest.permission.POST_NOTIFICATIONS, NOTIFY_REQUEST)
     }
 
     private fun displayName(uri: Uri): String {

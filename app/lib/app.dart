@@ -3,8 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/push/push_taps.dart';
+import 'features/calls/data/call_session.dart';
+import 'features/calls/providers/call_providers.dart';
 import 'features/settings/providers/theme_provider.dart';
 import 'routing/router.dart';
+import 'routing/routes.dart';
 import 'theme/app_theme.dart';
 import 'core/session/forget_session.dart';
 
@@ -15,6 +18,12 @@ class StoryApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sessionGuardProvider);
     ref.watch(pushTapsProvider);
+
+    ref.listen<CallSession?>(callControllerProvider, (previous, next) {
+      if (previous != null || next == null) return;
+      if (!next.isIncoming) return;
+      ref.read(routerProvider).push(Routes.call);
+    });
 
     final chosen = ref.watch(themeProvider);
     final mode = ref.read(themeProvider.notifier).mode;

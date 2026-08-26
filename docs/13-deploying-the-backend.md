@@ -146,3 +146,38 @@ platform built on anonymous writing.
 Turning push off later is one variable. `PUSH_PROVIDER=none` stops every send
 without touching a row — the notification history and the in-app badge are
 unaffected, because push is only a transport for records that already exist.
+
+## The TURN relay
+
+Voice calls connect phone-to-phone where the network allows it. Between 10% and
+20% cannot — symmetric NAT and carrier-grade NAT are common on mobile — and
+those relay through coturn. See [17-voice-calling.md](17-voice-calling.md) §6.
+
+```bash
+cd backend/coturn
+TURN_SHARED_SECRET=$(openssl rand -hex 32) TURN_PUBLIC_IP=<elastic-ip> \
+  docker compose up -d
+```
+
+Put the same secret in `backend/.env` as `TURN_SHARED_SECRET`, and set
+`TURN_URLS` to the relay's public address. The API mints a fresh username and
+password on every `POST /v1/calls`, each valid for five minutes, so nothing
+long-lived reaches a client. The APK is public: a static relay secret compiled
+into it would be an open relay for the internet, billed to us.
+
+Ports to open in the security group:
+
+| Port | Why |
+|---|---|
+| `3478/udp`, `3478/tcp` | STUN and TURN |
+| `443/tcp` | TURN over TLS, for networks that only allow HTTPS |
+| `49152-65535/udp` | where coturn allocates relays |
+
+`network_mode: host` is required. coturn allocates across that whole port range
+and mapping them one by one through Docker's NAT does not work.
+
+The relay lives in `eu-north-1` while most users do not. A relayed call between
+two people in India routes through Stockholm and adds roughly 150 ms each way.
+Direct calls are unaffected. Every call row records whether it relayed, so the
+question of buying a relay in `ap-south-1` gets answered with a number rather
+than a guess — [17-voice-calling.md](17-voice-calling.md) §6.1.

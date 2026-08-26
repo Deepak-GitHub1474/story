@@ -26,6 +26,7 @@ import '../features/settings/screens/edit_profile_screen.dart';
 import '../features/settings/screens/sessions_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/chat/screens/chat_list_screen.dart';
+import '../features/calls/screens/call_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/vault/screens/recovery_screen.dart';
 import '../features/vault/screens/vault_screen.dart';
@@ -115,6 +116,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: StoryDetailScreen(storyId: state.pathParameters['storyId']!),
         ),
+      ),
+      GoRoute(
+        path: Routes.call,
+        pageBuilder: (context, state) =>
+            fadePage(key: state.pageKey, child: const CallScreen()),
       ),
       GoRoute(
         path: Routes.communities,

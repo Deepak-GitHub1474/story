@@ -26,13 +26,13 @@ apk: ## Build a debug APK: make apk API_URL=http://192.168.1.38:9000/v1
 	flutter build apk --debug --dart-define=STORY_API_BASE_URL=$(API_URL)
 
 apk-release: ## Build the signed arm64 release APK against the live API
-	flutter build apk --release --target-platform android-arm64 \
+	flutter build apk --release --split-per-abi \
 		--dart-define=STORY_API_BASE_URL=$(LIVE_API)
-	@ls -lh build/app/outputs/flutter-apk/app-release.apk
+	@ls -lh build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
 release: apk-release ## Publish that APK to GitHub Releases as v$(VERSION)
 	@test -n "$(VERSION)" || { echo "no version in pubspec.yaml"; exit 1; }
-	@cp build/app/outputs/flutter-apk/app-release.apk build/story.apk
+	@cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/story.apk
 	gh release create v$(VERSION) build/story.apk \
 		--repo $(REPO) --title "STORY $(VERSION)" --generate-notes
 	@echo "https://github.com/$(REPO)/releases/latest"

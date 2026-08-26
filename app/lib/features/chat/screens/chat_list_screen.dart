@@ -18,6 +18,7 @@ import '../../../theme/tokens.dart';
 import '../../communities/models/community_models.dart';
 import '../../communities/providers/community_providers.dart';
 import '../models/chat_models.dart';
+import '../../calls/widgets/calls_tab.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/unlock_chat_sheet.dart';
 
@@ -28,9 +29,22 @@ class ChatListScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatListScreen> createState() => _ChatListScreenState();
 }
 
+enum _MessagesTab { chats, calls, requests }
+
 class _ChatListScreenState extends ConsumerState<ChatListScreen> {
-  bool _showRequests = false;
+  _MessagesTab _tab = _MessagesTab.chats;
   Timer? _refresh;
+
+  String _nameFor(String peerId) {
+    for (final state in [null, 'pending']) {
+      final found = ref.read(conversationsProvider(state)).valueOrNull;
+      if (found == null) continue;
+      for (final conversation in found) {
+        if (conversation.other.userId == peerId) return conversation.other.handle;
+      }
+    }
+    return 'Someone';
+  }
 
   Future<void> _openChatMenu(Conversation conversation) async {
     final colors = context.colors;
@@ -68,7 +82,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
     super.initState();
     _refresh = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted) return;
-      ref.invalidate(conversationsProvider(_showRequests ? 'pending' : null));
+      ref.invalidate(conversationsProvider(_tab == _MessagesTab.requests ? 'pending' : null));
       ref.invalidate(chatUnreadProvider);
     });
   }
@@ -84,7 +98,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
     final colors = context.colors;
     final unread = ref.watch(chatUnreadProvider).valueOrNull;
     final conversations = ref.watch(
-      conversationsProvider(_showRequests ? 'pending' : null),
+      conversationsProvider(_tab == _MessagesTab.requests ? 'pending' : null),
     );
     final isLocked = ref.watch(chatLockedProvider).valueOrNull ?? false;
 
@@ -140,21 +154,30 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               children: [
                 _Segment(
                   label: 'Chats',
-                  isActive: !_showRequests,
-                  onTap: () => setState(() => _showRequests = false),
+                  isActive: _tab == _MessagesTab.chats,
+                  onTap: () => setState(() => _tab = _MessagesTab.chats),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _Segment(
+                  label: 'Calls',
+                  isActive: _tab == _MessagesTab.calls,
+                  onTap: () => setState(() => _tab = _MessagesTab.calls),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _Segment(
                   label: unread != null && unread.requests > 0
                       ? 'Requests (${unread.requests})'
                       : 'Requests',
-                  isActive: _showRequests,
-                  onTap: () => setState(() => _showRequests = true),
+                  isActive: _tab == _MessagesTab.requests,
+                  onTap: () => setState(() => _tab = _MessagesTab.requests),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.md),
+          if (_tab == _MessagesTab.calls)
+            Expanded(child: CallsTab(nameFor: _nameFor))
+          else
           Expanded(
             child: conversations.when(
               loading: () => ListView.builder(
@@ -167,7 +190,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                 body: 'Check your connection and pull to refresh.',
               ),
               data: (items) => items.isEmpty
-                  ? (_showRequests
+                  ? (_tab == _MessagesTab.requests
                         ? const _Empty(
                             title: 'No requests',
                             body:
@@ -191,7 +214,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                       onRefresh: () async {
                         ref.invalidate(
                           conversationsProvider(
-                            _showRequests ? 'pending' : null,
+                            _tab == _MessagesTab.requests ? 'pending' : null,
                           ),
                         );
                         ref.invalidate(chatUnreadProvider);
@@ -201,7 +224,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                         itemCount: items.length + 1,
                         itemBuilder: (context, index) {
                           if (index == items.length) {
-                            return _showRequests
+                            return _tab == _MessagesTab.requests
                                 ? const SizedBox.shrink()
                                 : const _FollowSuggestions();
                           }
