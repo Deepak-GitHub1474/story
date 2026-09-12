@@ -20,7 +20,7 @@ export function TotpSetup({
 
   if (backupCodes) {
     return (
-      <div className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
+      <div className="rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5">
         <h2 className="font-medium text-danger">Save these now</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">
           Each one works once, in place of a code, if you lose your phone. They are
@@ -42,7 +42,7 @@ export function TotpSetup({
 
   if (isEnabled) {
     return (
-      <div className="rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
+      <div className="rounded-[length:var(--radius-lg)] border border-border bg-surface p-5">
         <p className="font-medium text-success">Authenticator active</p>
         <p className="mt-2 text-[length:var(--text-label)] text-text-secondary">
           {backupsLeft} backup {backupsLeft === 1 ? 'code' : 'codes'} left.
@@ -108,7 +108,7 @@ export function TotpSetup({
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
+    <div className="flex flex-col gap-5 rounded-[length:var(--radius-lg)] border border-border bg-surface p-5">
       <div>
         <h2 className="font-medium">1. Add this key to your app</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">

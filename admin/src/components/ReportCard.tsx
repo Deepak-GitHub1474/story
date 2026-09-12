@@ -22,7 +22,7 @@ export function ReportCard({ report }: { report: TReport }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <article className="rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
+    <article className="rounded-[length:var(--radius-lg)] border border-border bg-surface p-4 transition-colors duration-[var(--motion-fast)] hover:border-border-strong sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <Badge tone={REASON_TONE[report.reason] ?? 'neutral'}>
           {report.reason.replace(/_/g, ' ')}
@@ -30,6 +30,9 @@ export function ReportCard({ report }: { report: TReport }) {
         <span className="text-[length:var(--text-caption)] text-text-muted">
           {report.target.kind} · {relativeTime(report.created_at)}
         </span>
+        <code className="mono ml-auto text-[length:var(--text-micro)] text-text-muted">
+          {report.report_id}
+        </code>
         {report.target.author ? (
           <Link
             href={`/users/${report.target.author}`}
@@ -41,18 +44,18 @@ export function ReportCard({ report }: { report: TReport }) {
       </div>
 
       {report.target.title ? (
-        <h2 className="mt-3 font-medium">{report.target.title}</h2>
+        <h2 className="mt-3 text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">{report.target.title}</h2>
       ) : null}
 
-      <p className="mt-2 leading-relaxed text-text-secondary">{report.target.excerpt}</p>
+      <p className="mt-2 max-w-[75ch] text-[length:var(--text-label)] leading-relaxed text-text-secondary">{report.target.excerpt}</p>
 
       {report.note ? (
-        <p className="mt-3 rounded-[length:var(--radius-sm)] bg-surface-raised px-3 py-2 text-[length:var(--text-caption)] text-text-secondary">
+        <p className="mt-3 rounded-[length:var(--radius-lg)] border border-border bg-surface-raised px-3 py-2 text-[length:var(--text-caption)] text-text-secondary">
           Reporter note: {report.note}
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
         <Button
           size="sm"
           variant="danger"

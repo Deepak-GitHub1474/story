@@ -80,6 +80,9 @@ class Endpoints {
 
   static const String ringingForMe = '/calls/ringing';
 
+  static String callsIn(String conversationId) =>
+      '/calls?conversation_id=$conversationId';
+
   static const String chatIdentity = '/chat/identity';
   static const String chatBackup = '/chat/backup';
   static const String chatUnread = '/chat/unread-count';

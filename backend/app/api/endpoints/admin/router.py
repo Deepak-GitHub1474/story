@@ -33,6 +33,18 @@ async def resolve_report(
     return ok_response("Report resolved.", data=data)
 
 
+@router.get("/tickets", dependencies=[Depends(MODERATOR)], status_code=status.HTTP_200_OK)
+async def list_tickets(
+    claims: CurrentClaims,
+    mongo: MongoDatabase,
+    include_closed: bool = False,
+):
+    data = await controllers.list_tickets(
+        claims=claims, mongo=mongo, include_closed=include_closed
+    )
+    return ok_response("Tickets you can handle.", data=data)
+
+
 @router.get("/users/{username}", dependencies=[Depends(ADMIN)], status_code=status.HTTP_200_OK)
 async def user_detail(username: str, mongo: MongoDatabase):
     data = await controllers.user_detail(username, mongo=mongo)

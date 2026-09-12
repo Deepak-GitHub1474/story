@@ -30,8 +30,8 @@ export function NotificationLink({
       }}
       className={
         isRead
-          ? 'flex items-start gap-3 py-4 transition-colors hover:bg-surface'
-          : 'flex items-start gap-3 bg-accent/6 py-4 transition-colors hover:bg-surface'
+          ? 'flex flex-1 items-start gap-3 py-4 transition-colors hover:bg-surface'
+          : 'flex flex-1 items-start gap-3 bg-accent/6 py-4 transition-colors hover:bg-surface'
       }
     >
       {children}

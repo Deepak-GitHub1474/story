@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 text-center">
       <p className="text-xs font-medium tracking-[0.4em] text-text-muted">STORY</p>
-      <h1 className="mt-6 text-[length:var(--text-title)] font-medium">
+      <h1 className="mt-6 font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
         This page is not here
       </h1>
       <p className="mt-2 leading-relaxed text-text-secondary">

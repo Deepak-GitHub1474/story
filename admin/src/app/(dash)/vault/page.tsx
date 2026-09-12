@@ -5,15 +5,19 @@ import { VaultLookup } from './VaultLookup';
 
 export const metadata: Metadata = { title: 'Vault escrow' };
 
-export default async function VaultEscrowPage() {
+type Props = { searchParams: Promise<{ username?: string; ticket?: string }> };
+
+export default async function VaultEscrowPage({ searchParams }: Props) {
   const staff = await requireStaff();
   if (staff.role !== 'super_admin') redirect('/queue');
 
+  const { username, ticket } = await searchParams;
+
   return (
     <div className="max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">Vault escrow</h1>
+      <h1 className="text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Vault escrow</h1>
 
-      <div className="mt-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
+      <div className="mt-4 rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5">
         <h2 className="font-medium text-danger">Read before using this</h2>
         <ul className="mt-3 space-y-1.5 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
           <li>You can see passcode names. Not values, not hashes, not key material.</li>
@@ -34,7 +38,10 @@ export default async function VaultEscrowPage() {
       </div>
 
       <div className="mt-8">
-        <VaultLookup />
+        <VaultLookup
+          initialUsername={username ?? ''}
+          initialTicketId={ticket ?? ''}
+        />
       </div>
     </div>
   );

@@ -20,6 +20,10 @@ class RealtimeClient {
   bool _isConnecting = false;
 
   final _events = StreamController<RealtimeEvent>.broadcast();
+  final List<({Map<String, dynamic> event, DateTime at})> _queued = [];
+
+  static const _queueLimit = 32;
+  static const _queueLife = Duration(seconds: 20);
 
   Stream<RealtimeEvent> get events => _events.stream;
 
@@ -54,6 +58,7 @@ class RealtimeClient {
       _socket = socket;
       _attempt = 0;
       _startPing();
+      _flushQueued();
       _listener = socket.listen(
         (raw) {
           try {
@@ -72,8 +77,29 @@ class RealtimeClient {
 
   void send(Map<String, dynamic> event) {
     final socket = _socket;
+    if (socket != null && socket.readyState == WebSocket.open) {
+      socket.add(jsonEncode(event));
+      return;
+    }
+
+    _queued.add((event: event, at: DateTime.now()));
+    if (_queued.length > _queueLimit) _queued.removeAt(0);
+    unawaited(connect());
+  }
+
+  void _flushQueued() {
+    final socket = _socket;
     if (socket == null || socket.readyState != WebSocket.open) return;
-    socket.add(jsonEncode(event));
+
+    final now = DateTime.now();
+    final ready = _queued.where(
+      (held) => now.difference(held.at) < _queueLife,
+    ).toList();
+    _queued.clear();
+
+    for (final held in ready) {
+      socket.add(jsonEncode(held.event));
+    }
   }
 
   void _startPing() {

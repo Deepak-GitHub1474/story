@@ -212,10 +212,17 @@ def _decode_cursor(cursor: str) -> dict[str, Any] | None:
 
 
 async def list_calls(
-    *, claims, mongo: AsyncIOMotorDatabase, limit: int, cursor: str | None
+    *,
+    claims,
+    mongo: AsyncIOMotorDatabase,
+    limit: int,
+    cursor: str | None,
+    conversation_id: str | None = None,
 ) -> dict[str, Any]:
     capped = max(1, min(limit, c.HISTORY_MAX_LIMIT))
     query: dict[str, Any] = {"owner_id": claims.user_id}
+    if conversation_id:
+        query["conversation_id"] = conversation_id
     if cursor:
         after = _decode_cursor(cursor)
         if after is not None:

@@ -21,7 +21,9 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/chat_models.dart';
+import '../../calls/models/call_models.dart';
 import '../../calls/providers/call_providers.dart';
+import '../../calls/widgets/call_event.dart';
 import '../../calls/screens/call_screen.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/message_bubble.dart';
@@ -614,20 +616,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? SingleChildScrollView(
                       child: _EmptyThread(name: other?.displayName ?? 'them'),
                     )
-                  : ListView.builder(
+                  : Builder(
+                      builder: (context) {
+                        final calls =
+                            ref
+                                .watch(
+                                  conversationCallsProvider(
+                                    widget.conversationId,
+                                  ),
+                                )
+                                .valueOrNull ??
+                            const <CallRecord>[];
+                        final rows = _threadRows(state.messages, calls);
+
+                        return ListView.builder(
                       controller: _scroll,
                       reverse: true,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
                         vertical: AppSpacing.md,
                       ),
-                      itemCount: state.messages.length,
+                      itemCount: rows.length,
                       itemBuilder: (context, index) {
-                        final message = state.messages[index];
+                        final row = rows[index];
+                        if (row is CallRecord) return CallEvent(record: row);
+
+                        final message = row as ChatMessage;
                         final isMine = message.senderId == me;
-                        final older = index + 1 < state.messages.length
-                            ? state.messages[index + 1].createdAt
-                            : null;
+                        final older = _olderMessageAt(rows, index);
+
+
                         final opensDay = startsNewDay(message.createdAt, older);
                         final replied = message.replyTo == null
                             ? null
@@ -685,6 +703,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             _DaySeparator(isoUtc: message.createdAt),
                             bubble,
                           ],
+                        );
+                      },
                         );
                       },
                     ),
@@ -1247,4 +1267,28 @@ class _MoreReactions extends StatelessWidget {
       ),
     );
   }
+}
+
+List<Object> _threadRows(List<ChatMessage> messages, List<CallRecord> calls) {
+  if (calls.isEmpty) return List<Object>.from(messages);
+
+  final rows = <Object>[...messages, ...calls];
+  rows.sort((a, b) {
+    final left = a is CallRecord
+        ? a.startedAt.toUtc()
+        : DateTime.parse((a as ChatMessage).createdAt).toUtc();
+    final right = b is CallRecord
+        ? b.startedAt.toUtc()
+        : DateTime.parse((b as ChatMessage).createdAt).toUtc();
+    return right.compareTo(left);
+  });
+  return rows;
+}
+
+String? _olderMessageAt(List<Object> rows, int index) {
+  for (var below = index + 1; below < rows.length; below++) {
+    final row = rows[below];
+    if (row is ChatMessage) return row.createdAt;
+  }
+  return null;
 }

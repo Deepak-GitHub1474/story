@@ -16,6 +16,7 @@ CallStart aStart() => CallStart.fromJson({
 });
 
 void main() {
+  _guards();
   late FakeMedia media;
   late FakeSignal signal;
   late CallSession session;
@@ -210,5 +211,49 @@ void main() {
 
     expect(session.peerMedia, ['audio', 'video']);
     expect(session.phase, CallPhase.ringing);
+  });
+}
+
+void _guards() {
+  test('answering twice sends one answer and starts media once', () async {
+    final media = FakeMedia();
+    final signal = FakeSignal();
+    final session = CallSession(media: media, signal: signal);
+    await session.receive(aStart(), offer: 'sdp-offer');
+
+    await session.accept();
+    await session.accept();
+
+    expect(
+      signal.sent.where((e) => e['type'] == 'call.answer').length,
+      1,
+    );
+    expect(media.did.where((d) => d == 'start:callee').length, 1);
+  });
+
+  test('a failed peer connection ends the call instead of hanging', () async {
+    final media = FakeMedia();
+    final signal = FakeSignal();
+    final session = CallSession(media: media, signal: signal);
+    await session.place(aStart());
+    signal.sent.clear();
+
+    session.onConnectionFailed();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(session.phase, CallPhase.ended);
+    expect(session.endReason, 'failed');
+    expect(signal.sent.single['reason'], 'failed');
+  });
+
+  test('a dropped connection on a live call does not end it', () async {
+    final session = CallSession(media: FakeMedia(), signal: FakeSignal());
+    await session.place(aStart());
+    session.onConnectionChanged(true);
+
+    session.onConnectionChanged(false);
+
+    expect(session.phase, CallPhase.connecting);
+    expect(session.isOver, isFalse);
   });
 }

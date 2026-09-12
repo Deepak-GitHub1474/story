@@ -16,7 +16,9 @@ export default async function AppLayout({
         username={user.username}
         unread={unread.ok ? unread.value.unread : 0}
       />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-5 pt-8 pb-24 sm:px-8 sm:pt-12 sm:pb-20">
+        {children}
+      </main>
     </div>
   );
 }

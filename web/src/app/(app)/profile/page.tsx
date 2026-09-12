@@ -57,7 +57,7 @@ export default async function ProfilePage({ searchParams }: Props) {
             {user.interests.slice(0, 6).map((slug) => (
               <li
                 key={slug}
-                className="rounded-[length:var(--radius-pill)] border border-border px-3 py-1 text-[length:var(--text-caption)] text-text-secondary"
+                className="rounded-[length:var(--radius-sm)] border border-border px-2.5 py-1 text-[length:var(--text-caption)] text-text-secondary"
               >
                 {slug.replace(/-/g, ' ')}
               </li>
@@ -142,7 +142,7 @@ function Stat({
   const inner = (
     <>
       <dt className="sr-only">{label}</dt>
-      <dd className="text-[length:var(--text-heading)] font-medium">{value}</dd>
+      <dd className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">{value}</dd>
       <p className="text-[length:var(--text-caption)] text-text-muted">{label}</p>
     </>
   );

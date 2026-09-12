@@ -18,7 +18,7 @@ export function Field({ label, error, hint, suffix, className, ...rest }: Props)
     <div className="flex flex-col gap-2">
       <label
         htmlFor={id}
-        className="text-[length:var(--text-label)] font-medium text-text-secondary"
+        className="text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase"
       >
         {label}
       </label>
@@ -31,17 +31,21 @@ export function Field({ label, error, hint, suffix, className, ...rest }: Props)
           aria-describedby={describedBy}
           className={cn(
             'h-[var(--size-control-height)] w-full rounded-[length:var(--radius-md)]',
-            'border bg-surface px-4 text-[length:var(--text-body)] text-text-primary',
-            'transition-colors duration-150 outline-none',
-            'placeholder:text-text-muted',
-            'focus:border-accent focus:ring-1 focus:ring-accent',
-            error ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border',
-            Boolean(suffix) && 'pr-12',
+            'border bg-surface px-3.5 text-[length:var(--text-body)] text-text-primary',
+            'transition-colors duration-[var(--motion-fast)] outline-none',
+            'placeholder:text-text-muted/70',
+            'focus:border-accent focus:bg-bg',
+            error
+              ? 'border-danger focus:border-danger'
+              : 'border-border hover:border-border-strong',
+            Boolean(suffix) && 'pr-11',
             className,
           )}
         />
         {suffix ? (
-          <span className="absolute inset-y-0 right-3 flex items-center">{suffix}</span>
+          <span className="absolute inset-y-0 right-3 flex items-center text-text-muted">
+            {suffix}
+          </span>
         ) : null}
       </div>
 
@@ -50,7 +54,10 @@ export function Field({ label, error, hint, suffix, className, ...rest }: Props)
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-[length:var(--text-caption)] text-text-muted">
+        <p
+          id={`${id}-hint`}
+          className="text-[length:var(--text-caption)] leading-relaxed text-text-muted"
+        >
           {hint}
         </p>
       ) : null}

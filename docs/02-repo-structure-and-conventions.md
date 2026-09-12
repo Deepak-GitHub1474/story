@@ -225,7 +225,7 @@ web/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx
-│   │   ├── globals.css                Imports tokens.css, defines @theme inline
+│   │   ├── globals.css                The only stylesheet: raw tokens, @theme inline, base styles
 │   │   ├── (auth)/
 │   │   │   ├── signin/
 │   │   │   └── signup/
@@ -246,8 +246,6 @@ web/
 │   │   ├── auth/cookies.ts            Cookie names, forwarding, safe redirect
 │   │   ├── utils/cn.ts
 │   │   └── config/
-│   ├── styles/
-│   │   └── tokens.css                 GENERATED — do not edit
 │   └── gen/
 │       └── icons/                     GENERATED
 ├── public/
@@ -409,8 +407,8 @@ The design tokens were generated once, from a shared `tokens.json` through a Pyt
 | File | Consumer |
 |---|---|
 | `app/lib/theme/tokens.dart` | Flutter |
-| `web/src/styles/tokens.css` | Next.js, users |
-| `admin/src/styles/tokens.css` | Next.js, staff |
+| `web/src/app/globals.css` | Next.js, users |
+| `admin/src/app/globals.css` | Next.js, staff |
 
 The cost is real and is accepted: **nothing prevents the three drifting.** Changing one colour means editing three files, and within each CSS file every light-theme value appears twice — once under the explicit `[data-theme='paper']` selector, once under the `prefers-color-scheme` default. Six edits for one hex. Nothing warns you; this paragraph is the only record, and keeping the three aligned is a review responsibility.
 

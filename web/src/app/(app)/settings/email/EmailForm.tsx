@@ -27,7 +27,7 @@ export function EmailForm({
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <header>
-        <h1 className="text-[length:var(--text-title)] font-medium">Recovery email</h1>
+        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Recovery email</h1>
         <p className="mt-2 leading-relaxed text-text-secondary">
           An email is the only way to recover a forgotten password. We store it
           encrypted and can never show it to you or anyone else — only send to it.

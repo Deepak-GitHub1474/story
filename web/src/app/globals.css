@@ -1,16 +1,129 @@
 @import 'tailwindcss';
 
+:root,
+[data-theme='midnight'] {
+  --c-bg: oklch(0.158 0.008 74);
+  --c-surface: oklch(0.202 0.009 74);
+  --c-surface-raised: oklch(0.252 0.010 74);
+  --c-border: oklch(0.305 0.012 74);
+  --c-border-strong: oklch(0.392 0.014 74);
+  --c-text-primary: oklch(0.945 0.008 74);
+  --c-text-secondary: oklch(0.742 0.011 74);
+  --c-text-muted: oklch(0.586 0.011 74);
+  --c-accent: oklch(0.812 0.128 76);
+  --c-accent-soft: oklch(0.812 0.128 76 / 0.14);
+  --c-accent-text: oklch(0.158 0.014 74);
+  --c-danger: oklch(0.722 0.152 24);
+  --c-success: oklch(0.778 0.112 152);
+  --c-shadow: oklch(0.08 0.01 74 / 0.5);
+}
+
+[data-theme='paper'] {
+  --c-bg: oklch(0.974 0.006 86);
+  --c-surface: oklch(0.995 0.003 86);
+  --c-surface-raised: oklch(0.941 0.009 86);
+  --c-border: oklch(0.876 0.011 86);
+  --c-border-strong: oklch(0.782 0.014 86);
+  --c-text-primary: oklch(0.224 0.012 62);
+  --c-text-secondary: oklch(0.436 0.013 62);
+  --c-text-muted: oklch(0.596 0.011 62);
+  --c-accent: oklch(0.472 0.118 54);
+  --c-accent-soft: oklch(0.472 0.118 54 / 0.1);
+  --c-accent-text: oklch(0.988 0.004 86);
+  --c-danger: oklch(0.474 0.162 26);
+  --c-success: oklch(0.452 0.102 152);
+  --c-shadow: oklch(0.32 0.02 62 / 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --c-bg: oklch(0.974 0.006 86);
+    --c-surface: oklch(0.995 0.003 86);
+    --c-surface-raised: oklch(0.941 0.009 86);
+    --c-border: oklch(0.876 0.011 86);
+    --c-border-strong: oklch(0.782 0.014 86);
+    --c-text-primary: oklch(0.224 0.012 62);
+    --c-text-secondary: oklch(0.436 0.013 62);
+    --c-text-muted: oklch(0.596 0.011 62);
+    --c-accent: oklch(0.472 0.118 54);
+    --c-accent-soft: oklch(0.472 0.118 54 / 0.1);
+    --c-accent-text: oklch(0.988 0.004 86);
+    --c-danger: oklch(0.474 0.162 26);
+    --c-success: oklch(0.452 0.102 152);
+    --c-shadow: oklch(0.32 0.02 62 / 0.12);
+  }
+}
+
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-xxxl: 48px;
+  --space-section: clamp(3.5rem, 9vw, 7.5rem);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  --text-micro: 0.6875rem;
+  --text-caption: 0.8125rem;
+  --text-label: 0.9375rem;
+  --text-body: 1.0625rem;
+  --text-reading: 1.125rem;
+  --text-heading: 1.375rem;
+  --text-title: 1.9375rem;
+  --text-display: clamp(2.375rem, 1.35rem + 4.6vw, 4.75rem);
+  --text-mega: clamp(3rem, 1.2rem + 8vw, 7rem);
+
+  --tracking-display: -0.022em;
+  --tracking-title: -0.014em;
+  --tracking-label: 0.006em;
+  --tracking-eyebrow: 0.18em;
+
+  --size-control-height: 46px;
+  --size-control-height-sm: 36px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-max-content-width: 640px;
+  --size-measure: 68ch;
+
+  --motion-fast: 140ms;
+  --motion-base: 260ms;
+  --motion-slow: 620ms;
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-raised: var(--c-surface-raised);
+  --color-border: var(--c-border);
+  --color-border-strong: var(--c-border-strong);
+  --color-text-primary: var(--c-text-primary);
+  --color-text-secondary: var(--c-text-secondary);
+  --color-text-muted: var(--c-text-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-text: var(--c-accent-text);
+  --color-danger: var(--c-danger);
+  --color-success: var(--c-success);
+
+  --font-display: var(--font-literata), 'Iowan Old Style', Palatino, Georgia, serif;
+  --font-ui: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
 html {
   color-scheme: dark light;
 }
 
 body {
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'cv05' 1;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
@@ -18,32 +131,59 @@ body {
   color: var(--c-accent-text);
 }
 
-.story-body {
-  font-size: 1.0625rem;
-  line-height: 1.75;
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-[data-reading='large'] .story-body {
-  font-size: 1.25rem;
-  line-height: 1.85;
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-border-strong);
+  background-clip: content-box;
 }
 
 .font-editorial {
-  font-family:
-    ui-serif,
-    'Iowan Old Style',
-    'Palatino Linotype',
-    Palatino,
-    Georgia,
-    serif;
-  font-feature-settings: 'liga' 1, 'kern' 1;
+  font-family: var(--font-literata), 'Iowan Old Style', Palatino, Georgia, serif;
+  font-feature-settings: 'liga' 1, 'kern' 1, 'onum' 1;
+}
+
+.story-body {
+  font-family: var(--font-literata), 'Iowan Old Style', Palatino, Georgia, serif;
+  font-size: var(--text-reading);
+  line-height: 1.78;
+  letter-spacing: 0.002em;
+  font-feature-settings: 'liga' 1, 'kern' 1, 'onum' 1;
+}
+
+[data-reading='large'] .story-body {
+  font-size: 1.3125rem;
+  line-height: 1.82;
+}
+
+.story-body p + p {
+  margin-top: 1.35em;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 .rule-soft {
   background: linear-gradient(
     to right,
     var(--c-border) 0%,
-    var(--c-border) 40%,
+    var(--c-border) 34%,
     transparent 100%
   );
 }
@@ -51,7 +191,7 @@ body {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translate3d(0, 18px, 0);
+    transform: translate3d(0, 20px, 0);
   }
   to {
     opacity: 1;
@@ -60,15 +200,15 @@ body {
 }
 
 .rise {
-  animation: rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise var(--motion-slow) var(--ease-out-quint) both;
 }
 
 .reveal {
   opacity: 0;
-  transform: translate3d(0, 22px, 0);
+  transform: translate3d(0, 24px, 0);
   transition:
-    opacity 760ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 760ms var(--ease-out-quint),
+    transform 760ms var(--ease-out-quint);
   will-change: opacity, transform;
 }
 

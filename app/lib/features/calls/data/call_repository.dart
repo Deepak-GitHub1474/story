@@ -31,6 +31,12 @@ class CallRepository {
         parse: CallHistoryPage.fromJson,
       );
 
+  Future<Result<CallHistoryPage>> inConversation(String conversationId) =>
+      _client.get(
+        Endpoints.callsIn(conversationId),
+        parse: CallHistoryPage.fromJson,
+      );
+
   Future<Result<int>> deleteOne(String callId) => _client.delete(
     Endpoints.call(callId),
     parse: (data) => data['deleted'] as int? ?? 0,

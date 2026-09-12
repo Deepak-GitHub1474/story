@@ -116,3 +116,27 @@ async def test_an_empty_history_is_not_an_error(client, signup_payload):
 
     assert response.status_code == 200
     assert response.json()["data"]["items"] == []
+
+
+async def test_history_can_be_scoped_to_one_conversation(client, signup_payload, mongo):
+    """The chat thread shows only the calls that belong to it."""
+    headers, user_id = await me(client, mongo, signup_payload)
+    await seed(mongo, user_id, 2)
+    await mongo[c.CALLS].update_one(
+        {"call_id": "cal_000"}, {"$set": {"conversation_id": "cnv_other"}}
+    )
+
+    data = (
+        await client.get("/v1/calls?conversation_id=cnv_1", headers=headers)
+    ).json()["data"]
+
+    assert [item["call_id"] for item in data["items"]] == ["cal_001"]
+
+
+async def test_no_filter_still_returns_everything(client, signup_payload, mongo):
+    headers, user_id = await me(client, mongo, signup_payload)
+    await seed(mongo, user_id, 3)
+
+    data = (await client.get("/v1/calls", headers=headers)).json()["data"]
+
+    assert len(data["items"]) == 3

@@ -101,9 +101,13 @@ class CallSession {
   }
 
   Future<void> accept() async {
+    if (phase != CallPhase.ringing) return;
+
     final start = _start;
     final offer = _pendingOffer;
     if (start == null || offer == null) return;
+
+    _pendingOffer = null;
 
     await _media.start(iceServers: start.iceServerMaps, asCaller: false);
     await _media.acceptRemote(offer);
@@ -115,7 +119,6 @@ class CallSession {
       'sdp': answer,
     });
 
-    _pendingOffer = null;
     _ring?.cancel();
     wasAnswered = true;
     _moveTo(CallPhase.connecting);
@@ -164,6 +167,11 @@ class CallSession {
     }
 
     if (phase == CallPhase.connected) _moveTo(CallPhase.connecting);
+  }
+
+  void onConnectionFailed() {
+    if (phase == CallPhase.ended) return;
+    unawaited(_end('failed', tell: true));
   }
 
   Future<void> toggleMute() async {

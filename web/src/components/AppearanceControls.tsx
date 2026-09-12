@@ -31,7 +31,7 @@ function Choice<T extends string>({
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex gap-1 rounded-[length:var(--radius-pill)] bg-surface-raised p-1"
+        className="flex gap-0.5 rounded-[length:var(--radius-md)] border border-border bg-surface-raised p-0.5"
       >
         {options.map(([option, optionLabel]) => (
           <button
@@ -41,7 +41,7 @@ function Choice<T extends string>({
             aria-checked={value === option}
             onClick={() => onChange(option)}
             className={cn(
-              'rounded-[length:var(--radius-pill)] px-3.5 py-1.5 text-[length:var(--text-caption)] transition-colors',
+              'rounded-[length:var(--radius-sm)] px-3 py-1.5 text-[length:var(--text-caption)] transition-colors duration-[var(--motion-fast)]',
               value === option
                 ? 'bg-accent font-medium text-accent-text'
                 : 'text-text-secondary hover:text-text-primary',
@@ -63,6 +63,7 @@ export function AppearanceControls() {
     const storedTheme = localStorage.getItem('story.theme');
     const storedSize = localStorage.getItem('story.reading');
     if (storedTheme === 'midnight' || storedTheme === 'paper') setTheme(storedTheme);
+    else if (storedTheme === 'system') setTheme('system');
     if (storedSize === 'large') setSize(storedSize);
   }, []);
 
@@ -70,7 +71,7 @@ export function AppearanceControls() {
     const root = document.documentElement;
     if (theme === 'system') {
       root.removeAttribute('data-theme');
-      localStorage.removeItem('story.theme');
+      localStorage.setItem('story.theme', 'system');
     } else {
       root.setAttribute('data-theme', theme);
       localStorage.setItem('story.theme', theme);

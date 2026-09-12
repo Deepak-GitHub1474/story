@@ -123,12 +123,6 @@ async def handle(
         state["connected_at"] = utc_now().isoformat().replace("+00:00", "Z")
         await save(call_id, state, redis, settings.CALL_RING_TIMEOUT_SECONDS * 60)
 
-    logger.info(
-        "call_signal",
-        service="calls",
-        code=kind,
-        error=f"{user_id[-6:]}->{peer[-6:]} {call_id[-6:]} {event.get('reason') or ''}",
-    )
     await bus.publish(redis, [peer], payload)
 
     if kind == "call.offer" and mongo is not None:
@@ -148,6 +142,21 @@ async def handle(
 
     if kind == "call.end":
         await redis.delete(ringing_for_key(callee))
+
+        if mongo is not None and not state.get("connected_at"):
+            from app.api.endpoints.calls.ring import cancel_push
+            from app.ports.factory import build_push
+
+            try:
+                await cancel_push(
+                    callee_id=callee,
+                    call_id=call_id,
+                    mongo=mongo,
+                    push=build_push(settings),
+                )
+            except Exception:
+                logger.error("call_cancel_push_failed", code="call_cancel_push_failed")
+
         if mongo is not None:
             await _record(
                 state, event.get("reason") or "hangup", user_id, mongo

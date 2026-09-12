@@ -48,13 +48,13 @@ export default async function PublicProfilePage({ params }: Props) {
         <Avatar seed={profile.avatar_seed} size={80} />
         <dl className="flex flex-1 justify-around gap-6 text-center">
           <div>
-            <dd className="text-[length:var(--text-heading)] font-medium">
+            <dd className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
               {profile.counts.stories ?? 0}
             </dd>
             <dt className="text-[length:var(--text-caption)] text-text-muted">Stories</dt>
           </div>
           <div>
-            <dd className="text-[length:var(--text-heading)] font-medium">
+            <dd className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
               {profile.counts.followers ?? 0}
             </dd>
             <dt className="text-[length:var(--text-caption)] text-text-muted">Readers</dt>

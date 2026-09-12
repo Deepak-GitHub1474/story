@@ -10,6 +10,32 @@ export type TStoryAuthor = {
   username: string;
 };
 
+export type TImageFit = 'cover' | 'contain';
+
+export type TLiker = TStoryAuthor & {
+  user_id: string | null;
+  liked_at: string;
+  is_following?: boolean;
+  follows_me?: boolean;
+  is_me?: boolean;
+};
+
+export type TPictures = {
+  images: string[];
+  image_ratio: number | null;
+  image_fit: TImageFit;
+};
+
+export type TPerson = {
+  user_id: string;
+  username: string | null;
+  display_name: string;
+  avatar_seed: string;
+  reason?: string;
+};
+
+export type TSuggestions = { communities: TCommunity[]; people: TPerson[] };
+
 export type TPublicStory = {
   slug: string;
   title: string | null;
@@ -20,6 +46,9 @@ export type TPublicStory = {
   counts: { likes?: number; comments?: number };
   reading_minutes: number;
   published_at: string | null;
+  images?: string[];
+  image_ratio?: number | null;
+  image_fit?: TImageFit;
 };
 
 export type TResult<T> =
@@ -68,6 +97,10 @@ export type TStory = {
   published_at: string | null;
   created_at: string;
   shared?: TSharedStory | null;
+  images?: string[];
+  image_ratio?: number | null;
+  image_fit?: TImageFit;
+  liked_by?: TStoryAuthor[];
 };
 
 export type TPage<T> = { items: T[]; next_cursor: string | null; has_more: boolean };

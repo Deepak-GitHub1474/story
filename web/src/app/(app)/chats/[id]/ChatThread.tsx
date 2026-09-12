@@ -11,8 +11,10 @@ import { relativeTime } from '@/lib/format';
 import {
   decryptMessage,
   encryptMessage,
+  newConversationKey,
   pairKey,
   unwrapFromPeer,
+  wrapForPeer,
 } from '@/lib/chat/crypto';
 import { useChatIdentity } from '@/lib/chat/useIdentity';
 import type { TChatMessage, TConversation } from '@/lib/chat/types';
@@ -21,6 +23,7 @@ import {
   announceTyping,
   markConversationRead,
   peerIdentity,
+  rekeyConversation,
   sendMessage,
   setReaction,
   unsendMessage,
@@ -42,6 +45,8 @@ export function ChatThread({
   const [replyTo, setReplyTo] = useState<TChatMessage | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsRekey, setNeedsRekey] = useState(false);
+  const [isResetting, setResetting] = useState(false);
   const cek = useRef<Uint8Array | null>(null);
   const lastTyping = useRef(0);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
@@ -98,6 +103,7 @@ export function ChatThread({
           setError(
             'This chat was started on another device, so its key is not in this browser.',
           );
+          setNeedsRekey(true);
         }
       }
     }
@@ -107,6 +113,52 @@ export function ChatThread({
       cancelled = true;
     };
   }, [conversationId, identity, userId]);
+
+  async function reset() {
+    if (identity.status !== 'ready' || !conversation) return;
+
+    setResetting(true);
+    try {
+      const peer = await peerIdentity(conversation.other.username);
+      if (!peer) {
+        setError('They have not opened Story since chat was added, so there is no key to wrap for.');
+        return;
+      }
+
+      const fresh = await newConversationKey();
+      const pair = pairKey(userId, peer.user_id);
+
+      const outcome = await rekeyConversation(conversationId, {
+        wrapped_cek_for_me: await wrapForPeer({
+          cek: fresh,
+          mine: identity.identity,
+          theirPublicKey: peer.public_key,
+          pair,
+          recipientId: userId,
+        }),
+        wrapped_cek_for_them: await wrapForPeer({
+          cek: fresh,
+          mine: identity.identity,
+          theirPublicKey: peer.public_key,
+          pair,
+          recipientId: peer.user_id,
+        }),
+        sender_public_key: identity.identity.publicKey,
+      });
+
+      if (outcome.error) {
+        setError(outcome.error);
+        return;
+      }
+
+      cek.current = fresh;
+      setNeedsRekey(false);
+      setError(null);
+      await refresh();
+    } finally {
+      setResetting(false);
+    }
+  }
 
   useRealtime((event) => {
     if (event.conversation_id !== conversationId) return;
@@ -208,9 +260,25 @@ export function ChatThread({
       {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
 
       {error ? (
-        <p className="mt-3 rounded-[length:var(--radius-md)] bg-surface-raised px-4 py-3 leading-relaxed text-text-secondary">
-          {error}
-        </p>
+        <div className="mt-3 rounded-[length:var(--radius-md)] bg-surface-raised px-4 py-3">
+          <p className="leading-relaxed text-text-secondary">{error}</p>
+          {needsRekey ? (
+            <div className="mt-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                isFullWidth={false}
+                isLoading={isResetting}
+                onClick={() => void reset()}
+              >
+                Reset this chat
+              </Button>
+              <p className="mt-2 text-[length:var(--text-caption)] text-text-muted">
+                A fresh key for both of you. Everything said before it stays unreadable.
+              </p>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <ol className="flex flex-1 flex-col-reverse gap-2 overflow-y-auto py-6">
@@ -367,9 +435,13 @@ export function ChatThread({
                 void announceTyping(conversationId);
               }
             }}
-            className="max-h-32 min-h-[52px] flex-1 resize-y rounded-[length:var(--radius-pill)] border border-border bg-surface px-5 py-3.5 outline-none placeholder:text-text-muted focus:border-accent"
+            className="max-h-32 min-h-[46px] flex-1 resize-y rounded-[length:var(--radius-lg)] border border-border bg-surface px-4 py-3 outline-none placeholder:text-text-muted/70 focus:border-accent"
           />
-          <Button type="submit" isFullWidth={false} disabled={!draft.trim()}>
+          <Button
+            type="submit"
+            isFullWidth={false}
+            disabled={!draft.trim() || needsRekey}
+          >
             Send
           </Button>
           </div>

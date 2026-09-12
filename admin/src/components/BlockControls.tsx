@@ -33,7 +33,7 @@ export function BlockControls({
   }
 
   return (
-    <div className="space-y-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
+    <div className="space-y-4 rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5">
       <h2 className="font-medium text-danger">Block this account</h2>
       <p className="text-[length:var(--text-label)] leading-relaxed text-text-secondary">
         They cannot sign in, and their stories leave every feed. The reason is internal

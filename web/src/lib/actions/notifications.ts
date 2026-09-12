@@ -12,3 +12,8 @@ export async function markRead(notificationId: string) {
   await backendFetch(`/notifications/${notificationId}/read`, { method: 'POST' });
   revalidatePath('/activity');
 }
+
+export async function removeNotification(notificationId: string) {
+  await backendFetch(`/notifications/${notificationId}`, { method: 'DELETE' });
+  revalidatePath('/activity');
+}

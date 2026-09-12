@@ -287,12 +287,13 @@ The user opens the ticket from **Vault → Recovery** (app: `/vault/recovery`, w
 | `POST /v1/tickets` | user | Opens one ticket per type. A second open ticket of the same type is `TICKET_ALREADY_OPEN`. |
 | `GET /v1/tickets` | user | Only the caller's own tickets. |
 | `GET /v1/security-activity` | user | Audit entries whose target is the caller and whose `visible_to_target` is true. |
+| `GET /v1/admin/tickets` | moderator+ | Open tickets, oldest first, narrowed to the types the caller's role may handle. `?include_closed=true` widens it to every state. Carries the ticket id, type, state, reason, and the opener's public card — never their email. |
 | `GET /v1/admin/vault/{username}/passcodes` | **super_admin only** | `label`, `scope`, `created_at`, `last_used_at`, `failed_attempts`, `locked_until`. Never the hash, the salt, the KDF params, or the escrow payload. |
 | `POST /v1/admin/vault/{username}/release` | **super_admin only** | Requires an open `passcode_release` ticket belonging to that account and a justification of at least 50 characters. Moves the ticket to `reveal_ready` and writes `passcode_release.approved` to the audit log with the justification attached. |
 
 `moderator` and `admin` both receive `403 ROLE_REQUIRED` on the two admin routes. There is no `/items`, `/keys`, or `/decrypt` route under `/admin/vault` — a test asserts all three are `404`, so adding one is a visible act.
 
-The admin surface exposes this at `/vault`, visible in the nav only to `super_admin`, and the page redirects any other role to `/queue`. That redirect is convenience; the backend role dependency is the control.
+The admin surface exposes this at `/vault`, visible in the nav only to `super_admin`, and the page redirects any other role to `/queue`. That redirect is convenience; the backend role dependency is the control. A super_admin reaches it from `/tickets`, where each `passcode_release` links through with the username and ticket id already filled in — the release form demands a ticket id, and without the queue the only way to learn one was to read the database.
 
 #### Step-up authentication
 

@@ -12,7 +12,7 @@ export function JoinButton({ slug, isMember }: { slug: string; isMember: boolean
     <Button
       size="sm"
       isFullWidth={false}
-      variant={joined ? 'secondary' : 'primary'}
+      variant={joined ? 'ghost' : 'secondary'}
       onClick={() =>
         startTransition(async () => {
           const next = !joined;

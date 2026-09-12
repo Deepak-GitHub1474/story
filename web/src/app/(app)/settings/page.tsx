@@ -7,6 +7,7 @@ import { SignOutButton } from '@/components/SignOutButton';
 import { Row, Section } from '@/components/ui/Surface';
 import { signOutEverywhere } from '@/lib/actions/account';
 import { requireUser } from '@/lib/server/guard';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-[length:var(--text-title)] font-medium">Settings</h1>
+      <PageHeader title="Settings" description="Your account, how STORY looks, and how much of you it remembers." />
 
       <Section title="Account">
         <Row label="Edit profile" href="/settings/profile" />

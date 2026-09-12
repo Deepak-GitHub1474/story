@@ -19,6 +19,9 @@ PROJECTION = {
     "counts": 1,
     "reading_minutes": 1,
     "published_at": 1,
+    "images": 1,
+    "image_ratio": 1,
+    "image_fit": 1,
 }
 
 
@@ -60,6 +63,9 @@ async def public_story(slug: str, mongo: MongoDatabase):
                 "counts": story.get("counts", {}),
                 "reading_minutes": story.get("reading_minutes", 1),
                 "published_at": to_wire(story.get("published_at")),
+                "images": story.get("images", []),
+                "image_ratio": story.get("image_ratio"),
+                "image_fit": story.get("image_fit") or "cover",
             }
         },
     )

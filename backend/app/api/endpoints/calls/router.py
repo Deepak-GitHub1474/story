@@ -36,9 +36,14 @@ async def list_calls(
     mongo: MongoDatabase,
     limit: int = Query(default=c.HISTORY_DEFAULT_LIMIT, ge=1, le=c.HISTORY_MAX_LIMIT),
     cursor: str | None = Query(default=None),
+    conversation_id: str | None = Query(default=None),
 ):
     data = await controllers.list_calls(
-        claims=claims, mongo=mongo, limit=limit, cursor=cursor
+        claims=claims,
+        mongo=mongo,
+        limit=limit,
+        cursor=cursor,
+        conversation_id=conversation_id,
     )
     return ok_response("Your calls.", data=data)
 

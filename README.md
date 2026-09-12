@@ -267,9 +267,10 @@ make promote USER=quiet_fox ROLE=admin       # queue, accounts, audit
 ```
 
 Design tokens live in three hand-maintained files — `app/lib/theme/tokens.dart`,
-`web/src/styles/tokens.css` and `admin/src/styles/tokens.css`. There is no
-generator and no shared source. Changing a colour means touching all three; the
-CSS files carry a banner saying so.
+`web/src/app/globals.css` and `admin/src/app/globals.css`. There is no generator
+and no shared source. Changing a colour means touching all three. On the two web
+surfaces the tokens sit in `globals.css` rather than a file of their own, because
+Tailwind v4 only reads `@theme` from the `@import 'tailwindcss'` graph.
 
 ## Secrets
 

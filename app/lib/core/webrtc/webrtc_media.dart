@@ -16,10 +16,12 @@ class WebRtcMedia implements CallMedia {
   WebRtcMedia({
     required this.onLocalCandidate,
     required this.onConnectionChanged,
+    required this.onConnectionFailed,
   });
 
   final void Function(Map<String, dynamic> candidate) onLocalCandidate;
   final void Function(bool connected) onConnectionChanged;
+  final void Function() onConnectionFailed;
 
   RTCPeerConnection? _peer;
   MediaStream? _local;
@@ -56,6 +58,10 @@ class WebRtcMedia implements CallMedia {
     };
 
     peer.onConnectionState = (state) {
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        onConnectionFailed();
+        return;
+      }
       onConnectionChanged(
         state == RTCPeerConnectionState.RTCPeerConnectionStateConnected,
       );

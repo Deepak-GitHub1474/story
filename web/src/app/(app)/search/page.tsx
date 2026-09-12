@@ -6,6 +6,7 @@ import { backendFetch } from '@/lib/server/session';
 import type { TCommunity, TStory } from '@/lib/types';
 import { RecentSearches } from '@/components/RecentSearches';
 import { SearchBox } from './SearchBox';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export const metadata: Metadata = { title: 'Search' };
 
@@ -26,7 +27,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">Search</h1>
+      <PageHeader title="Search" description="Find people, rooms and stories by what they are about." />
       <div className="mt-6">
         <SearchBox initialQuery={query} />
       </div>

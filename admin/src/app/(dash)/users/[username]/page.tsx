@@ -26,7 +26,7 @@ export default async function AdminUserPage({ params }: Props) {
   return (
     <div className="max-w-2xl space-y-8">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="text-[length:var(--text-title)] font-medium">
+        <h1 className="text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
           @{user.username}
         </h1>
         <Badge tone={user.blocked ? 'danger' : 'success'}>
@@ -61,7 +61,7 @@ export default async function AdminUserPage({ params }: Props) {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[length:var(--radius-md)] border border-border bg-surface px-4 py-3">
+    <div className="rounded-[length:var(--radius-lg)] border border-border bg-surface px-4 py-3">
       <dd className="font-medium">{value}</dd>
       <dt className="text-[length:var(--text-caption)] text-text-muted">{label}</dt>
     </div>

@@ -9,7 +9,7 @@ export function Card({
     <div
       {...rest}
       className={cn(
-        'rounded-[length:var(--radius-md)] border border-border bg-surface p-6',
+        'rounded-[length:var(--radius-lg)] border border-border bg-surface p-5 sm:p-6',
         className,
       )}
     >
@@ -26,11 +26,11 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="px-1 text-[length:var(--text-caption)] font-medium tracking-[0.12em] text-text-muted uppercase">
+    <section className="flex flex-col gap-3">
+      <h2 className="px-0.5 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
         {title}
       </h2>
-      <div className="divide-y divide-border overflow-hidden rounded-[length:var(--radius-md)] border border-border bg-surface">
+      <div className="divide-y divide-border overflow-hidden rounded-[length:var(--radius-lg)] border border-border bg-surface">
         {children}
       </div>
     </section>
@@ -55,13 +55,17 @@ export function Row({
   const inner = (
     <>
       <span className={cn('flex-1 text-left', isDanger && 'text-danger')}>{label}</span>
-      {value ? <span className="text-text-muted">{value}</span> : null}
+      {value ? (
+        <span className="truncate text-[length:var(--text-label)] text-text-muted">
+          {value}
+        </span>
+      ) : null}
       {trailing}
     </>
   );
 
   const shared =
-    'flex w-full items-center gap-3 px-4 py-4 text-[length:var(--text-body)] transition-colors hover:bg-surface-raised';
+    'flex w-full items-center gap-3 px-4 py-3.5 text-[length:var(--text-label)] transition-colors duration-[var(--motion-fast)] hover:bg-surface-raised sm:px-5';
 
   if (href) {
     return (
@@ -90,22 +94,41 @@ export function Badge({
   children: React.ReactNode;
 }) {
   const tones = {
-    neutral: 'border-border text-text-secondary',
-    accent: 'border-accent/50 text-accent',
-    success: 'border-success/50 text-success',
-    danger: 'border-danger/50 text-danger',
+    neutral: 'border-border text-text-muted',
+    accent: 'border-accent/40 text-accent',
+    success: 'border-success/40 text-success',
+    danger: 'border-danger/40 text-danger',
   } as const;
 
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-[length:var(--radius-pill)] border px-2 py-0.5',
-        'text-[length:var(--text-caption)] font-medium',
+        'inline-flex items-center rounded-[length:var(--radius-sm)] border px-1.5 py-0.5',
+        'text-[length:var(--text-micro)] font-medium tracking-[0.09em] uppercase',
         tones[tone],
       )}
     >
       {children}
     </span>
+  );
+}
+
+export function Eyebrow({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={cn(
+        'text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase',
+        className,
+      )}
+    >
+      {children}
+    </p>
   );
 }
 

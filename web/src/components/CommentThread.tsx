@@ -83,7 +83,7 @@ export function CommentThread({
 
   return (
     <section className="mt-10">
-      <h2 className="text-[length:var(--text-heading)] font-medium">Comments</h2>
+      <h2 className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">Comments</h2>
 
       {comments.length === 0 ? (
         <p className="mt-4 leading-relaxed text-text-muted">

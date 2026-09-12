@@ -558,11 +558,15 @@ Container(
 }
 ```
 
-`globals.css` is layer two — the semantic mapping Tailwind v4 turns into utility classes:
+Both layers live in `globals.css`, and they have to: Tailwind v4 only reads `@theme`
+from files reachable through the `@import 'tailwindcss'` graph, so a token file
+pulled in from `layout.tsx` is silently ignored and every colour utility vanishes.
+Layer two is the semantic mapping Tailwind turns into utility classes:
 
 ```css
 @import 'tailwindcss';
-@import './tokens.css';
+
+/* layer one — raw values, keyed by theme, above */
 
 @theme inline {
   --color-bg-base: var(--bg-base);

@@ -36,7 +36,15 @@ export function ChatList({ userId }: { userId: string }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">Messages</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Messages</h1>
+        <Link
+          href="/chats/new"
+          className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
+        >
+          New message
+        </Link>
+      </div>
 
       {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
 
@@ -57,7 +65,7 @@ export function ChatList({ userId }: { userId: string }) {
             type="button"
             onClick={() => setShowRequests(pending as boolean)}
             className={cn(
-              'rounded-[length:var(--radius-pill)] border px-4 py-2 text-[length:var(--text-label)] font-medium transition-colors',
+              'inline-flex h-9 items-center rounded-[length:var(--radius-md)] border px-4 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] transition-colors duration-[var(--motion-fast)]',
               showRequests === pending
                 ? 'border-accent bg-accent text-accent-text'
                 : 'border-border text-text-secondary hover:text-text-primary',
@@ -74,7 +82,7 @@ export function ChatList({ userId }: { userId: string }) {
           body={
             showRequests
               ? 'People who do not follow you back land here first.'
-              : 'Find someone from search and say something. If you both follow each other it opens straight away.'
+              : 'Start one from New message, or find someone in search. If you both follow each other it opens straight away.'
           }
         />
       ) : (

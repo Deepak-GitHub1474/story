@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { RevokeButton } from './RevokeButton';
 import { backendFetch } from '@/lib/server/session';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export const metadata: Metadata = { title: 'Active sessions' };
 
@@ -17,7 +18,7 @@ export default async function SessionsPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-[length:var(--text-title)] font-medium">Active sessions</h1>
+      <PageHeader title="Active sessions" />
       <p className="mt-2 leading-relaxed text-text-secondary">
         Every device signed in to this account. Revoking one signs it out within a
         minute.

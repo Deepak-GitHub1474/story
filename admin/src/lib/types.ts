@@ -40,6 +40,22 @@ export type TAdminUser = {
   last_login_at: string | null;
 };
 
+export type TTicket = {
+  ticket_id: string;
+  type: string;
+  state: string;
+  reason: string;
+  required_role: string;
+  opened_by: {
+    user_id: string | null;
+    username: string | null;
+    display_name: string;
+    avatar_seed: string;
+  };
+  created_at: string;
+  updated_at: string;
+};
+
 export type TAuditEntry = {
   entry_id: string;
   action: string;
@@ -56,6 +72,7 @@ export type TStats = {
   stories: number;
   comments: number;
   open_reports: number;
+  open_tickets: number;
   communities: number;
 };
 

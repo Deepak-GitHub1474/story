@@ -48,7 +48,7 @@ export default async function PeoplePage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">{config.title}</h1>
+      <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">{config.title}</h1>
 
       {people.length === 0 ? (
         <EmptyState title="Nobody here yet" body={config.empty} />

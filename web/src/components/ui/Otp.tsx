@@ -22,7 +22,7 @@ export function Otp({
             key={index}
             className={cn(
               'flex h-14 flex-1 items-center justify-center rounded-[length:var(--radius-md)] border bg-surface',
-              'text-[length:var(--text-title)] font-medium transition-colors',
+              'font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)] transition-colors',
               hasError
                 ? 'border-danger'
                 : index === value.length

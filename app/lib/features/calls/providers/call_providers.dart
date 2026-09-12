@@ -22,6 +22,14 @@ final callHistoryProvider = FutureProvider<List<CallRecord>>((ref) async {
   return result.valueOrNull?.items ?? const [];
 });
 
+final conversationCallsProvider =
+    FutureProvider.family<List<CallRecord>, String>((ref, conversationId) async {
+      final result = await ref
+          .watch(callRepositoryProvider)
+          .inConversation(conversationId);
+      return result.valueOrNull?.items ?? const [];
+    });
+
 class _SocketSignal implements CallSignal {
   _SocketSignal(this._client);
 
@@ -54,6 +62,7 @@ class CallController extends StateNotifier<CallSession?> {
     final media = WebRtcMedia(
       onLocalCandidate: (candidate) => session.onLocalCandidate(candidate),
       onConnectionChanged: (connected) => session.onConnectionChanged(connected),
+      onConnectionFailed: () => session.onConnectionFailed(),
     );
     session = CallSession(media: media, signal: signal)
       ..onChanged = () {
@@ -81,8 +90,8 @@ class CallController extends StateNotifier<CallSession?> {
       await CallUi.startRingback();
       await CallUi.startOngoing(start.peer.displayName, start.callId);
     } catch (error) {
-      state = null;
       await session.hangUp();
+      state = null;
       return 'The call could not start: $error';
     }
     return null;
@@ -171,6 +180,11 @@ class CallController extends StateNotifier<CallSession?> {
     unawaited(CallUi.stopRingback());
     unawaited(CallUi.stopOngoing());
     _ref.invalidate(callHistoryProvider);
+
+    final conversationId = state?.start?.conversationId;
+    if (conversationId != null && conversationId.isNotEmpty) {
+      _ref.invalidate(conversationCallsProvider(conversationId));
+    }
   }
 
   void dismiss() {
@@ -200,7 +214,6 @@ class CallController extends StateNotifier<CallSession?> {
     } else if (action == 'hangup') {
       await hangUp();
     } else {
-      onIncoming?.call();
     }
   }
 
@@ -223,18 +236,15 @@ class CallController extends StateNotifier<CallSession?> {
     final session = _newSession();
     await session.receive(invite.start, offer: invite.sdp);
     state = session;
+    await CallUi.volumeForRinging();
     await CallUi.ring(
       callId: invite.start.callId,
       caller: invite.start.peer.displayName,
     );
-    onIncoming?.call();
   }
 
   Future<void> adopt(String callId) async {
-    if (state != null && !state!.isOver) {
-      if (state!.callId == callId) return;
-      return;
-    }
+    if (state != null && !state!.isOver) return;
 
     final result = await _ref.read(callRepositoryProvider).pending(callId);
     final invite = result.valueOrNull;
@@ -246,11 +256,11 @@ class CallController extends StateNotifier<CallSession?> {
     final session = _newSession();
     await session.receive(invite.start, offer: invite.sdp);
     state = session;
+    await CallUi.volumeForRinging();
     await CallUi.ring(
       callId: invite.start.callId,
       caller: invite.start.peer.displayName,
     );
-    onIncoming?.call();
   }
 
   Future<void> _onEvent(RealtimeEvent event) async {
@@ -311,10 +321,7 @@ class CallController extends StateNotifier<CallSession?> {
     state = session;
     await CallUi.volumeForRinging();
     await CallUi.ring(callId: callId, caller: start.peer.displayName);
-    onIncoming?.call();
   }
-
-  void Function()? onIncoming;
 
   @override
   void dispose() {

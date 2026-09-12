@@ -14,7 +14,7 @@ const KINDS = [
 ];
 
 const CHIP =
-  'rounded-[length:var(--radius-pill)] border px-4 py-2 text-[length:var(--text-label)] font-medium transition-colors';
+  'inline-flex h-9 items-center rounded-[length:var(--radius-md)] border px-4 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] transition-colors duration-[var(--motion-fast)]';
 
 export function VaultClient({
   userId,
@@ -58,7 +58,7 @@ export function VaultClient({
   if (!vault.isUnlocked) {
     return (
       <div className="mx-auto max-w-lg">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-medium">
+        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
           Vault
         </h1>
 
@@ -165,7 +165,7 @@ export function VaultClient({
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-medium">
+        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
           {vaults.find((row) => row.id === chosen)?.label ?? 'Vault'}
         </h1>
         <Button variant="secondary" size="sm" isFullWidth={false} onClick={vault.lock}>
