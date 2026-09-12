@@ -284,7 +284,7 @@ Malware scanning runs on ciphertext, which means it cannot inspect content. It t
 
 ## 6. Optional email
 
-Email is optional, added only from Settings, and is the sole account-recovery path (see [06-recovery-and-admin-flows.md](06-recovery-and-admin-flows.md)). It must be stored so that it is usable for OTP delivery and uniqueness checks but **unreadable in a database dump**.
+Email is optional, added only from Settings, and is the sole account-recovery path (see 06-recovery-and-admin-flows.md). It must be stored so that it is usable for OTP delivery and uniqueness checks but **unreadable in a database dump**.
 
 ```
 email_normalized = NFKC → trim → lowercase
@@ -318,7 +318,7 @@ Anonymity is not achieved by omitting a name field. These are the specific measu
 | Image content | Story images are the user's own choice, but the composer warns when an image contains a detected face and offers to blur it, on-device. |
 | Contacts / social graph import | No such feature. No "people you may know", no contact upload, no address-book permission requested. |
 | Public story sharing | Share links carry an opaque slug, not the `user_id`, and no referrer is leaked (`rel="noopener noreferrer"`, `Referrer-Policy: no-referrer`). |
-| Self-deanonymization in one's own prose | The exposure check ([12](12-ai-layer.md) §2.3) scans for names, employers, phone numbers, addresses, handles, and school-plus-year combinations before publish, and warns. It never blocks — the user's own information is the user's decision. |
+| Self-deanonymization in one's own prose | The exposure check (the AI layer §2.3) scans for names, employers, phone numbers, addresses, handles, and school-plus-year combinations before publish, and warns. It never blocks — the user's own information is the user's decision. |
 | AI provider as a correlation vector | Content sent to a hosted model carries **no** `user_id`, no username, no device fingerprint, and no session identifier. The request contains the text and the rubric, nothing else. Two stories by the same author are unlinkable at the provider. |
 
 ### 7.1 The AI boundary
@@ -412,7 +412,7 @@ Logs are retained 30 days. Access to the log store is itself audited.
 | XSS on web | Nonce-based CSP with no `unsafe-inline`, React escaping, story text rendered as text with a strict allowlist for formatting. |
 | Log-based leakage | Default-deny redaction with a CI assertion. |
 | Backup-based leakage | Decrypt directory and cache excluded from OS backups. |
-| Prompt injection through story text | Content is delimited and labelled, never concatenated into instructions; the model returns a constrained schema with no actionable field; no tool use and no retrieval on the moderation path; injection fixtures in the CI golden set. [12](12-ai-layer.md) §7. |
+| Prompt injection through story text | Content is delimited and labelled, never concatenated into instructions; the model returns a constrained schema with no actionable field; no tool use and no retrieval on the moderation path; injection fixtures in the CI golden set. the AI layer §7. |
 | Gate evasion by probing `precheck` | Rate limited per story and per user; every precheck writes a `content_review`, so a user grinding against the classifier produces a visible pattern rather than a silent success. |
 | Client-side bypass of the gate | `precheck` is advisory only. `publish` re-runs the full gate server-side and never trusts a client-supplied verdict. |
 | Deanonymization via the AI provider | No identifier is sent, and there is no parameter through which one could be. |

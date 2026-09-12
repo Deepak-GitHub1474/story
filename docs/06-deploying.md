@@ -151,7 +151,7 @@ unaffected, because push is only a transport for records that already exist.
 
 Voice calls connect phone-to-phone where the network allows it. Between 10% and
 20% cannot — symmetric NAT and carrier-grade NAT are common on mobile — and
-those relay through coturn. See [17-voice-calling.md](17-voice-calling.md) §6.
+those relay through coturn. See 17-voice-calling.md §6.
 
 ```bash
 cd backend/coturn
@@ -180,4 +180,4 @@ The relay lives in `eu-north-1` while most users do not. A relayed call between
 two people in India routes through Stockholm and adds roughly 150 ms each way.
 Direct calls are unaffected. Every call row records whether it relayed, so the
 question of buying a relay in `ap-south-1` gets answered with a number rather
-than a guess — [17-voice-calling.md](17-voice-calling.md) §6.1.
+than a guess — 17-voice-calling.md §6.1.

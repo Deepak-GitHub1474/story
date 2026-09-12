@@ -32,7 +32,7 @@ engine, a relay, and two screens.
 
 ## 2. Decisions, and why
 
-**Voice only.** P7 in [00](00-product-overview.md) names faces before voices as
+**Voice only.** P7 in the product overview names faces before voices as
 identifying. A 720p video call is roughly 1.35 GB per relayed hour against
 29 MB for voice — about 46× the bandwidth, on our own egress — and it doubles
 the call screen. Video stays out of v1 and §10 keeps the door open.
@@ -56,7 +56,7 @@ WhatsApp. Writing the alternative means writing an Opus codec, an echo
 canceller and an ICE stack; the hand-rolled path still ships libwebrtc, just
 with glue we maintain forever. This is capability Dart cannot express at any
 effort level, which is the boundary the no-dependency rule in
-[02](02-repo-structure-and-conventions.md) §5a is meant to protect.
+the repo conventions §5a is meant to protect.
 
 Everything else — the ringing notification, the foreground service, the
 permission prompt — is Kotlin in the pattern `MainActivity.kt` already uses.
@@ -309,7 +309,7 @@ exercised without it.
 8. Call screens and the Calls tab
 9. Relay-rate instrumentation, then revisit §6.1
 
-Per [02](02-repo-structure-and-conventions.md) §5a, no production code without
+Per the repo conventions §5a, no production code without
 a failing test first. The signaling types, the retention stamping, the sweeper
 and the delete scoping are all pure functions of state and are tested without a
 device. What needs a device is the media path, which is libwebrtc's to get

@@ -88,7 +88,7 @@ FCM answers `UNREGISTERED` for a token belonging to an uninstalled app. The
 adapter sorts every response into `delivered` / `stale` / `retry`, and `stale`
 tokens are deleted from `push_tokens` in the same pass.
 
-This is the [07](07-data-model.md) rule about `media` applied again: a row that
+This is the the data model rule about `media` applied again: a row that
 stands for something reachable must stop existing when it stops being
 reachable. Without it the collection grows forever with tokens that can never
 receive anything, and every future send wastes a request on each.

@@ -2,7 +2,7 @@
 
 > Every privileged action in this system is a ticket, every ticket is visible to the affected user, and every step is written to an append-only log. There is no back channel.
 
-This document specifies what happens when something goes wrong: a forgotten password, a forgotten passcode, a suspected compromise. It is the operational counterpart to [05-security-and-crypto.md](05-security-and-crypto.md).
+This document specifies what happens when something goes wrong: a forgotten password, a forgotten passcode, a suspected compromise. It is the operational counterpart to 05-security-and-crypto.md.
 
 ## 1. The recovery matrix
 
@@ -328,7 +328,7 @@ Five roles at full scope. A user has exactly one.
 | `moderator` | Handles content reports and appeals. No account access. | Phase 6 |
 | `system` | Internal, non-interactive. Used by workers. Cannot authenticate. | Phase 6 |
 
-The `role` enum in [07](07-data-model.md) carries only the first three until the moderation queue exists. **Adding an unreachable role early is worse than adding it late** — it appears in the permission matrix, in tests, and in admin dropdowns as a capability that silently does nothing.
+The `role` enum in the data model carries only the first three until the moderation queue exists. **Adding an unreachable role early is worse than adding it late** — it appears in the permission matrix, in tests, and in admin dropdowns as a capability that silently does nothing.
 
 ### 5.1 Permission matrix
 
@@ -432,7 +432,7 @@ A nightly job walks the chain and alerts on any break. The chain head is additio
 }
 ```
 
-`details` **never** contains a secret. Not the passcode, not the reveal code, not the email. The redaction processor from [05-security-and-crypto.md](05-security-and-crypto.md) applies to audit writes as well.
+`details` **never** contains a secret. Not the passcode, not the reveal code, not the email. The redaction processor from 05-security-and-crypto.md applies to audit writes as well.
 
 `visible_to_target` controls whether the affected user sees the entry in their own security log. It is `true` for everything a user has a right to know — which is everything that touches their account. It is `false` only for entries about a staff member's own session hygiene.
 

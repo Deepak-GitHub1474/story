@@ -6,7 +6,7 @@
 
 Anonymous long-form storytelling with an encrypted private vault.
 
-Full specification lives in [`docs/`](docs/). Read [`docs/00-product-overview.md`](docs/00-product-overview.md) first.
+Security, operations and feature notes live in [`docs/`](docs/).
 
 ## Download the app
 
@@ -83,7 +83,7 @@ accepts it. Twenty passes an hour.
 
 Publishing runs one model call before anything becomes visible, and it decides
 five separate things. They are separate on purpose — different failure costs,
-different appeal paths. Full rules in [`docs/12-ai-layer.md`](docs/12-ai-layer.md).
+different appeal paths.
 
 | Check | What it asks | May it block? |
 |---|---|---|
@@ -141,7 +141,7 @@ its secret word back, exactly, capitals included.
 
 Each account gets **100 MB**, set by `VAULT_QUOTA_BYTES` and enforced when space
 is reserved, again when the bytes land, and hourly by a sweeper that erases
-uploads nobody finished. See [`docs/15-storage-security-and-scale.md`](docs/15-storage-security-and-scale.md).
+uploads nobody finished. See [`docs/03-storage.md`](docs/03-storage.md).
 
 ### Chat and notifications
 
@@ -176,9 +176,9 @@ username is released.
 |---|---|
 | Backend | Working, 1,000 tests |
 | Flutter app | Working, 549 tests |
-| Vault — encrypted files | Working, see [`docs/05-security-and-crypto.md`](docs/05-security-and-crypto.md) |
+| Vault — encrypted files | Working, see [`docs/01-security-and-crypto.md`](docs/01-security-and-crypto.md) |
 | Chat — end-to-end encrypted | Working |
-| AI sanity layer | Working, see [`docs/12-ai-layer.md`](docs/12-ai-layer.md) |
+| AI sanity layer | Working |
 | Web + admin (Next.js) | Behind the app; feature parity incomplete |
 | 2FA | Deferred |
 
@@ -310,9 +310,9 @@ Values are redacted by default — a field is logged only if its key is allowlis
 
 ## Conventions
 
-Binding on all code in this repository, see [`docs/02-repo-structure-and-conventions.md`](docs/02-repo-structure-and-conventions.md) §5a:
+Binding on all code in this repository:
 
-- **No comments and no docstrings in source.** Reasoning lives in `docs/`.
+- **No comments and no docstrings in source.** Names carry the meaning.
 - **One response shape.** `{success, message, data}` on every backend response; `Result<T>` on every client call.
 - **Custom components only.** No UI kits, no icon packages.
 - **No dependency without a reason** that could not be met in ~50 lines.
