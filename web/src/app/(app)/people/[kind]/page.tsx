@@ -47,7 +47,7 @@ export default async function PeoplePage({ params }: Props) {
   const people = result.ok ? result.value.items : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">{config.title}</h1>
 
       {people.length === 0 ? (

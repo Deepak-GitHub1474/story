@@ -30,7 +30,12 @@ export default function RootLayout({
       data-theme="midnight"
       className={`${archivo.variable} ${splineMono.variable}`}
     >
-      <body className="min-h-dvh bg-bg text-text-primary antialiased">{children}</body>
+      <body
+        suppressHydrationWarning
+        className="min-h-dvh bg-bg text-text-primary antialiased"
+      >
+        {children}
+      </body>
     </html>
   );
 }

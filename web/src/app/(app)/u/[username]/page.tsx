@@ -43,7 +43,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const stories = storiesResult.ok ? storiesResult.value.items : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <header className="flex flex-wrap items-center gap-6">
         <Avatar seed={profile.avatar_seed} size={80} />
         <dl className="flex flex-1 justify-around gap-6 text-center">

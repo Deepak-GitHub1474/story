@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { confirmTotp, disableTotp, startTotp } from '@/lib/actions';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function TotpSetup({
   isEnabled,
@@ -14,6 +15,7 @@ export function TotpSetup({
 }) {
   const [secret, setSecret] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [isRemoving, setIsRemoving] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -52,18 +54,7 @@ export function TotpSetup({
           className="mt-5 flex flex-col gap-4 border-t border-border pt-5"
           onSubmit={(event) => {
             event.preventDefault();
-            startTransition(async () => {
-              if (
-                !confirm(
-                  'Remove your authenticator? You will not be able to approve a passcode release until you set one up again.',
-                )
-              ) {
-                return;
-              }
-              const result = await disableTotp(code.trim());
-              if (result.error) setError(result.error);
-              else setCode('');
-            });
+            setIsRemoving(true);
           }}
         >
           <Field
@@ -147,6 +138,23 @@ export function TotpSetup({
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isRemoving}
+        title="Remove your authenticator?"
+        body="You will not be able to approve a passcode release until you set one up again."
+        confirmLabel="Remove"
+        isDanger
+        onCancel={() => setIsRemoving(false)}
+        onConfirm={() => {
+          setIsRemoving(false);
+          startTransition(async () => {
+            const result = await disableTotp(code.trim());
+            if (result.error) setError(result.error);
+            else setCode('');
+          });
+        }}
+      />
     </div>
   );
 }

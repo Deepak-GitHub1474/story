@@ -17,7 +17,7 @@ export default async function SessionsPage() {
   const sessions = result.ok ? result.value.items : [];
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="max-w-lg">
       <PageHeader title="Active sessions" />
       <p className="mt-2 leading-relaxed text-text-secondary">
         Every device signed in to this account. Revoking one signs it out within a

@@ -18,7 +18,7 @@ export function AvatarPicker({ current }: { current: string }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="max-w-lg">
       <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Your avatar</h1>
 
       <div className="mt-6 flex items-start gap-5">

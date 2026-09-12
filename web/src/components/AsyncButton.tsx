@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function AsyncButton({
   label,
@@ -21,6 +22,14 @@ export function AsyncButton({
     ok: null,
   });
   const [isPending, startTransition] = useTransition();
+  const [isAsking, setAsking] = useState(false);
+
+  function run() {
+    startTransition(async () => {
+      const result = await action();
+      if (result) setState(result);
+    });
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -29,13 +38,7 @@ export function AsyncButton({
         variant={variant}
         isLoading={isPending}
         isFullWidth={isFullWidth}
-        onClick={() =>
-          startTransition(async () => {
-            if (confirmText && !confirm(confirmText)) return;
-            const result = await action();
-            if (result) setState(result);
-          })
-        }
+        onClick={() => (confirmText ? setAsking(true) : run())}
       >
         {label}
       </Button>
@@ -48,6 +51,22 @@ export function AsyncButton({
         <p role="status" className="text-[length:var(--text-label)] text-success">
           {state.ok}
         </p>
+      ) : null}
+
+      {confirmText ? (
+        <ConfirmDialog
+          isOpen={isAsking}
+          title={label}
+          body={confirmText}
+          confirmLabel={label}
+          isDanger={variant === 'danger'}
+          isPending={isPending}
+          onCancel={() => setAsking(false)}
+          onConfirm={() => {
+            setAsking(false);
+            run();
+          }}
+        />
       ) : null}
     </div>
   );

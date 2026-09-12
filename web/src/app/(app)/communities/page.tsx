@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { JoinButton } from '@/components/JoinButton';
 import { Suggestions } from '@/components/Suggestions';
 import { ChipLink } from '@/components/ui/Chip';
+import { Carousel } from '@/components/ui/Carousel';
 import { backendFetch } from '@/lib/server/session';
 import type { TCommunity } from '@/lib/types';
 
@@ -25,14 +26,15 @@ export default async function CommunitiesPage({ searchParams }: Props) {
   const communities = communitiesResult.ok ? communitiesResult.value.items : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Communities</h1>
       <p className="mt-2 max-w-prose text-text-secondary">
         Rooms for one part of life. Join to read them in your feed and to write into
         them.
       </p>
 
-      <nav className="-mx-5 mt-8 flex gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] sm:-mx-8 sm:px-8 [&::-webkit-scrollbar]:hidden">
+      <div className="mt-8">
+        <Carousel label="categories" as="div">
         <ChipLink href="/communities" isActive={!category}>
           All
         </ChipLink>
@@ -45,7 +47,8 @@ export default async function CommunitiesPage({ searchParams }: Props) {
             {item.name}
           </ChipLink>
         ))}
-      </nav>
+        </Carousel>
+      </div>
 
       {!category ? (
         <div className="mt-8">

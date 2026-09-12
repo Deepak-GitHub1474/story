@@ -47,6 +47,23 @@ export async function startConversation(body: {
   return result.ok ? result.value.conversation.conversation_id : null;
 }
 
+export async function deleteConversation(conversationId: string) {
+  const result = await backendFetch(`/chat/conversations/${conversationId}`, {
+    method: 'DELETE',
+  });
+  revalidatePath('/chats');
+  return result.ok;
+}
+
+export async function hideMessageForMe(conversationId: string, messageId: string) {
+  const result = await backendFetch(
+    `/chat/conversations/${conversationId}/messages/${messageId}/mine`,
+    { method: 'DELETE' },
+  );
+  revalidatePath(`/chats/${conversationId}`);
+  return result.ok;
+}
+
 export async function rekeyConversation(
   conversationId: string,
   body: {

@@ -45,7 +45,7 @@ export default async function FeedPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <h1 className="sr-only">Stories</h1>
       <div className="divide-y divide-border">
         {page.items.map((story) => (

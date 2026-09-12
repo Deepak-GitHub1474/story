@@ -26,7 +26,7 @@ export default async function SearchPage({ searchParams }: Props) {
     data && !data.users.length && !data.communities.length && !data.stories.length;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeader title="Search" description="Find people, rooms and stories by what they are about." />
       <div className="mt-6">
         <SearchBox initialQuery={query} />

@@ -17,7 +17,7 @@ export default async function ActivityPage() {
   const unread = items.filter((item) => !item.is_read).length;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Activity</h1>
         {unread > 0 ? <MarkAllRead /> : null}

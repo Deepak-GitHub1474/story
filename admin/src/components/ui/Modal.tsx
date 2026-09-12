@@ -56,7 +56,7 @@ export function Modal({
     >
       <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4">
         <div className="min-w-0">
-          <h2 className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
+          <h2 className="text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
             {title}
           </h2>
           {description ? (

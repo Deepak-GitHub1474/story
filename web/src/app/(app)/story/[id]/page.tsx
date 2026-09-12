@@ -34,7 +34,7 @@ export default async function StoryPage({ params }: Props) {
   const isMine = story.author.user_id === me.user_id;
 
   return (
-    <div className="mx-auto max-w-[42rem]">
+    <div className="max-w-[42rem]">
       <article>
         <p className="text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
           {story.community ? story.community.name : 'Unfiled'}

@@ -57,7 +57,7 @@ export function VaultClient({
 
   if (!vault.isUnlocked) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="max-w-lg">
         <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
           Vault
         </h1>
@@ -163,7 +163,7 @@ export function VaultClient({
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
           {vaults.find((row) => row.id === chosen)?.label ?? 'Vault'}

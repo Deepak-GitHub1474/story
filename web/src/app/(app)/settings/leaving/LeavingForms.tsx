@@ -17,7 +17,7 @@ export function LeavingForms() {
   const [confirm, setConfirm] = useState('');
 
   return (
-    <div className="mx-auto max-w-lg space-y-10">
+    <div className="max-w-lg space-y-10">
       <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Leaving</h1>
 
       <form
@@ -72,11 +72,6 @@ export function LeavingForms() {
             variant="danger"
             isLoading={isDeleting}
             disabled={confirm.trim() !== CONFIRM_WORD}
-            onClick={(event) => {
-              if (!confirm.trim().length || !window.confirm('Delete your account?')) {
-                event.preventDefault();
-              }
-            }}
           >
             Delete account
           </Button>

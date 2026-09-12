@@ -43,7 +43,7 @@ export function InterestPicker({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">{title}</h1>
       <p className="mt-2 max-w-prose leading-relaxed text-text-secondary">
         Pick up to {MAX}. This shapes what you are shown, and nobody else can see your

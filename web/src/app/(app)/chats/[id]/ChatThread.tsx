@@ -6,6 +6,7 @@ import { useRealtime } from '@/lib/chat/useRealtime';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ChatUnlock } from '@/components/ChatUnlock';
+import { MessageMenu } from './MessageMenu';
 import { cn } from '@/lib/cn';
 import { relativeTime } from '@/lib/format';
 import {
@@ -22,14 +23,13 @@ import {
   acceptConversation,
   announceTyping,
   markConversationRead,
+  hideMessageForMe,
   peerIdentity,
   rekeyConversation,
   sendMessage,
   setReaction,
   unsendMessage,
 } from '@/lib/actions/chat';
-
-const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '🙏', '🔥'];
 
 export function ChatThread({
   conversationId,
@@ -211,11 +211,37 @@ export function ChatThread({
     const key = cek.current;
     if (!text || !key) return;
 
+    const pendingId = `tmp_${Date.now()}`;
+    const replyingTo = replyTo?.message_id;
+
     setDraft('');
-    const ciphertext = await encryptMessage(key, text, conversationId);
-    const ok = await sendMessage(conversationId, ciphertext, replyTo?.message_id);
     setReplyTo(null);
-    if (!ok) setError('That did not send.');
+    setMessages((current) => [
+      {
+        message_id: pendingId,
+        conversation_id: conversationId,
+        sender_id: userId,
+        ciphertext: null,
+        reply_to: replyingTo ?? null,
+        is_deleted: false,
+        reactions: [],
+        created_at: new Date().toISOString(),
+        text,
+      },
+      ...current,
+    ]);
+
+    const ciphertext = await encryptMessage(key, text, conversationId);
+    const ok = await sendMessage(conversationId, ciphertext, replyingTo);
+
+    if (!ok) {
+      setMessages((current) => current.filter((m) => m.message_id !== pendingId));
+      setDraft(text);
+      setError('That did not send.');
+      return;
+    }
+
+    await refresh();
   }
 
   async function react(message: TChatMessage, emoji: string) {
@@ -231,8 +257,8 @@ export function ChatThread({
   const canWrite = !isPending || Boolean(conversation?.is_requester);
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-2xl flex-col">
-      <header className="flex items-center gap-3 border-b border-border pb-4">
+    <div className="flex h-[calc(100dvh-12rem)] max-w-2xl flex-col">
+      <header className="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-border bg-bg pb-4">
         {other ? (
           <>
             <Avatar seed={other.avatar_seed} size={40} />
@@ -257,10 +283,14 @@ export function ChatThread({
         ) : null}
       </header>
 
-      {identity.status === 'locked' ? <ChatUnlock userId={userId} /> : null}
+      {identity.status === 'locked' ? (
+        <div className="shrink-0">
+          <ChatUnlock userId={userId} />
+        </div>
+      ) : null}
 
       {error ? (
-        <div className="mt-3 rounded-[length:var(--radius-md)] bg-surface-raised px-4 py-3">
+        <div className="mt-3 shrink-0 rounded-[length:var(--radius-md)] bg-surface-raised px-4 py-3">
           <p className="leading-relaxed text-text-secondary">{error}</p>
           {needsRekey ? (
             <div className="mt-3">
@@ -281,7 +311,7 @@ export function ChatThread({
         </div>
       ) : null}
 
-      <ol className="flex flex-1 flex-col-reverse gap-2 overflow-y-auto py-6">
+      <ol className="flex min-h-0 flex-1 flex-col-reverse gap-2 overflow-y-auto py-6">
         {messages.map((message) => {
           const isMine = message.sender_id === userId;
           const seen =
@@ -296,15 +326,40 @@ export function ChatThread({
               id={`m-${message.message_id}`}
               className={cn('flex flex-col', isMine ? 'items-end' : 'items-start')}
             >
+              <div
+                className={cn(
+                  'group/msg flex max-w-[86%] items-center gap-1',
+                  isMine ? 'flex-row' : 'flex-row-reverse',
+                )}
+              >
+                <button
+                  type="button"
+                  aria-label="Message options"
+                  hidden={message.message_id.startsWith('tmp_')}
+                  onClick={() => setMenuFor(message.message_id)}
+                  className={cn(
+                    'grid size-7 shrink-0 place-items-center rounded-[length:var(--radius-sm)]',
+                    'text-text-muted transition-opacity duration-[var(--motion-fast)]',
+                    'hover:bg-surface hover:text-text-primary',
+                    'opacity-0 group-hover/msg:opacity-100 focus-visible:opacity-100',
+                    '[@media(hover:none)]:opacity-100',
+                  )}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6" />
+                    <circle cx="12" cy="12" r="1.6" />
+                    <circle cx="19" cy="12" r="1.6" />
+                  </svg>
+                </button>
               <button
                 type="button"
                 onDoubleClick={() => react(message, '❤️')}
                 onContextMenu={(event) => {
                   event.preventDefault();
-                  setMenuFor(menuFor === message.message_id ? null : message.message_id);
+                  setMenuFor(message.message_id);
                 }}
                 className={cn(
-                  'max-w-[76%] rounded-[length:var(--radius-lg)] px-4 py-2.5 text-left leading-relaxed',
+                  'min-w-0 rounded-[length:var(--radius-lg)] px-4 py-2.5 text-left leading-relaxed',
                   isMine
                     ? 'bg-accent text-accent-text'
                     : 'border border-border bg-surface',
@@ -329,6 +384,7 @@ export function ChatThread({
                 ) : null}
                 {message.text ?? 'Cannot be opened in this browser'}
               </button>
+              </div>
 
               {message.reactions.length > 0 ? (
                 <span className="-mt-1 rounded-[length:var(--radius-pill)] border border-border bg-surface-raised px-1.5 text-[length:var(--text-caption)]">
@@ -336,63 +392,50 @@ export function ChatThread({
                 </span>
               ) : null}
 
-              {menuFor === message.message_id ? (
-                <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[length:var(--radius-md)] border border-border bg-surface px-2 py-1.5">
-                  {QUICK_REACTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => {
-                        react(message, emoji);
-                        setMenuFor(null);
-                      }}
-                      className={cn(
-                        'rounded-full px-1 text-lg transition-transform hover:scale-125',
-                        message.reactions.some(
-                          (r) => r.emoji === emoji && r.user_id === userId,
-                        ) && 'bg-accent/20',
-                      )}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReplyTo(message);
-                      setMenuFor(null);
-                    }}
-                    className="text-[length:var(--text-caption)] font-medium text-accent"
-                  >
-                    Reply
-                  </button>
-                </div>
-              ) : null}
               <div className="mt-1 flex items-center gap-2 text-[length:var(--text-caption)] text-text-muted">
                 <span>{relativeTime(message.created_at)}</span>
                 {seen ? <span className="text-accent">Seen</span> : null}
-                {isMine ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMessages((current) =>
-                        current.filter((m) => m.message_id !== message.message_id),
-                      );
-                      void unsendMessage(conversationId, message.message_id);
-                    }}
-                    className="hover:text-text-secondary"
-                  >
-                    Unsend
-                  </button>
-                ) : null}
               </div>
             </li>
           );
         })}
       </ol>
 
+      <MessageMenu
+        message={messages.find((m) => m.message_id === menuFor) ?? null}
+        isMine={
+          messages.find((m) => m.message_id === menuFor)?.sender_id === userId
+        }
+        userId={userId}
+        onClose={() => setMenuFor(null)}
+        onReact={(emoji) => {
+          const target = messages.find((m) => m.message_id === menuFor);
+          if (target) void react(target, emoji);
+          setMenuFor(null);
+        }}
+        onReply={() => {
+          const target = messages.find((m) => m.message_id === menuFor);
+          if (target) setReplyTo(target);
+          setMenuFor(null);
+        }}
+        onUnsend={() => {
+          const id = menuFor;
+          setMenuFor(null);
+          if (!id) return;
+          setMessages((current) => current.filter((m) => m.message_id !== id));
+          void unsendMessage(conversationId, id);
+        }}
+        onHide={() => {
+          const id = menuFor;
+          setMenuFor(null);
+          if (!id) return;
+          setMessages((current) => current.filter((m) => m.message_id !== id));
+          void hideMessageForMe(conversationId, id);
+        }}
+      />
+
       {isPending && !conversation?.is_requester ? (
-        <div className="border-t border-border pt-4">
+        <div className="shrink-0 border-t border-border pt-4">
           <p className="mb-3 text-center leading-relaxed text-text-secondary">
             {other?.display_name} wants to send you messages.
           </p>
@@ -400,7 +443,7 @@ export function ChatThread({
         </div>
       ) : canWrite ? (
         <form
-          className="flex flex-col gap-2 border-t border-border pt-4"
+          className="flex shrink-0 flex-col gap-2 border-t border-border pt-4"
           onSubmit={(event) => {
             event.preventDefault();
             void send();

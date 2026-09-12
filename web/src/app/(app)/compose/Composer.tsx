@@ -143,7 +143,7 @@ export function Composer({
 
   if (!story) {
     return (
-      <form action={createDraft} className="mx-auto max-w-2xl">
+      <form action={createDraft} className="max-w-2xl">
         <input
           name="title"
           value={title}
@@ -156,10 +156,10 @@ export function Composer({
           name="body"
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          rows={16}
+          rows={7}
           maxLength={20000}
           placeholder="Say it here. Nobody knows who you are."
-          className="mt-6 w-full resize-y bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
+          className="mt-6 field-sizing-content min-h-[9lh] w-full resize-none bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
         />
         <input type="hidden" name="images" value={JSON.stringify(images)} />
         <input type="hidden" name="image_ratio" value={ratio ?? ''} />
@@ -184,7 +184,7 @@ export function Composer({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
         <button
           type="button"
@@ -274,10 +274,10 @@ export function Composer({
       <textarea
         value={body}
         onChange={(event) => setBody(event.target.value)}
-        rows={18}
+        rows={9}
         maxLength={20000}
         placeholder="Say it here. Nobody knows who you are."
-        className="mt-6 w-full resize-y bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
+        className="mt-6 field-sizing-content min-h-[9lh] w-full resize-none bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
       />
 
       <ImagePicker images={images} fit={fit} canFit={canFit} onChange={onPictures} />

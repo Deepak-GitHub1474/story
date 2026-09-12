@@ -15,7 +15,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-8">
       <PageHeader title="Settings" description="Your account, how STORY looks, and how much of you it remembers." />
 
       <Section title="Account">

@@ -101,7 +101,7 @@ export function NewChat({ viewerId }: { viewerId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">New message</h1>
         <Link
@@ -113,8 +113,8 @@ export function NewChat({ viewerId }: { viewerId: string }) {
       </div>
 
       <p className="mt-2 leading-relaxed text-text-secondary">
-        People you follow. If they follow you back the chat opens straight away;
-        otherwise it waits in their requests.
+        People you follow who you have not messaged yet. If they follow you back the
+        chat opens straight away; otherwise it waits in their requests.
       </p>
 
       {identity.status === 'unsupported' ? (

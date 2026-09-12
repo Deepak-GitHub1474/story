@@ -13,7 +13,7 @@ export default async function LeavingPage() {
 
   if (isLeaving) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="max-w-lg">
         <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Leaving</h1>
         <div className="mt-6 rounded-[length:var(--radius-md)] border border-danger bg-surface p-6">
           <h2 className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)] text-danger">

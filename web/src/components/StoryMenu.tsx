@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { ReportMenu } from '@/components/ReportMenu';
 import { deleteStory, shareStory, unpublishStory } from '@/lib/actions/stories';
 import { SITE_URL } from '@/lib/config';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function StoryMenu({
   storyId,
@@ -17,6 +18,7 @@ export function StoryMenu({
   slug: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showReasons, setShowReasons] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -102,13 +104,7 @@ export function StoryMenu({
                   ) : null}
                   <button
                     type="button"
-                    onClick={() =>
-                      startTransition(async () => {
-                        if (confirm('Delete this story? This cannot be undone.')) {
-                          await deleteStory(storyId);
-                        }
-                      })
-                    }
+                    onClick={() => setIsDeleting(true)}
                     className="block w-full px-4 py-3 text-left text-[length:var(--text-label)] text-danger transition-colors hover:bg-surface-raised"
                   >
                     Delete
@@ -136,6 +132,20 @@ export function StoryMenu({
           {notice}
         </p>
       ) : null}
+
+      <ConfirmDialog
+        isOpen={isDeleting}
+        title="Delete this story?"
+        body="It goes for good, along with its comments and likes. This cannot be undone."
+        confirmLabel="Delete"
+        isDanger
+        onCancel={() => setIsDeleting(false)}
+        onConfirm={() => {
+          setIsDeleting(false);
+          setIsOpen(false);
+          startTransition(async () => void (await deleteStory(storyId)));
+        }}
+      />
     </div>
   );
 }

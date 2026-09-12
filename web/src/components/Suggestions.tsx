@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { FollowButton } from '@/components/FollowButton';
 import { JoinButton } from '@/components/JoinButton';
+import { Carousel } from '@/components/ui/Carousel';
 import { backendFetch } from '@/lib/server/session';
 import type { TSuggestions } from '@/lib/types';
 
@@ -22,7 +23,7 @@ export async function Suggestions({
       {rooms.length > 0 ? (
         <section>
           <Heading label="Rooms that fit what you follow" />
-          <ul className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:px-8">
+          <Carousel label="rooms">
             {rooms.map((room) => (
               <li
                 key={room.slug}
@@ -43,14 +44,14 @@ export async function Suggestions({
                 </div>
               </li>
             ))}
-          </ul>
+          </Carousel>
         </section>
       ) : null}
 
       {people.length > 0 ? (
         <section>
           <Heading label="People writing near you" />
-          <ul className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:px-8">
+          <Carousel label="people">
             {people.map((person) => (
               <li
                 key={person.user_id}
@@ -79,7 +80,7 @@ export async function Suggestions({
                 ) : null}
               </li>
             ))}
-          </ul>
+          </Carousel>
         </section>
       ) : null}
     </div>
