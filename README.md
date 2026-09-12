@@ -141,7 +141,7 @@ its secret word back, exactly, capitals included.
 
 Each account gets **100 MB**, set by `VAULT_QUOTA_BYTES` and enforced when space
 is reserved, again when the bytes land, and hourly by a sweeper that erases
-uploads nobody finished. See [`docs/03-storage.md`](docs/03-storage.md).
+uploads nobody finished. See [`docs/03-operations.md`](docs/03-operations.md).
 
 ### Chat and notifications
 
