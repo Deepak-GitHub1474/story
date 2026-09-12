@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { cn } from '@/lib/cn';
 
 const BASE =
-  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[length:var(--radius-md)] border px-3.5 ' +
-  'text-[length:var(--text-caption)] whitespace-nowrap transition-colors duration-[var(--motion-fast)] ' +
+  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[length:var(--radius-pill)] px-4 ' +
+  'text-[length:var(--text-label)] font-medium whitespace-nowrap ' +
+  'transition-colors duration-[var(--motion-fast)] ' +
   'disabled:cursor-not-allowed disabled:opacity-45';
 
 const TONES = {
-  on: 'border-transparent bg-accent-strong font-medium text-accent-text',
-  off: 'border-border text-text-secondary hover:border-border-strong hover:text-text-primary',
+  on: 'bg-accent-strong text-accent-text',
+  off: 'bg-surface-raised text-text-secondary hover:text-text-primary',
 } as const;
 
 function classesFor(isActive: boolean, className?: string) {

@@ -26,41 +26,37 @@ export function StoryRow({
     story.visibility === 'draft' || story.visibility === 'scheduled';
 
   return (
-    <article className="group py-8 first:pt-0 sm:py-10">
+    <article className="py-6 first:pt-0 sm:py-8">
       <div className="flex items-center gap-3">
         <Link href={`/u/${story.author.username ?? ''}`} className="shrink-0">
-          <Avatar seed={story.author.avatar_seed} size={28} />
+          <Avatar seed={story.author.avatar_seed} size={38} />
         </Link>
 
-        <p className="min-w-0 flex-1 truncate text-[length:var(--text-caption)] text-text-muted">
+        <div className="min-w-0 flex-1">
           <Link
             href={`/u/${story.author.username ?? ''}`}
-            className="font-medium text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            className="block truncate text-[length:var(--text-body)] font-medium text-text-primary"
           >
             {story.author.display_name}
           </Link>
-          <span className="mx-1.5 text-text-muted/60">·</span>
-          {story.shared ? (
-            <>
-              shared {story.shared.author.display_name}
-              <span className="mx-1.5 text-text-muted/60">·</span>
-            </>
-          ) : null}
-          {relativeTime(story.published_at ?? story.created_at)}
-          <span className="mx-1.5 text-text-muted/60">·</span>
-          {story.reading_minutes} min
-          {story.community ? (
-            <>
-              <span className="mx-1.5 text-text-muted/60">·</span>
-              <Link
-                href={`/communities/${story.community.slug}`}
-                className="underline-offset-4 hover:text-text-secondary hover:underline"
-              >
-                {story.community.name}
-              </Link>
-            </>
-          ) : null}
-        </p>
+          <p className="truncate text-[length:var(--text-caption)] text-text-muted">
+            {story.shared ? `Shared ${story.shared.author.display_name}'s story · ` : ''}
+            {relativeTime(story.published_at ?? story.created_at)}
+            <span className="mx-1.5 text-text-muted/60">·</span>
+            {story.reading_minutes} min
+            {story.community ? (
+              <>
+                <span className="mx-1.5 text-text-muted/60">·</span>
+                <Link
+                  href={`/communities/${story.community.slug}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {story.community.name}
+                </Link>
+              </>
+            ) : null}
+          </p>
+        </div>
 
         {showVisibility ? (
           <Badge
@@ -84,19 +80,6 @@ export function StoryRow({
         />
       </div>
 
-      <Link href={href} className="mt-4 block">
-        {story.title ? (
-          <h2 className="font-editorial text-[length:var(--text-heading)] leading-[1.22] font-semibold tracking-[var(--tracking-title)] text-balance transition-colors duration-[var(--motion-fast)] group-hover:text-accent sm:text-[1.6rem]">
-            {story.title}
-          </h2>
-        ) : null}
-        {story.excerpt ? (
-          <p className="story-body mt-3 line-clamp-3 text-text-secondary">
-            {story.excerpt}
-          </p>
-        ) : null}
-      </Link>
-
       {story.images && story.images.length > 0 ? (
         <StoryImages
           images={story.images}
@@ -104,8 +87,6 @@ export function StoryRow({
           fit={story.image_fit}
         />
       ) : null}
-
-      {story.shared ? <SharedStoryCard shared={story.shared} /> : null}
 
       {isUnpublished ? null : (
         <>
@@ -117,6 +98,27 @@ export function StoryRow({
           />
         </>
       )}
+
+      {story.title || story.excerpt ? (
+        <Link
+          href={href}
+          className="mt-2 block text-[length:var(--text-label)] leading-[1.5]"
+        >
+          <span className="font-medium text-text-primary">
+            {story.author.display_name}
+          </span>
+          {'  '}
+          {story.title ? (
+            <>
+              <span className="font-medium text-text-primary">{story.title}</span>
+              <br />
+            </>
+          ) : null}
+          <span className="line-clamp-3 text-text-secondary">{story.excerpt}</span>
+        </Link>
+      ) : null}
+
+      {story.shared ? <SharedStoryCard shared={story.shared} /> : null}
     </article>
   );
 }

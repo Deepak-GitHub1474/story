@@ -83,7 +83,7 @@ export function CommentThread({
 
   return (
     <section className="mt-10">
-      <h2 className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">Comments</h2>
+      <h2 className="text-[length:var(--text-label)] font-medium text-text-secondary">Comments</h2>
 
       {comments.length === 0 ? (
         <p className="mt-4 leading-relaxed text-text-muted">
@@ -104,7 +104,7 @@ export function CommentThread({
         </ul>
       )}
 
-      <div className="sticky bottom-0 mt-8 border-t border-border bg-bg pt-4 pb-6">
+      <div className="sticky bottom-0 mt-8 bg-bg pt-4 pb-6">
         {replyTo ? (
           <div className="mb-3 flex items-center gap-2 rounded-[length:var(--radius-sm)] bg-surface-raised px-3 py-2 text-[length:var(--text-caption)] text-text-secondary">
             <span className="flex-1">Replying to {replyTo.author.display_name}</span>

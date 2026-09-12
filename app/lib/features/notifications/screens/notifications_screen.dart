@@ -29,7 +29,8 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
@@ -64,12 +65,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               children: [
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
                   icon: Icon(Icons.arrow_back, color: colors.textPrimary),
                   tooltip: 'Back to your feed',
                   onPressed: () => context.go(Routes.stories),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   'Notifications',
                   style: TextStyle(
@@ -132,10 +136,14 @@ class _Tile extends ConsumerWidget {
     final colors = context.colors;
 
     return Material(
-      color: notification.isRead ? Colors.transparent : colors.accent.withValues(alpha: 0.06),
+      color: notification.isRead
+          ? Colors.transparent
+          : colors.accent.withValues(alpha: 0.06),
       child: InkWell(
         onTap: () {
-          ref.read(notificationsProvider.notifier).markRead(notification.notificationId);
+          ref
+              .read(notificationsProvider.notifier)
+              .markRead(notification.notificationId);
           final route = routeForPush({
             'kind': notification.kind,
             'target_kind': notification.targetKind,

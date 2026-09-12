@@ -41,12 +41,12 @@ export default async function StoryPage({ params }: Props) {
         </p>
 
         {story.title ? (
-          <h1 className="font-editorial mt-5 text-[length:var(--text-title)] leading-[1.08] font-semibold tracking-[var(--tracking-title)] text-balance sm:text-[2.6rem]">
+          <h1 className="font-editorial mt-4 text-[length:var(--text-heading)] leading-[1.25] font-semibold text-balance">
             {story.title}
           </h1>
         ) : null}
 
-        <div className="mt-8 flex items-center gap-3 border-y border-border py-4">
+        <div className="mt-6 flex items-center gap-3">
           <Link href={`/u/${story.author.username ?? ''}`} className="shrink-0">
             <Avatar seed={story.author.avatar_seed} size={36} />
           </Link>
@@ -90,7 +90,7 @@ export default async function StoryPage({ params }: Props) {
         {story.shared ? <SharedStoryCard shared={story.shared} /> : null}
       </article>
 
-      <div className="mt-12 flex flex-wrap items-center gap-x-7 gap-y-3 border-y border-border py-4">
+      <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3">
         <LikeButton
           storyId={story.story_id}
           isLiked={story.is_liked}
@@ -107,6 +107,8 @@ export default async function StoryPage({ params }: Props) {
         people={story.liked_by ?? []}
         total={story.counts.likes}
       />
+
+      <div aria-hidden="true" className="mt-8 border-t border-border" />
 
       <CommentThread
         storyId={story.story_id}

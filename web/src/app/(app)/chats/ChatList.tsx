@@ -43,7 +43,7 @@ export function ChatList({ userId }: { userId: string }) {
         <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Messages</h1>
         <Link
           href="/chats/new"
-          className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
+          className="inline-flex h-9 shrink-0 items-center rounded-[length:var(--radius-pill)] bg-surface-raised px-4 whitespace-nowrap text-[length:var(--text-label)] font-medium text-text-secondary transition-colors duration-[var(--motion-fast)] hover:text-text-primary"
         >
           New message
         </Link>

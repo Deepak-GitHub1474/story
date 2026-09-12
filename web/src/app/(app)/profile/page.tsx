@@ -92,7 +92,7 @@ export default async function ProfilePage({ searchParams }: Props) {
         />
       ) : (
         <>
-          <div className="divide-y divide-border">
+          <div className="mt-2 divide-y divide-border">
             {stories.map((story) => (
               <StoryRow key={story.story_id} story={story} showVisibility isMine />
             ))}

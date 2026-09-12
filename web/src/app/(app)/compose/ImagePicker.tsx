@@ -200,7 +200,7 @@ export function ImagePicker({
           <button
             type="button"
             onClick={() => onChange({ images, fit: fit === 'contain' ? 'cover' : 'contain' })}
-            className="mt-4 inline-flex h-9 items-center rounded-[length:var(--radius-pill)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary"
+            className="mt-4 inline-flex h-9 items-center rounded-[length:var(--radius-pill)] bg-surface-raised px-4 text-[length:var(--text-label)] font-medium text-text-secondary transition-colors duration-[var(--motion-fast)] hover:text-text-primary"
           >
             {fit === 'contain' ? 'Showing all of it' : 'Filling the frame'}
           </button>
@@ -218,7 +218,7 @@ export function ImagePicker({
           type="button"
           onClick={() => input.current?.click()}
           disabled={isUploading || images.length >= MAX_IMAGES}
-          className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-9 items-center rounded-[length:var(--radius-pill)] bg-surface-raised px-4 text-[length:var(--text-label)] font-medium text-text-secondary transition-colors duration-[var(--motion-fast)] hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isUploading
             ? 'Uploading…'
@@ -231,7 +231,7 @@ export function ImagePicker({
           <button
             type="button"
             onClick={() => onChange({ images, fit: fit === 'contain' ? 'cover' : 'contain' })}
-            className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
+            className="inline-flex h-9 items-center rounded-[length:var(--radius-pill)] bg-surface-raised px-4 text-[length:var(--text-label)] font-medium text-text-secondary transition-colors duration-[var(--motion-fast)] hover:text-text-primary"
           >
             {fit === 'contain' ? 'Showing all of it' : 'Filling the frame'}
           </button>

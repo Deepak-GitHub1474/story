@@ -130,7 +130,7 @@ export function PolishSheet({
             key={idea}
             type="button"
             onClick={() => setInstruction(idea)}
-            className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
+            className="inline-flex h-9 items-center rounded-[length:var(--radius-pill)] bg-surface-raised px-4 text-[length:var(--text-label)] font-medium text-text-secondary transition-colors duration-[var(--motion-fast)] hover:text-text-primary"
           >
             {idea}
           </button>

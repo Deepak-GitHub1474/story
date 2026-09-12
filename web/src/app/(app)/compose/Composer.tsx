@@ -69,6 +69,9 @@ export function Composer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, body, story, pictureKey]);
 
+  const barButton =
+    'inline-grid size-11 place-items-center rounded-full text-text-primary transition-opacity duration-[var(--motion-fast)] disabled:opacity-40';
+
   const words = body.trim() ? body.trim().split(/\s+/).length : 0;
   const canPublish = body.trim().length >= MIN_PUBLISH_LENGTH;
 
@@ -99,26 +102,6 @@ export function Composer({
     setSaved('');
   }
 
-  const aiControls = (
-    <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-6">
-      <button
-        type="button"
-        onClick={() => setSheet('write')}
-        className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
-      >
-        Write it with AI
-      </button>
-      <button
-        type="button"
-        onClick={() => setSheet('polish')}
-        disabled={body.trim().length === 0}
-        className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        Another go at it
-      </button>
-    </div>
-  );
-
   const sheets = (
     <>
       <WriteWithAI
@@ -145,47 +128,100 @@ export function Composer({
   if (!story) {
     return (
       <form action={createDraft} className="max-w-2xl">
+        <div className="-mx-6 flex h-14 items-center gap-0.5 border-b border-border px-2 sm:-mx-8 sm:px-4">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Close"
+            className={barButton}
+          >
+            <Icon name="close" />
+          </button>
+
+          <span className="flex-1" />
+
+          <ImagePicker
+            images={images}
+            fit={fit}
+            canFit={canFit}
+            variant="icon"
+            onChange={onPictures}
+          />
+
+          <button
+            type="button"
+            onClick={() => setSheet('write')}
+            aria-label="Write it with AI"
+            title="Write it with AI"
+            className={barButton}
+          >
+            <Icon name="wand" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSheet('polish')}
+            disabled={body.trim().length === 0}
+            aria-label="Ask for a tidier version"
+            title="Ask for a tidier version"
+            className={barButton}
+          >
+            <Icon name="sparkles" />
+          </button>
+
+          <button
+            type="submit"
+            disabled={!canPublish}
+            className="ml-1 px-2 text-[length:var(--text-body)] font-medium text-accent disabled:text-text-muted"
+          >
+            Publish
+          </button>
+        </div>
+
         <input
           name="title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           maxLength={120}
           placeholder="Title, if you want one"
-          className="w-full border-b border-border bg-transparent pb-4 font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)] outline-none placeholder:text-text-muted focus:border-accent"
+          className="mt-6 w-full border-b border-border bg-transparent pb-3 text-[length:var(--text-body)] leading-[1.4] font-medium outline-none placeholder:text-text-muted focus:border-accent"
         />
-        <textarea
-          name="body"
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          rows={7}
-          maxLength={20000}
-          placeholder="Say it here. Nobody knows who you are."
-          className="mt-6 field-sizing-content min-h-[9lh] w-full resize-none bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
-        />
+
         <input type="hidden" name="images" value={JSON.stringify(images)} />
         <input type="hidden" name="image_ratio" value={ratio ?? ''} />
         <input type="hidden" name="image_fit" value={fit} />
 
-        <ImagePicker images={images} fit={fit} canFit={canFit} onChange={onPictures} />
+        <ImagePicker
+          images={images}
+          fit={fit}
+          canFit={canFit}
+          variant="preview"
+          onChange={onPictures}
+        />
 
-        {aiControls}
+        <textarea
+          name="body"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          rows={9}
+          maxLength={20000}
+          placeholder="Say it here. Nobody knows who you are."
+          className="mt-3 field-sizing-content min-h-[12lh] w-full resize-none bg-transparent text-[length:var(--text-label)] leading-[1.7] outline-none placeholder:text-text-muted"
+        />
 
-        <div className="mt-6 flex items-center justify-between">
+        <div className="-mx-6 mt-6 flex items-center justify-between gap-3 border-t border-border px-6 py-3 sm:-mx-8 sm:px-8">
           <span className="text-[length:var(--text-caption)] text-text-muted">
             {words} words
           </span>
-          <Button type="submit" isFullWidth={false} disabled={!canPublish}>
-            Continue
-          </Button>
+          {error ? (
+            <span className="text-[length:var(--text-caption)] text-danger">{error}</span>
+          ) : null}
         </div>
 
         {sheets}
       </form>
     );
   }
-
-  const barButton =
-    'inline-grid size-11 place-items-center rounded-full text-text-primary transition-opacity duration-[var(--motion-fast)] disabled:opacity-40';
 
   return (
     <div className="max-w-2xl">
@@ -314,7 +350,7 @@ export function Composer({
           type="button"
           onClick={() => setShowOptions((value) => !value)}
           aria-expanded={showOptions}
-          className="inline-flex h-9 items-center gap-1 rounded-[length:var(--radius-pill)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-primary"
+          className="inline-flex h-9 items-center gap-1 rounded-[length:var(--radius-pill)] bg-surface-raised px-4 text-[length:var(--text-label)] font-medium text-text-primary"
         >
           Draft
           <Icon name="chevronDown" size={16} />
