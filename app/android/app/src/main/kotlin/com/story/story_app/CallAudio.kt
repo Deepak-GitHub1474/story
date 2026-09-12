@@ -68,6 +68,14 @@ object CallAudio {
         releaseProximity()
     }
 
+    fun volumeForRinging(activity: Activity) {
+        activity.volumeControlStream = AudioManager.STREAM_RING
+    }
+
+    fun volumeForCall(activity: Activity) {
+        activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
+    }
+
     fun setSpeaker(context: Context, on: Boolean) {
         val manager = audio(context)
         manager.mode = AudioManager.MODE_IN_COMMUNICATION

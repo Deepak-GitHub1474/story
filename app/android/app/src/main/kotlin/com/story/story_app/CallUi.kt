@@ -8,8 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 
-const val CALL_CHANNEL = "story_calls"
-const val ONGOING_CHANNEL = "story_call_ongoing"
+const val CALL_CHANNEL = "story_calls_v2"
+const val ONGOING_CHANNEL = "story_call_ongoing_v2"
 const val CALL_NOTIFICATION = 9411
 const val EXTRA_CALL_ID = "call_id"
 const val EXTRA_CALL_ACTION = "call_action"
@@ -19,6 +19,8 @@ object CallUi {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
         val manager = context.getSystemService(NotificationManager::class.java)
+        manager.deleteNotificationChannel("story_calls")
+        manager.deleteNotificationChannel("story_call_ongoing")
 
         val ongoing = NotificationChannel(
             ONGOING_CHANNEL,
@@ -75,6 +77,11 @@ object CallUi {
 
         context.getSystemService(NotificationManager::class.java)
             .notify(CALL_NOTIFICATION, notification)
+    }
+
+    fun hideRingNotification(context: Context) {
+        context.getSystemService(NotificationManager::class.java)
+            .cancel(CALL_NOTIFICATION)
     }
 
     fun stopRinging(context: Context) {

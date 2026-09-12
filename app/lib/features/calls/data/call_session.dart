@@ -42,6 +42,8 @@ class CallSession {
   CallPhase phase = CallPhase.idle;
   DateTime? connectedAt;
   String? endReason;
+  bool endedByMe = false;
+  bool wasAnswered = false;
   bool isMuted = false;
   bool isSpeakerOn = false;
   List<String> peerMedia = const ['audio'];
@@ -115,6 +117,7 @@ class CallSession {
 
     _pendingOffer = null;
     _ring?.cancel();
+    wasAnswered = true;
     _moveTo(CallPhase.connecting);
   }
 
@@ -127,6 +130,7 @@ class CallSession {
 
     _ring?.cancel();
     endReason = reason;
+    endedByMe = tell;
     if (tell && _start != null) {
       _signal.send({
         'type': 'call.end',
@@ -194,6 +198,7 @@ class CallSession {
         final sdp = event['sdp'];
         if (sdp is String) {
           _ring?.cancel();
+          wasAnswered = true;
           await _media.acceptRemote(sdp);
           _moveTo(CallPhase.connecting);
         }

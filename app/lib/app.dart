@@ -11,11 +11,35 @@ import 'routing/routes.dart';
 import 'theme/app_theme.dart';
 import 'core/session/forget_session.dart';
 
-class StoryApp extends ConsumerWidget {
+class StoryApp extends ConsumerStatefulWidget {
   const StoryApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StoryApp> createState() => _StoryAppState();
+}
+
+class _StoryAppState extends ConsumerState<StoryApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(callControllerProvider.notifier).checkRinging();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(sessionGuardProvider);
     ref.watch(pushTapsProvider);
 

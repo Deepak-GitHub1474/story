@@ -4,6 +4,7 @@ CONNECTIONS = "connections"
 USERS = "users"
 
 RING_PREFIX = "ST:CALL:"
+RINGING_FOR_PREFIX = "ST:CALLFOR:"
 
 AUDIO = "audio"
 

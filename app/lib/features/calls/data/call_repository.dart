@@ -19,6 +19,11 @@ class CallRepository {
     parse: CallInvite.fromJson,
   );
 
+  Future<Result<CallInvite>> ringing() => _client.get(
+    Endpoints.ringingForMe,
+    parse: CallInvite.fromJson,
+  );
+
   Future<Result<CallHistoryPage>> history({String? cursor, int limit = 30}) =>
       _client.get(
         Endpoints.calls,

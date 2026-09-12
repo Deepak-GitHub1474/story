@@ -11,6 +11,7 @@ from app.api.endpoints.calls.models import (
     RetentionRequest,
     StartCallRequest,
 )
+from app.api.endpoints.calls.signaling import ringing_for_key
 from app.api.endpoints.calls.signaling import save as save_ring
 from app.config import get_settings
 from app.core.errors import ErrorCode, api_error
@@ -88,6 +89,9 @@ async def start_call(
         },
         redis,
         settings.CALL_RING_TIMEOUT_SECONDS,
+    )
+    await redis.set(
+        ringing_for_key(peer_id), call_id, ex=settings.CALL_RING_TIMEOUT_SECONDS
     )
 
     return {
@@ -293,3 +297,12 @@ async def pending_call(call_id: str, *, claims, redis: Redis) -> dict[str, Any]:
 
     settings = get_settings()
     return pending_for(state, ice_servers(claims.user_id, settings=settings))
+
+
+async def ringing_for_me(*, claims, redis: Redis) -> dict[str, Any]:
+    raw = await redis.get(ringing_for_key(claims.user_id))
+    if raw is None:
+        raise api_error(ErrorCode.CALL_NOT_FOUND)
+
+    call_id = raw.decode() if isinstance(raw, bytes) else str(raw)
+    return await pending_call(call_id, claims=claims, redis=redis)

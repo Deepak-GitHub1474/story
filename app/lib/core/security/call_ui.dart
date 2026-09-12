@@ -7,6 +7,20 @@ class CallUi {
 
   static const _channel = MethodChannel('story/call_ui');
 
+  static void onIntent(
+    void Function(String callId, String? action) handler,
+  ) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method != 'incomingCall') return null;
+      final args = Map<String, dynamic>.from(call.arguments as Map);
+      final callId = args['callId'];
+      if (callId is String && callId.isNotEmpty) {
+        handler(callId, args['action'] as String?);
+      }
+      return null;
+    });
+  }
+
   static Future<void> ring({
     required String callId,
     required String caller,
@@ -22,6 +36,33 @@ class CallUi {
     }
   }
 
+  static Future<void> startRingback() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('startRingback');
+    } on PlatformException {
+      return;
+    }
+  }
+
+  static Future<void> stopRingback() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('stopRingback');
+    } on PlatformException {
+      return;
+    }
+  }
+
+  static Future<void> hideRingNotification() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('hideRingNotification');
+    } on PlatformException {
+      return;
+    }
+  }
+
   static Future<void> stopRinging() async {
     if (!Platform.isAndroid) return;
     try {
@@ -31,10 +72,13 @@ class CallUi {
     }
   }
 
-  static Future<void> startOngoing(String peer) async {
+  static Future<void> startOngoing(String peer, String callId) async {
     if (!Platform.isAndroid) return;
     try {
-      await _channel.invokeMethod<void>('startOngoing', {'peer': peer});
+      await _channel.invokeMethod<void>('startOngoing', {
+        'peer': peer,
+        'callId': callId,
+      });
     } on PlatformException {
       return;
     }
@@ -56,6 +100,24 @@ class CallUi {
       return found?['callId'];
     } on PlatformException {
       return null;
+    }
+  }
+
+  static Future<void> volumeForRinging() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('volumeForRinging');
+    } on PlatformException {
+      return;
+    }
+  }
+
+  static Future<void> volumeForCall() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('volumeForCall');
+    } on PlatformException {
+      return;
     }
   }
 

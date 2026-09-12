@@ -23,6 +23,7 @@ private const val NOTIFY_REQUEST = 8413
 
 class MainActivity : FlutterActivity() {
     private var pending: MethodChannel.Result? = null
+    private var callChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,8 +65,8 @@ class MainActivity : FlutterActivity() {
             }
 
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CALL_UI_CHANNEL)
-            .setMethodCallHandler { call, result ->
+        callChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CALL_UI_CHANNEL)
+        callChannel!!.setMethodCallHandler { call, result ->
                 when (call.method) {
                     "ring" -> {
                         CallUi.ring(
@@ -75,12 +76,32 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
+                    "startRingback" -> {
+                        Ringer.startRingback(this)
+                        result.success(null)
+                    }
+                    "stopRingback" -> {
+                        Ringer.stopRingback()
+                        result.success(null)
+                    }
+                    "hideRingNotification" -> {
+                        CallUi.hideRingNotification(this)
+                        result.success(null)
+                    }
                     "stopRinging" -> {
                         CallUi.stopRinging(this)
                         result.success(null)
                     }
                     "pendingCall" -> {
                         result.success(takePendingCall())
+                    }
+                    "volumeForRinging" -> {
+                        CallAudio.volumeForRinging(this)
+                        result.success(null)
+                    }
+                    "volumeForCall" -> {
+                        CallAudio.volumeForCall(this)
+                        result.success(null)
                     }
                     "startAudio" -> {
                         CallAudio.start(this)
@@ -95,7 +116,11 @@ class MainActivity : FlutterActivity() {
                         result.success(CallAudio.isSpeakerOn(this))
                     }
                     "startOngoing" -> {
-                        CallService.start(this, call.argument<String>("peer") ?: "Call")
+                        CallService.start(
+                            this,
+                            call.argument<String>("peer") ?: "Call",
+                            call.argument<String>("callId") ?: "",
+                        )
                         result.success(null)
                     }
                     "stopOngoing" -> {
@@ -108,9 +133,11 @@ class MainActivity : FlutterActivity() {
                     "requestNotifications" -> {
                         result.success(requestNotifications())
                     }
-                    else -> result.notImplemented()
-                }
+                else -> result.notImplemented()
             }
+        }
+
+        deliverPendingCall()
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FILES_CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -178,6 +205,12 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(incoming: Intent) {
         super.onNewIntent(incoming)
         intent = incoming
+        deliverPendingCall()
+    }
+
+    private fun deliverPendingCall() {
+        val waiting = takePendingCall() ?: return
+        callChannel?.invokeMethod("incomingCall", waiting)
     }
 
     private fun requestPermission(name: String, code: Int): Boolean {

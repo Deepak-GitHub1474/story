@@ -37,10 +37,15 @@ class CallController extends StateNotifier<CallSession?> {
     _pushes = FirebaseMessaging.onMessage.listen(_onPush);
     unawaited(CallUi.requestNotifications());
     unawaited(_adoptAnythingWaiting());
+    CallUi.onIntent(_onNotificationIntent);
   }
 
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _live;
+
+  @override
+  bool updateShouldNotify(CallSession? old, CallSession? current) => true;
+
   StreamSubscription<RemoteMessage>? _pushes;
 
   CallSession _newSession() {
@@ -72,12 +77,14 @@ class CallController extends StateNotifier<CallSession?> {
     state = session;
     try {
       await session.place(start);
+      await CallUi.volumeForCall();
+      await CallUi.startRingback();
+      await CallUi.startOngoing(start.peer.displayName, start.callId);
     } catch (error) {
       state = null;
       await session.hangUp();
       return 'The call could not start: $error';
     }
-    await CallUi.startOngoing(start.peer.displayName);
     return null;
   }
 
@@ -93,7 +100,12 @@ class CallController extends StateNotifier<CallSession?> {
       return 'The call could not connect: $error';
     }
     final peer = state?.peer;
-    if (peer != null) await CallUi.startOngoing(peer.displayName);
+    final id = state?.callId;
+    if (peer != null && id != null) {
+      await CallUi.startOngoing(peer.displayName, id);
+    }
+    await CallUi.volumeForCall();
+    await CallUi.stopRingback();
     return null;
   }
 
@@ -111,18 +123,58 @@ class CallController extends StateNotifier<CallSession?> {
     _clearWhenOver();
   }
 
+  Future<void> replyAndDecline(String text) async {
+    final conversationId = state?.start?.conversationId;
+
+    await decline();
+
+    if (conversationId == null || conversationId.isEmpty) return;
+    unawaited(_sendReply(conversationId, text));
+  }
+
+  Future<void> _sendReply(String conversationId, String text) async {
+    final alive = _ref.listen(
+      conversationProvider(conversationId),
+      (_, _) {},
+      fireImmediately: true,
+    );
+
+    try {
+      final chat = _ref.read(conversationProvider(conversationId).notifier);
+
+      for (var waited = 0; waited < 60; waited++) {
+        if (alive.read().hasKey) break;
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      }
+
+      if (!alive.read().hasKey) return;
+      await chat.send(text);
+    } finally {
+      alive.close();
+      _ref.invalidate(conversationsProvider(null));
+      _ref.invalidate(chatUnreadProvider);
+    }
+  }
+
+  Future<void> silenceRing() async {
+    await CallUi.hideRingNotification();
+  }
+
   Future<void> toggleMute() async => state?.toggleMute();
 
   Future<void> toggleSpeaker() async => state?.toggleSpeaker();
 
   void _clearWhenOver() {
-    if (state?.isOver ?? false) {
-      unawaited(CallUi.stopRinging());
-      unawaited(CallUi.stopOngoing());
-      Future<void>.delayed(const Duration(seconds: 1), () {
-        if (mounted && (state?.isOver ?? false)) state = null;
-      });
-    }
+    if (!(state?.isOver ?? false)) return;
+
+    unawaited(CallUi.stopRinging());
+    unawaited(CallUi.stopRingback());
+    unawaited(CallUi.stopOngoing());
+    _ref.invalidate(callHistoryProvider);
+  }
+
+  void dismiss() {
+    if (state?.isOver ?? false) state = null;
   }
 
   Future<void> _onPush(RemoteMessage message) async {
@@ -138,9 +190,44 @@ class CallController extends StateNotifier<CallSession?> {
     if (callId is String) await adopt(callId);
   }
 
+  Future<void> _onNotificationIntent(String callId, String? action) async {
+    await adopt(callId);
+
+    if (action == 'answer') {
+      await accept();
+    } else if (action == 'decline') {
+      await decline();
+    } else if (action == 'hangup') {
+      await hangUp();
+    } else {
+      onIncoming?.call();
+    }
+  }
+
   Future<void> _adoptAnythingWaiting() async {
     final waiting = await CallUi.pendingCallId();
-    if (waiting != null) await adopt(waiting);
+    if (waiting != null) {
+      await adopt(waiting);
+      return;
+    }
+    await checkRinging();
+  }
+
+  Future<void> checkRinging() async {
+    if (state != null && !state!.isOver) return;
+
+    final result = await _ref.read(callRepositoryProvider).ringing();
+    final invite = result.valueOrNull;
+    if (invite == null) return;
+
+    final session = _newSession();
+    await session.receive(invite.start, offer: invite.sdp);
+    state = session;
+    await CallUi.ring(
+      callId: invite.start.callId,
+      caller: invite.start.peer.displayName,
+    );
+    onIncoming?.call();
   }
 
   Future<void> adopt(String callId) async {
@@ -178,6 +265,12 @@ class CallController extends StateNotifier<CallSession?> {
     final session = state;
     if (session != null) {
       await session.onEvent(event);
+
+      if (session.phase != CallPhase.ringing &&
+          session.phase != CallPhase.dialling) {
+        await CallUi.stopRingback();
+      }
+
       if (session.isOver) {
         await CallUi.stopRinging();
         await CallUi.stopOngoing();
@@ -216,6 +309,7 @@ class CallController extends StateNotifier<CallSession?> {
     final session = _newSession();
     await session.receive(start, offer: sdp);
     state = session;
+    await CallUi.volumeForRinging();
     await CallUi.ring(callId: callId, caller: start.peer.displayName);
     onIncoming?.call();
   }

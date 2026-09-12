@@ -24,6 +24,10 @@ def ring_key(call_id: str) -> str:
     return f"{c.RING_PREFIX}{call_id}"
 
 
+def ringing_for_key(user_id: str) -> str:
+    return f"{c.RINGING_FOR_PREFIX}{user_id}"
+
+
 async def load(call_id: str, redis: Redis) -> dict[str, Any] | None:
     raw = await redis.get(ring_key(call_id))
     if raw is None:
@@ -119,6 +123,12 @@ async def handle(
         state["connected_at"] = utc_now().isoformat().replace("+00:00", "Z")
         await save(call_id, state, redis, settings.CALL_RING_TIMEOUT_SECONDS * 60)
 
+    logger.info(
+        "call_signal",
+        service="calls",
+        code=kind,
+        error=f"{user_id[-6:]}->{peer[-6:]} {call_id[-6:]} {event.get('reason') or ''}",
+    )
     await bus.publish(redis, [peer], payload)
 
     if kind == "call.offer" and mongo is not None:
@@ -137,6 +147,7 @@ async def handle(
             logger.error("call_ring_push_failed", code="call_ring_push_failed")
 
     if kind == "call.end":
+        await redis.delete(ringing_for_key(callee))
         if mongo is not None:
             await _record(
                 state, event.get("reason") or "hangup", user_id, mongo
