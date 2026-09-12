@@ -1,23 +1,49 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { EMPTY, signIn } from '@/lib/actions';
+import { signIn } from '@/lib/actions';
+import { EMPTY } from '@/lib/formState';
 
 export function SignInForm() {
   const [state, action, isPending] = useActionState(signIn, EMPTY);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={action} className="flex flex-col gap-6">
-      <Field label="Username" name="username" autoComplete="username" required />
+      <Field
+        label="Username"
+        name="username"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        value={username}
+        onChange={(event) => setUsername(event.target.value)}
+        required
+      />
+
       <Field
         label="Password"
         name="password"
-        type="password"
+        type={showPassword ? 'text' : 'password'}
         autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
         required
+        suffix={
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="text-[length:var(--text-caption)] text-text-muted hover:text-text-secondary"
+          >
+            {showPassword ? 'Hide' : 'Show'}
+          </button>
+        }
       />
+
       {state.error ? (
         <p
           role="alert"
@@ -26,6 +52,7 @@ export function SignInForm() {
           {state.error}
         </p>
       ) : null}
+
       <Button type="submit" isLoading={isPending}>
         Sign in
       </Button>

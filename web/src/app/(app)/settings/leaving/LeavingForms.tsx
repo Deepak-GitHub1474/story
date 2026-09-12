@@ -18,7 +18,7 @@ export function LeavingForms() {
 
   return (
     <div className="max-w-lg space-y-10">
-      <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Leaving</h1>
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Leaving</h1>
 
       <form
         action={deactivateAction}

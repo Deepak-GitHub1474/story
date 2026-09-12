@@ -42,7 +42,7 @@ const shellDestinations = [
   ),
   ShellDestination(
     route: Routes.activity,
-    label: 'Notifications',
+    label: 'Activity',
     icon: Icons.favorite_border,
     activeIcon: Icons.favorite,
   ),
@@ -138,18 +138,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '${Routes.user}/:username',
         pageBuilder: (context, state) => slidePage(
           key: state.pageKey,
-          child: PublicProfileScreen(username: state.pathParameters['username']!),
+          child: PublicProfileScreen(
+            username: state.pathParameters['username']!,
+          ),
         ),
       ),
       GoRoute(
         path: Routes.search,
-        pageBuilder: (context, state) =>
-            fadePage(
-              key: state.pageKey,
-              child: SearchScreen(
-                peopleOnly: state.uri.queryParameters['people'] == '1',
-              ),
-            ),
+        pageBuilder: (context, state) => fadePage(
+          key: state.pageKey,
+          child: SearchScreen(
+            peopleOnly: state.uri.queryParameters['people'] == '1',
+          ),
+        ),
       ),
       GoRoute(
         path: Routes.following,
@@ -246,13 +247,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: Routes.chats,
-            pageBuilder: (context, state) =>
-                NoTransitionPage(key: state.pageKey, child: const ChatListScreen()),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const ChatListScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.profile,
-            pageBuilder: (context, state) =>
-                NoTransitionPage(key: state.pageKey, child: const ProfileScreen()),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const ProfileScreen(),
+            ),
           ),
         ],
       ),

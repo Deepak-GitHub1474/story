@@ -8,26 +8,17 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   error?: string | null;
   hint?: string | null;
   suffix?: React.ReactNode;
-  isMono?: boolean;
 };
 
-export function Field({
-  label,
-  error,
-  hint,
-  suffix,
-  isMono = false,
-  className,
-  ...rest
-}: Props) {
+export function Field({ label, error, hint, suffix, className, ...rest }: Props) {
   const id = useId();
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <label
         htmlFor={id}
-        className="text-[length:var(--text-micro)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase"
+        className="text-[length:var(--text-label)] font-medium text-text-secondary"
       >
         {label}
       </label>
@@ -40,20 +31,19 @@ export function Field({
           aria-describedby={describedBy}
           className={cn(
             'h-[var(--size-control-height)] w-full rounded-[length:var(--radius-md)]',
-            'border bg-bg px-3 text-[length:var(--text-body)] text-text-primary',
+            'border bg-surface px-3.5 text-[length:var(--text-body)] text-text-primary',
             'transition-colors duration-[var(--motion-fast)] outline-none',
             'placeholder:text-text-muted/70',
-            'focus:border-accent',
-            isMono && 'mono',
+            'focus:border-accent focus:bg-bg',
             error
               ? 'border-danger focus:border-danger'
               : 'border-border hover:border-border-strong',
-            Boolean(suffix) && 'pr-10',
+            Boolean(suffix) && 'pr-11',
             className,
           )}
         />
         {suffix ? (
-          <span className="absolute inset-y-0 right-2.5 flex items-center text-text-muted">
+          <span className="absolute inset-y-0 right-3 flex items-center text-text-muted">
             {suffix}
           </span>
         ) : null}

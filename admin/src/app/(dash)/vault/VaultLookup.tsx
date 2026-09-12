@@ -71,7 +71,7 @@ export function VaultLookup({
               {passcodes.map((passcode) => (
                 <li key={passcode.passcode_id} className="px-4 py-3">
                   <p className="font-medium">{passcode.label}</p>
-                  <p className="mono text-[length:var(--text-caption)] text-text-muted">
+                  <p className="numeric text-[length:var(--text-caption)] text-text-muted">
                     {passcode.scope} · {passcode.failed_attempts} failed attempts
                   </p>
                 </li>

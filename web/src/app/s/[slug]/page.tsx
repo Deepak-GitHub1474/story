@@ -123,7 +123,7 @@ export default async function PublicStoryPage({ params }: Props) {
         </p>
         <Link
           href="/signup"
-          className="mt-7 inline-flex h-11 items-center rounded-[length:var(--radius-md)] bg-accent px-6 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
+          className="mt-7 inline-flex h-11 items-center rounded-[length:var(--radius-md)] bg-accent-strong px-6 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
         >
           Write your own
         </Link>

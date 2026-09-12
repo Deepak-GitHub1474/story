@@ -85,7 +85,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/signup"
-              className="inline-flex h-10 items-center rounded-[length:var(--radius-md)] bg-accent px-5 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
+              className="inline-flex h-10 items-center rounded-[length:var(--radius-md)] border border-transparent bg-accent-strong px-5 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
             >
               Start writing
             </Link>
@@ -126,7 +126,7 @@ export default function HomePage() {
               >
                 <Link
                   href="/signup"
-                  className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
+                  className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent-strong px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
                 >
                   Create an account
                 </Link>
@@ -261,7 +261,7 @@ export default function HomePage() {
                 <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
                   <Link
                     href="/signup"
-                    className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
+                    className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent-strong px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
                   >
                     Create an account
                   </Link>

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { createDraft, publishStory, saveStory } from '@/lib/actions/stories';
 import { LANDSCAPE_BOUND, PORTRAIT_BOUND } from '@/lib/imageShape';
 import type { TCommunity, TImageFit, TStory } from '@/lib/types';
@@ -183,25 +184,62 @@ export function Composer({
     );
   }
 
+  const barButton =
+    'inline-grid size-11 place-items-center rounded-full text-text-primary transition-opacity duration-[var(--motion-fast)] disabled:opacity-40';
+
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center justify-between gap-4">
+      <div className="-mx-6 flex h-14 items-center gap-0.5 border-b border-border px-2 sm:-mx-8 sm:px-4">
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-[length:var(--text-label)] text-text-muted hover:text-text-primary"
+          aria-label="Close"
+          className={barButton}
         >
-          Close
+          <Icon name="close" />
         </button>
-        <span className="text-[length:var(--text-caption)] text-text-muted">{saved}</span>
-        <Button
-          isFullWidth={false}
-          size="sm"
+
+        <span className="flex-1 truncate px-2 text-[length:var(--text-caption)] text-text-muted">
+          {saved}
+        </span>
+
+        <ImagePicker
+          images={images}
+          fit={fit}
+          canFit={canFit}
+          variant="icon"
+          onChange={onPictures}
+        />
+
+        <button
+          type="button"
+          onClick={() => setSheet('write')}
+          aria-label="Write it with AI"
+          title="Write it with AI"
+          className={barButton}
+        >
+          <Icon name="wand" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSheet('polish')}
+          disabled={body.trim().length === 0}
+          aria-label="Ask for a tidier version"
+          title="Ask for a tidier version"
+          className={barButton}
+        >
+          <Icon name="sparkles" />
+        </button>
+
+        <button
+          type="button"
           disabled={!canPublish}
           onClick={() => setShowOptions((value) => !value)}
+          className="ml-1 px-2 text-[length:var(--text-body)] font-medium text-accent disabled:text-text-muted"
         >
           Publish
-        </Button>
+        </button>
       </div>
 
       {showOptions ? (
@@ -216,7 +254,7 @@ export function Composer({
               <select
                 value={community}
                 onChange={(event) => setCommunity(event.target.value)}
-                className="mt-1 h-11 w-full rounded-[length:var(--radius-md)] border border-border bg-bg px-3 outline-none focus:border-accent"
+                className="mt-1 h-[var(--size-control-height)] w-full rounded-[length:var(--radius-md)] border border-border bg-bg px-3 outline-none focus:border-accent"
               >
                 <option value="">No community</option>
                 {communities.map((item) => (
@@ -268,7 +306,27 @@ export function Composer({
         onChange={(event) => setTitle(event.target.value)}
         maxLength={120}
         placeholder="Title, if you want one"
-        className="mt-8 w-full border-b border-border bg-transparent pb-4 font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)] outline-none placeholder:text-text-muted focus:border-accent"
+        className="mt-6 w-full border-b border-border bg-transparent pb-3 text-[length:var(--text-body)] leading-[1.4] font-medium outline-none placeholder:text-text-muted focus:border-accent"
+      />
+
+      <div className="mt-3 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setShowOptions((value) => !value)}
+          aria-expanded={showOptions}
+          className="inline-flex h-9 items-center gap-1 rounded-[length:var(--radius-pill)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-primary"
+        >
+          Draft
+          <Icon name="chevronDown" size={16} />
+        </button>
+      </div>
+
+      <ImagePicker
+        images={images}
+        fit={fit}
+        canFit={canFit}
+        variant="preview"
+        onChange={onPictures}
       />
 
       <textarea
@@ -277,14 +335,10 @@ export function Composer({
         rows={9}
         maxLength={20000}
         placeholder="Say it here. Nobody knows who you are."
-        className="mt-6 field-sizing-content min-h-[9lh] w-full resize-none bg-transparent text-[1.0625rem] leading-[1.75] outline-none placeholder:text-text-muted"
+        className="mt-3 field-sizing-content min-h-[12lh] w-full resize-none bg-transparent text-[length:var(--text-label)] leading-[1.7] outline-none placeholder:text-text-muted"
       />
 
-      <ImagePicker images={images} fit={fit} canFit={canFit} onChange={onPictures} />
-
-      {aiControls}
-
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+      <div className="-mx-6 mt-6 flex items-center justify-between gap-3 border-t border-border px-6 py-3 sm:-mx-8 sm:px-8">
         <span className="text-[length:var(--text-caption)] text-text-muted">
           {words} words
         </span>

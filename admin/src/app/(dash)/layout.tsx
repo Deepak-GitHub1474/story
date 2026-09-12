@@ -27,7 +27,7 @@ export default async function DashLayout({
           </nav>
 
           <span className="hidden shrink-0 items-center gap-2 text-[length:var(--text-caption)] text-text-muted sm:flex">
-            <span className="mono">@{staff.username}</span>
+            <span className="numeric">@{staff.username}</span>
             <span className="rounded-[length:var(--radius-sm)] border border-border px-1.5 py-0.5 text-[length:var(--text-micro)] tracking-[0.08em] uppercase">
               {staff.role.replace('_', ' ')}
             </span>

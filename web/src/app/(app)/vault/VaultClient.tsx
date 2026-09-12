@@ -58,7 +58,7 @@ export function VaultClient({
   if (!vault.isUnlocked) {
     return (
       <div className="max-w-lg">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">
           Vault
         </h1>
 
@@ -111,7 +111,7 @@ export function VaultClient({
                       className={cn(
                         CHIP,
                         chosen === row.id
-                          ? 'border-accent bg-accent text-accent-text'
+                          ? 'border-accent bg-accent-strong text-accent-text'
                           : 'border-border text-text-secondary hover:border-text-muted',
                       )}
                     >
@@ -165,7 +165,7 @@ export function VaultClient({
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">
           {vaults.find((row) => row.id === chosen)?.label ?? 'Vault'}
         </h1>
         <Button variant="secondary" size="sm" isFullWidth={false} onClick={vault.lock}>
@@ -180,7 +180,7 @@ export function VaultClient({
           className={cn(
             CHIP,
             kind === null
-              ? 'border-accent bg-accent text-accent-text'
+              ? 'border-accent bg-accent-strong text-accent-text'
               : 'border-border text-text-secondary hover:border-text-muted',
           )}
         >
@@ -194,7 +194,7 @@ export function VaultClient({
             className={cn(
               CHIP,
               kind === value
-                ? 'border-accent bg-accent text-accent-text'
+                ? 'border-accent bg-accent-strong text-accent-text'
                 : 'border-border text-text-secondary hover:border-text-muted',
             )}
           >

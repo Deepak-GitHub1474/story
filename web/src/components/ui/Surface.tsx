@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/ui/Icon';
 
 export function Card({
   className,
@@ -9,7 +10,7 @@ export function Card({
     <div
       {...rest}
       className={cn(
-        'rounded-[length:var(--radius-lg)] border border-border bg-surface p-5 sm:p-6',
+        'rounded-[length:var(--radius-md)] border border-border bg-surface p-4 sm:p-6',
         className,
       )}
     >
@@ -27,10 +28,10 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="px-0.5 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
+      <h2 className="px-1 text-[length:var(--text-caption)] font-medium tracking-[0.1em] text-text-muted uppercase">
         {title}
       </h2>
-      <div className="divide-y divide-border overflow-hidden rounded-[length:var(--radius-lg)] border border-border bg-surface">
+      <div className="divide-y divide-border overflow-hidden rounded-[length:var(--radius-md)] border border-border bg-surface">
         {children}
       </div>
     </section>
@@ -40,6 +41,7 @@ export function Section({
 export function Row({
   label,
   value,
+  leading,
   trailing,
   href,
   onClick,
@@ -47,25 +49,34 @@ export function Row({
 }: {
   label: string;
   value?: string | null;
+  leading?: React.ReactNode;
   trailing?: React.ReactNode;
   href?: string;
   onClick?: () => void;
   isDanger?: boolean;
 }) {
+  const isTappable = Boolean(href || onClick);
+
   const inner = (
     <>
+      {leading ? <span className="shrink-0 text-text-primary">{leading}</span> : null}
       <span className={cn('flex-1 text-left', isDanger && 'text-danger')}>{label}</span>
       {value ? (
-        <span className="truncate text-[length:var(--text-label)] text-text-muted">
+        <span className="truncate text-[length:var(--text-body)] text-text-muted">
           {value}
         </span>
       ) : null}
       {trailing}
+      {isTappable && !trailing ? (
+        <span className="shrink-0 text-text-muted">
+          <Icon name="chevronRight" size={22} />
+        </span>
+      ) : null}
     </>
   );
 
   const shared =
-    'flex w-full items-center gap-3 px-4 py-3.5 text-[length:var(--text-label)] transition-colors duration-[var(--motion-fast)] hover:bg-surface-raised sm:px-5';
+    'flex w-full items-center gap-3 px-4 py-4 text-[length:var(--text-body)] transition-colors duration-[var(--motion-fast)] hover:bg-surface-raised sm:px-5';
 
   if (href) {
     return (

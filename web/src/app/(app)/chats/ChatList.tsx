@@ -40,7 +40,7 @@ export function ChatList({ userId }: { userId: string }) {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">Messages</h1>
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Messages</h1>
         <Link
           href="/chats/new"
           className="inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary transition-colors duration-[var(--motion-fast)] hover:border-border-strong hover:text-text-primary"
@@ -70,7 +70,7 @@ export function ChatList({ userId }: { userId: string }) {
             className={cn(
               'inline-flex h-9 items-center rounded-[length:var(--radius-md)] border px-4 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] transition-colors duration-[var(--motion-fast)]',
               showRequests === pending
-                ? 'border-accent bg-accent text-accent-text'
+                ? 'border-accent bg-accent-strong text-accent-text'
                 : 'border-border text-text-secondary hover:text-text-primary',
             )}
           >
@@ -128,7 +128,7 @@ export function ChatList({ userId }: { userId: string }) {
                   </span>
                 ) : null}
                 {conversation.unread_count > 0 ? (
-                  <span className="rounded-[length:var(--radius-pill)] bg-accent px-2 py-0.5 text-[length:var(--text-caption)] font-medium text-accent-text">
+                  <span className="rounded-[length:var(--radius-pill)] bg-accent-strong px-2 py-0.5 text-[length:var(--text-caption)] font-medium text-accent-text">
                     {conversation.unread_count}
                   </span>
                 ) : null}

@@ -30,7 +30,7 @@ export function ReportCard({ report }: { report: TReport }) {
         <span className="text-[length:var(--text-caption)] text-text-muted">
           {report.target.kind} · {relativeTime(report.created_at)}
         </span>
-        <code className="mono ml-auto text-[length:var(--text-micro)] text-text-muted">
+        <code className="numeric ml-auto text-[length:var(--text-micro)] text-text-muted">
           {report.report_id}
         </code>
         {report.target.author ? (

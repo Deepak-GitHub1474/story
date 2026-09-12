@@ -42,14 +42,14 @@ export default async function AuditPage() {
                   <td className="px-4 py-2.5 whitespace-nowrap text-text-muted">
                     {relativeTime(entry.occurred_at)}
                   </td>
-                  <td className="mono px-4 py-2.5 whitespace-nowrap">
+                  <td className="numeric px-4 py-2.5 whitespace-nowrap">
                     @{entry.actor.username ?? '—'}
                     <span className="ml-1 text-text-muted">({entry.actor.role})</span>
                   </td>
-                  <td className="mono px-4 py-2.5 text-[length:var(--text-caption)] whitespace-nowrap">
+                  <td className="numeric px-4 py-2.5 text-[length:var(--text-caption)] whitespace-nowrap">
                     {entry.action}
                   </td>
-                  <td className="mono px-4 py-2.5 text-[length:var(--text-caption)] text-text-muted">
+                  <td className="numeric px-4 py-2.5 text-[length:var(--text-caption)] text-text-muted">
                     {entry.target.kind}:{(entry.target.id ?? '').slice(0, 12)}
                   </td>
                   <td className="px-4 py-2.5">

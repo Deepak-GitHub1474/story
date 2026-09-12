@@ -7,7 +7,7 @@ const BASE =
   'disabled:cursor-not-allowed disabled:opacity-45';
 
 const TONES = {
-  on: 'border-accent bg-accent font-medium text-accent-text',
+  on: 'border-transparent bg-accent-strong font-medium text-accent-text',
   off: 'border-border text-text-secondary hover:border-border-strong hover:text-text-primary',
 } as const;
 

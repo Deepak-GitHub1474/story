@@ -5,9 +5,7 @@ import { redirect } from 'next/navigation';
 import { API_BASE_URL } from './config';
 import { backendFetch, clearSession, saveSession } from './server/session';
 import type { TEnvelope, TStaff, TTokens } from './types';
-
-export type TFormState = { error: string | null };
-export const EMPTY: TFormState = { error: null };
+import type { TFormState } from './formState';
 
 const STAFF_ROLES = ['moderator', 'admin', 'super_admin'];
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/ui/Icon';
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   label: string;
@@ -12,13 +13,28 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> & {
 
 export function Field({ label, error, hint, suffix, className, ...rest }: Props) {
   const id = useId();
+  const [isRevealed, setRevealed] = useState(false);
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  const isPassword = rest.type === 'password';
+  const trailing =
+    suffix ??
+    (isPassword ? (
+      <button
+        type="button"
+        onClick={() => setRevealed((value) => !value)}
+        aria-label={isRevealed ? 'Hide password' : 'Show password'}
+        title={isRevealed ? 'Hide password' : 'Show password'}
+        className="grid size-9 place-items-center text-text-muted outline-none transition-colors duration-[var(--motion-fast)] hover:text-text-primary"
+      >
+        <Icon name={isRevealed ? 'eyeOff' : 'eye'} size={20} />
+      </button>
+    ) : null);
 
   return (
     <div className="flex flex-col gap-2">
       <label
         htmlFor={id}
-        className="text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-eyebrow)] text-text-muted uppercase"
+        className="text-[length:var(--text-label)] font-medium text-text-secondary"
       >
         {label}
       </label>
@@ -26,6 +42,7 @@ export function Field({ label, error, hint, suffix, className, ...rest }: Props)
       <div className="relative">
         <input
           {...rest}
+          type={isPassword && isRevealed ? 'text' : rest.type}
           id={id}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
@@ -38,13 +55,13 @@ export function Field({ label, error, hint, suffix, className, ...rest }: Props)
             error
               ? 'border-danger focus:border-danger'
               : 'border-border hover:border-border-strong',
-            Boolean(suffix) && 'pr-11',
+            Boolean(trailing) && 'pr-12',
             className,
           )}
         />
-        {suffix ? (
-          <span className="absolute inset-y-0 right-3 flex items-center text-text-muted">
-            {suffix}
+        {trailing ? (
+          <span className="absolute inset-y-0 right-2 flex items-center text-text-muted">
+            {trailing}
           </span>
         ) : null}
       </div>

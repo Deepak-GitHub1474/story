@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { mediaUrl } from '@/lib/config';
 import { isCropped, postRatioFor } from '@/lib/imageShape';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/ui/Icon';
 import type { TImageFit } from '@/lib/types';
 
 const MAX_IMAGES = 8;
@@ -42,11 +43,13 @@ export function ImagePicker({
   images,
   fit,
   canFit,
+  variant = 'inline',
   onChange,
 }: {
   images: string[];
   fit: TImageFit;
   canFit: boolean;
+  variant?: 'inline' | 'icon' | 'preview';
   onChange: (next: {
     images: string[];
     ratio?: number | null;
@@ -127,17 +130,90 @@ export function ImagePicker({
     );
   }
 
+  const field = (
+    <input
+      ref={input}
+      type="file"
+      accept="image/jpeg,image/png"
+      multiple
+      hidden
+      onChange={(event) => void add(event.target.files)}
+    />
+  );
+
+  if (variant === 'icon') {
+    return (
+      <>
+        {field}
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={isUploading || images.length >= MAX_IMAGES}
+          aria-label={error ?? 'Add a picture'}
+          title={error ?? 'Add a picture'}
+          className="inline-grid size-11 place-items-center rounded-full text-text-primary transition-opacity duration-[var(--motion-fast)] disabled:opacity-40"
+        >
+          {isUploading ? (
+            <span className="size-4.5 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
+          ) : (
+            <Icon name="image" />
+          )}
+        </button>
+      </>
+    );
+  }
+
+  const gallery = (
+    <>
+      {images.length > 0 ? (
+        <ul className="mt-4 flex flex-wrap gap-3">
+          {images.map((url) => (
+            <li key={url} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mediaUrl(url)}
+                alt=""
+                className={cn(
+                  'size-20 rounded-[length:var(--radius-md)] border border-border',
+                  fit === 'contain' ? 'object-contain' : 'object-cover',
+                )}
+              />
+              <button
+                type="button"
+                onClick={() => remove(url)}
+                aria-label="Remove this picture"
+                className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full border border-border bg-bg text-text-secondary transition-colors hover:text-danger"
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+
+  if (variant === 'preview') {
+    return (
+      <div>
+        {canFit && images.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => onChange({ images, fit: fit === 'contain' ? 'cover' : 'contain' })}
+            className="mt-4 inline-flex h-9 items-center rounded-[length:var(--radius-pill)] border border-border px-3.5 text-[length:var(--text-caption)] text-text-secondary"
+          >
+            {fit === 'contain' ? 'Showing all of it' : 'Filling the frame'}
+          </button>
+        ) : null}
+        {gallery}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6">
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          ref={input}
-          type="file"
-          accept="image/jpeg,image/png"
-          multiple
-          hidden
-          onChange={(event) => void add(event.target.files)}
-        />
+        {field}
         <button
           type="button"
           onClick={() => input.current?.click()}

@@ -103,7 +103,7 @@ export function NewChat({ viewerId }: { viewerId: string }) {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-editorial text-[length:var(--text-title)] font-semibold tracking-[var(--tracking-title)]">New message</h1>
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">New message</h1>
         <Link
           href="/chats"
           className="text-[length:var(--text-label)] text-text-muted hover:text-text-primary"

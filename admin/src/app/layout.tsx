@@ -1,19 +1,20 @@
 import type { Metadata } from 'next';
-import { Archivo, Spline_Sans_Mono } from 'next/font/google';
+import { Literata, Public_Sans } from 'next/font/google';
 import './globals.css';
 
-const archivo = Archivo({
+const literata = Literata({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-archivo',
+  variable: '--font-literata',
   weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 });
 
-const splineMono = Spline_Sans_Mono({
+const publicSans = Public_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-spline-mono',
-  weight: ['400', '500', '600'],
+  variable: '--font-public-sans',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="midnight"
-      className={`${archivo.variable} ${splineMono.variable}`}
+      className={`${literata.variable} ${publicSans.variable}`}
     >
       <body
         suppressHydrationWarning

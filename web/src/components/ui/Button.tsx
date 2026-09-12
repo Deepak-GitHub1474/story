@@ -12,7 +12,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-accent text-accent-text border border-accent hover:brightness-108 active:brightness-95',
+    'bg-accent-strong text-accent-text border border-transparent hover:brightness-108 active:brightness-95',
   secondary:
     'bg-transparent text-text-primary border border-border hover:border-border-strong hover:bg-surface',
   ghost:

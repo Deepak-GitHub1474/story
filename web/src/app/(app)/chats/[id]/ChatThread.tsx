@@ -361,7 +361,7 @@ export function ChatThread({
                 className={cn(
                   'min-w-0 rounded-[length:var(--radius-lg)] px-4 py-2.5 text-left leading-relaxed',
                   isMine
-                    ? 'bg-accent text-accent-text'
+                    ? 'bg-accent-strong text-accent-text'
                     : 'border border-border bg-surface',
                 )}
               >

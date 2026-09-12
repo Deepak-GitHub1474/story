@@ -76,7 +76,7 @@ export default async function TicketsPage({ searchParams }: Props) {
                 <span className="text-[length:var(--text-caption)] text-text-muted">
                   {relativeTime(ticket.created_at)}
                 </span>
-                <code className="mono ml-auto text-[length:var(--text-micro)] text-text-muted">
+                <code className="numeric ml-auto text-[length:var(--text-micro)] text-text-muted">
                   {ticket.ticket_id}
                 </code>
               </div>

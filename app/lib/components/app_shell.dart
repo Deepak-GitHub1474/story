@@ -94,18 +94,26 @@ class AppShell extends ConsumerWidget {
           child: SafeArea(
             top: false,
             child: SizedBox(
-              height: 54,
+              height: 62,
               child: Row(
                 children: [
-                  Expanded(
-                    child: _ShellTab(
-                      destination: destinations[0],
-                      isActive: currentIndex == 0,
-                      onTap: () => context.go(destinations[0].route),
+                  for (var index = 0; index < 2; index++)
+                    Expanded(
+                      child: _ShellTab(
+                        destination: destinations[index],
+                        isActive: index == currentIndex,
+                        onTap: () => context.go(destinations[index].route),
+                        badgeCount: switch (destinations[index].route) {
+                          Routes.activity => unread,
+                          Routes.chats =>
+                            (chatUnread?.unread ?? 0) +
+                                (chatUnread?.requests ?? 0),
+                          _ => 0,
+                        },
+                      ),
                     ),
-                  ),
                   Expanded(child: _ComposeButton(onTap: onCompose)),
-                  for (var index = 1; index < destinations.length; index++)
+                  for (var index = 2; index < destinations.length; index++)
                     Expanded(
                       child: _ShellTab(
                         destination: destinations[index],
@@ -152,7 +160,8 @@ class _ShellTab extends StatelessWidget {
       label: destination.label,
       button: true,
       selected: isActive,
-      child: InkWell(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -160,10 +169,14 @@ class _ShellTab extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  isActive ? destination.activeIcon : destination.icon,
-                  color: color,
-                  size: AppSizes.iconNav,
+                SizedBox(
+                  width: AppSizes.iconNav,
+                  height: AppSizes.iconNav,
+                  child: Icon(
+                    destination.icon,
+                    color: color,
+                    size: AppSizes.iconNav,
+                  ),
                 ),
                 if (badgeCount > 0)
                   Positioned(
@@ -180,6 +193,17 @@ class _ShellTab extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              destination.label,
+              style: TextStyle(
+                fontSize: AppTypeScale.micro,
+                height: 1.1,
+                letterSpacing: 0.2,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -218,12 +242,36 @@ class _ComposeButtonState extends State<_ComposeButton> {
             label: 'Write',
             button: true,
             child: SizedBox(
-              width: 52,
-              height: 40,
-              child: Icon(
-                Icons.add_box_outlined,
-                color: colors.textSecondary,
-                size: AppSizes.iconNav,
+              width: 64,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colors.accentStrong,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: colors.accentText,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Write',
+                    style: TextStyle(
+                      fontSize: AppTypeScale.micro,
+                      height: 1.1,
+                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
-import { NAV_LINKS } from '@/components/nav/const';
+import { DESKTOP_LINKS, MOBILE_ACTIONS, NAV_LINKS, type NavItem } from '@/components/nav/const';
+import { Icon } from '@/components/ui/Icon';
+import { Avatar } from '@/components/Avatar';
 
 function Count({ value, tone }: { value: number; tone: 'accent' | 'danger' }) {
   return (
@@ -13,7 +15,7 @@ function Count({ value, tone }: { value: number; tone: 'accent' | 'danger' }) {
       className={cn(
         'numeric ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-[length:var(--radius-pill)] px-1',
         'text-[length:var(--text-micro)] font-semibold',
-        tone === 'accent' ? 'bg-accent text-accent-text' : 'bg-danger text-bg',
+        tone === 'accent' ? 'bg-accent-strong text-accent-text' : 'bg-danger text-bg',
       )}
     >
       {value > 99 ? '99+' : value}
@@ -21,7 +23,15 @@ function Count({ value, tone }: { value: number; tone: 'accent' | 'danger' }) {
   );
 }
 
-export function Nav({ unread, username }: { unread: number; username: string }) {
+export function Nav({
+  unread,
+  username,
+  avatarSeed,
+}: {
+  unread: number;
+  username: string;
+  avatarSeed: string;
+}) {
   const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
@@ -58,13 +68,13 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
         <nav className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-5 sm:px-8">
           <Link
             href="/feed"
-            className="font-editorial shrink-0 text-[length:var(--text-heading)] leading-none font-semibold tracking-[0.16em] text-text-primary"
+            className="font-editorial shrink-0 text-[20px] leading-none font-medium tracking-[0.25em] text-text-primary"
           >
             STORY
           </Link>
 
           <ul className="hidden flex-1 items-center gap-0.5 sm:flex">
-            {NAV_LINKS.map((link) => {
+            {DESKTOP_LINKS.map((link) => {
               const isActive = pathname.startsWith(link.href);
               const count = countFor(link.href);
               return (
@@ -91,11 +101,22 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
             })}
           </ul>
 
-          <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none sm:gap-3">
+          <div className="flex flex-1 items-center justify-end gap-1 sm:flex-none sm:gap-3">
+            {MOBILE_ACTIONS.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                aria-label={action.label}
+                className="inline-grid size-11 place-items-center rounded-full text-text-primary sm:hidden"
+              >
+                <Icon name={action.icon} />
+              </Link>
+            ))}
+
             <Link
               href="/compose"
               className={cn(
-                'inline-flex h-9 items-center rounded-[length:var(--radius-md)] border border-accent bg-accent px-4',
+                'hidden h-9 items-center rounded-[length:var(--radius-md)] border border-transparent bg-accent-strong px-4 sm:inline-flex',
                 'text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] text-accent-text',
                 'transition-[filter] duration-[var(--motion-fast)] hover:brightness-108',
               )}
@@ -105,59 +126,101 @@ export function Nav({ unread, username }: { unread: number; username: string }) 
             <Link
               href="/profile"
               aria-label={`Your profile, @${username}`}
+              title={`@${username}`}
               className={cn(
-                'inline-flex h-9 max-w-36 items-center truncate rounded-[length:var(--radius-md)] px-2.5',
-                'text-[length:var(--text-caption)] transition-colors duration-[var(--motion-fast)]',
+                'ml-1 inline-grid size-9 shrink-0 place-items-center rounded-full sm:ml-0',
+                'transition-opacity duration-[var(--motion-fast)] hover:opacity-80',
                 pathname.startsWith('/profile') || pathname.startsWith('/settings')
-                  ? 'bg-surface text-text-primary'
-                  : 'text-text-muted hover:bg-surface hover:text-text-secondary',
+                  ? 'opacity-100'
+                  : 'opacity-85',
               )}
             >
-              @{username}
+              <Avatar seed={avatarSeed} size={32} />
             </Link>
           </div>
         </nav>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
-        <ul className="grid grid-cols-5">
-          {NAV_LINKS.map((link) => {
-            const isActive = pathname.startsWith(link.href);
-            const count = countFor(link.href);
-            return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    'flex h-14 flex-col items-center justify-center gap-0.5 text-center',
-                    'text-[length:var(--text-micro)] tracking-[0.04em] transition-colors',
-                    isActive ? 'text-accent' : 'text-text-muted',
-                  )}
-                >
-                  <span className="relative">
-                    {link.label}
-                    {count ? (
-                      <span
-                        className={cn(
-                          'absolute -top-1 -right-2.5 size-1.5 rounded-full',
-                          count.tone === 'accent' ? 'bg-accent' : 'bg-danger',
-                        )}
-                      />
-                    ) : null}
-                  </span>
-                  <span
-                    className={cn(
-                      'h-px w-5 transition-opacity duration-[var(--motion-base)]',
-                      isActive ? 'bg-accent opacity-100' : 'opacity-0',
-                    )}
-                  />
-                </Link>
-              </li>
-            );
-          })}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[0.6px] border-border bg-bg pb-[env(safe-area-inset-bottom)] sm:hidden">
+        <ul className="grid h-[62px] grid-cols-5 items-center">
+          {NAV_LINKS.slice(0, 2).map((link) => (
+            <BottomItem
+              key={link.href}
+              link={link}
+              isActive={pathname.startsWith(link.href)}
+              count={countFor(link.href)}
+            />
+          ))}
+
+          <li>
+            <Link
+              href="/compose"
+              aria-label="Write"
+              className="flex h-[62px] flex-col items-center justify-center gap-[3px]"
+            >
+              <span
+                className={cn(
+                  'grid size-9 place-items-center rounded-full bg-accent-strong text-accent-text',
+                  'transition-transform duration-[var(--motion-fast)] active:scale-90',
+                )}
+              >
+                <Icon name="plus" />
+              </span>
+              <span className="text-[10px] leading-[1.1] font-medium tracking-[0.2px] text-text-secondary">
+                Write
+              </span>
+            </Link>
+          </li>
+
+          {NAV_LINKS.slice(2).map((link) => (
+            <BottomItem
+              key={link.href}
+              link={link}
+              isActive={pathname.startsWith(link.href)}
+              count={countFor(link.href)}
+            />
+          ))}
         </ul>
       </nav>
     </>
+  );
+}
+
+function BottomItem({
+  link,
+  isActive,
+  count,
+}: {
+  link: NavItem;
+  isActive: boolean;
+  count: { value: number; tone: 'accent' | 'danger' } | null;
+}) {
+  return (
+    <li>
+      <Link
+        href={link.href}
+        aria-current={isActive ? 'page' : undefined}
+        className={cn(
+          'flex h-[62px] flex-col items-center justify-center gap-[3px] text-center',
+          'transition-colors duration-[var(--motion-fast)]',
+          isActive ? 'text-accent' : 'text-text-secondary',
+        )}
+      >
+        <span className="relative grid size-[26px] place-items-center">
+          <Icon name={link.icon} size={26} />
+          {count ? (
+            <span className="absolute -top-px -right-0.5 size-2 rounded-full border-[1.5px] border-bg bg-danger" />
+          ) : null}
+        </span>
+        <span
+          className={cn(
+            'text-[10px] leading-[1.1] tracking-[0.2px]',
+            isActive ? 'font-semibold' : 'font-medium',
+          )}
+        >
+          {link.label}
+        </span>
+      </Link>
+    </li>
   );
 }

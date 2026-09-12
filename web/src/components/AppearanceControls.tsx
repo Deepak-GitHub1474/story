@@ -43,7 +43,7 @@ function Choice<T extends string>({
             className={cn(
               'rounded-[length:var(--radius-sm)] px-3 py-1.5 text-[length:var(--text-caption)] transition-colors duration-[var(--motion-fast)]',
               value === option
-                ? 'bg-accent font-medium text-accent-text'
+                ? 'bg-accent-strong font-medium text-accent-text'
                 : 'text-text-secondary hover:text-text-primary',
             )}
           >
