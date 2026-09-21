@@ -154,6 +154,40 @@ which is why the conversation list shows no message previews. Message someone
 you follow; if you follow each other it opens straight away, otherwise it waits
 in their requests.
 
+### Calling
+
+One-to-one voice calls, over WebRTC. The audio goes **phone to phone** — it does
+not pass through the server, which only carries the signalling needed to set the
+call up. A call rings for 45 seconds, and rings a phone whose app is closed via
+a push that wakes a foreground service. Call history is per conversation and is
+kept for 30 days.
+
+Most networks let two phones talk directly. Symmetric and carrier-grade NAT do
+not, which is most mobile data, so those calls relay through a coturn server.
+The API mints a fresh relay username and password on every `POST /v1/calls`,
+valid five minutes:
+
+```
+POST /v1/calls  →  {
+  "call_id": "cal_...",
+  "ring_timeout_seconds": 45,
+  "ice_servers": [
+    { "urls": ["stun:stun.l.google.com:19302"] },
+    { "urls": ["turn:203.0.113.10:3478"],
+      "username": "1789971558:usr_...",      // expiry:user, 5 minutes
+      "credential": "3eOnPKRRXwKa..." }      // HMAC-SHA1 of the above
+  ]
+}
+```
+
+The relay secret stays on the server and is never compiled into the app — the
+APK is public, and a static secret inside it would be an open relay for the
+internet, billed to us. Without `TURN_SHARED_SECRET` and `TURN_URLS` set the API
+returns STUN only: calls still ring and connect on permissive networks, and fail
+to find each other on mobile data. Setup is in
+[`docs/04-voice-calling.md`](docs/04-voice-calling.md) and
+[`docs/03-operations.md`](docs/03-operations.md).
+
 ### Your account
 
 | You | Settings | Active sessions | Leaving |
@@ -174,10 +208,11 @@ username is released.
 
 | Piece | State |
 |---|---|
-| Backend | Working, 1,000 tests |
-| Flutter app | Working, 549 tests |
+| Backend | Working, 1,088 tests |
+| Flutter app | Working, 594 tests |
 | Vault — encrypted files | Working, see [`docs/01-security-and-crypto.md`](docs/01-security-and-crypto.md) |
 | Chat — end-to-end encrypted | Working |
+| Voice calls — 1:1, WebRTC | Working; needs a TURN relay for mobile data |
 | AI sanity layer | Working |
 | Web + admin (Next.js) | Behind the app; feature parity incomplete |
 | 2FA | Deferred |

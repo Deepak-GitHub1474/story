@@ -87,7 +87,8 @@ TURN_SHARED_SECRET=$(openssl rand -hex 32) TURN_PUBLIC_IP=<elastic-ip> \
 ```
 
 Put the same secret in the API environment and set `TURN_URLS` to the relay's
-public address. The API mints a fresh username and password on every
+public address, for example `turn:203.0.113.10:3478`. Plain TURN covers
+carrier-grade NAT, which is what mobile data needs. The API mints a fresh username and password on every
 `POST /v1/calls`, valid five minutes, so nothing long-lived reaches a client.
 **The APK is public — a static relay secret compiled into it would be an open
 relay for the internet, billed to us.**
@@ -95,8 +96,17 @@ relay for the internet, billed to us.**
 | Port | Why |
 |---|---|
 | `3478/udp`, `3478/tcp` | STUN and TURN |
-| `443/tcp` | TURN over TLS, for networks that only allow HTTPS |
+| `5349/tcp` | TURN over TLS, once a certificate is configured (see below) |
 | `49152-65535/udp` | where coturn allocates relays |
+
+`network_mode: host` means coturn binds the host directly, so it cannot share a
+port with the API's reverse proxy. TURN over TLS sits on 5349, not 443, for
+that reason.
+
+**`turns:` needs a certificate `turnserver.conf` does not yet carry.** Without
+`cert=` and `pkey=`, coturn serves a self-signed certificate that every WebRTC
+client rejects, so leave `turns:` out of `TURN_URLS` until those are set. Plain
+TURN on 3478 is what carries mobile data, and it needs no certificate.
 
 `network_mode: host` is required; coturn allocates across that whole range and
 mapping it through Docker's NAT does not work.
