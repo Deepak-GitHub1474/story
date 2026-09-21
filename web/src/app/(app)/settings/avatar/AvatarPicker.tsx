@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -12,14 +12,19 @@ const BATCH = 24;
 
 export function AvatarPicker({ current }: { current: string }) {
   const router = useRouter();
-  const [seeds, setSeeds] = useState(() => newAvatarSeeds(BATCH, current));
+  const [seeds, setSeeds] = useState<string[]>([current]);
+
+  useEffect(() => {
+    setSeeds(newAvatarSeeds(BATCH, current));
+  }, [current]);
+
   const [chosen, setChosen] = useState(current);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="text-[length:var(--text-title)] font-medium">Your avatar</h1>
+    <div className="max-w-lg">
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Your avatar</h1>
 
       <div className="mt-6 flex items-start gap-5">
         <Avatar seed={chosen} size={76} />

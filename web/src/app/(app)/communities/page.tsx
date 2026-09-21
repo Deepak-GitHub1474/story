@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { JoinButton } from '@/components/JoinButton';
+import { Suggestions } from '@/components/Suggestions';
+import { ChipLink } from '@/components/ui/Chip';
+import { Carousel } from '@/components/ui/Carousel';
 import { backendFetch } from '@/lib/server/session';
 import type { TCommunity } from '@/lib/types';
 
@@ -23,24 +26,35 @@ export default async function CommunitiesPage({ searchParams }: Props) {
   const communities = communitiesResult.ok ? communitiesResult.value.items : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">Communities</h1>
+    <div className="max-w-3xl">
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Communities</h1>
       <p className="mt-2 max-w-prose text-text-secondary">
         Rooms for one part of life. Join to read them in your feed and to write into
         them.
       </p>
 
-      <nav className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
-        <CategoryChip href="/communities" label="All" isActive={!category} />
+      <div className="mt-8">
+        <Carousel label="categories" as="div">
+        <ChipLink href="/communities" isActive={!category}>
+          All
+        </ChipLink>
         {categories.map((item) => (
-          <CategoryChip
+          <ChipLink
             key={item.slug}
             href={`/communities?category=${item.slug}`}
-            label={item.name}
             isActive={category === item.slug}
-          />
+          >
+            {item.name}
+          </ChipLink>
         ))}
-      </nav>
+        </Carousel>
+      </div>
+
+      {!category ? (
+        <div className="mt-8">
+          <Suggestions />
+        </div>
+      ) : null}
 
       <ul className="mt-6 divide-y divide-border border-y border-border">
         {communities.map((community) => (
@@ -60,28 +74,5 @@ export default async function CommunitiesPage({ searchParams }: Props) {
         ))}
       </ul>
     </div>
-  );
-}
-
-function CategoryChip({
-  href,
-  label,
-  isActive,
-}: {
-  href: string;
-  label: string;
-  isActive: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={
-        isActive
-          ? 'shrink-0 rounded-[length:var(--radius-pill)] border border-accent bg-accent px-4 py-2 text-[length:var(--text-label)] font-medium text-accent-text'
-          : 'shrink-0 rounded-[length:var(--radius-pill)] border border-border px-4 py-2 text-[length:var(--text-label)] text-text-secondary transition-colors hover:border-text-muted'
-      }
-    >
-      {label}
-    </Link>
   );
 }

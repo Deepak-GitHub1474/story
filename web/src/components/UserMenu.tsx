@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { ReportMenu } from '@/components/ReportMenu';
 import { blockUser } from '@/lib/actions/stories';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function UserMenu({ username, userId }: { username: string; userId: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const [showReasons, setShowReasons] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -59,19 +61,7 @@ export function UserMenu({ username, userId }: { username: string; userId: strin
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  startTransition(async () => {
-                    if (
-                      confirm(
-                        `Block ${username}? They will not see your stories and you will not see theirs.`,
-                      )
-                    ) {
-                      await blockUser(username);
-                      setIsOpen(false);
-                      setNotice('Blocked.');
-                    }
-                  })
-                }
+                onClick={() => setIsBlocking(true)}
                 className="block w-full px-4 py-3 text-left text-[length:var(--text-label)] text-danger transition-colors hover:bg-surface-raised"
               >
                 Block
@@ -89,6 +79,23 @@ export function UserMenu({ username, userId }: { username: string; userId: strin
           {notice}
         </p>
       ) : null}
+
+      <ConfirmDialog
+        isOpen={isBlocking}
+        title={`Block ${username}?`}
+        body="They will not see your stories and you will not see theirs. You can undo this from Blocked accounts in Settings."
+        confirmLabel="Block"
+        isDanger
+        onCancel={() => setIsBlocking(false)}
+        onConfirm={() => {
+          setIsBlocking(false);
+          startTransition(async () => {
+            await blockUser(username);
+            setIsOpen(false);
+            setNotice('Blocked.');
+          });
+        }}
+      />
     </div>
   );
 }

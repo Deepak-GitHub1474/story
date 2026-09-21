@@ -18,6 +18,7 @@ class Routes {
   static const String user = '/u';
   static const String search = '/search';
   static const String chats = '/chats';
+  static const String call = '/call';
   static const String chat = '/chat';
   static const String following = '/people/following';
   static const String followers = '/people/followers';

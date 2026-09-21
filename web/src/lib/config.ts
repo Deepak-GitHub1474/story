@@ -5,3 +5,9 @@ export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 export const SITE_NAME = 'STORY';
+
+export const API_ORIGIN = API_BASE_URL.replace(/\/v1\/?$/, '');
+
+export function mediaUrl(path: string): string {
+  return /^https?:\/\//.test(path) ? path : `${API_ORIGIN}${path}`;
+}

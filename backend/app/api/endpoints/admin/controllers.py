@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.endpoints.admin import audit
 from app.api.endpoints.admin.models import ResolveReportRequest
-from app.core.cards import cards
+from app.core.cards import card_for, cards
 from app.core.errors import ErrorCode, api_error
 from app.core.time import to_wire, utc_now
 
@@ -12,9 +12,14 @@ USERS = "users"
 REPORTS = "reports"
 STORIES = "stories"
 COMMENTS = "comments"
+TICKETS = "support_tickets"
 
 QUEUE_LIMIT = 50
 AUDIT_LIMIT = 100
+
+ROLE_RANK = {"moderator": 1, "admin": 2, "super_admin": 3}
+
+OPEN_TICKET_STATES = ("submitted", "under_review", "needs_more_info", "reveal_ready")
 
 TARGET_COLLECTIONS = {"story": STORIES, "comment": COMMENTS, "user": USERS}
 
@@ -200,7 +205,49 @@ async def stats(*, mongo: AsyncIOMotorDatabase) -> dict[str, Any]:
         ),
         "comments": await mongo[COMMENTS].count_documents({"deleted_at": None}),
         "open_reports": await mongo[REPORTS].count_documents({"state": "open"}),
+        "open_tickets": await mongo[TICKETS].count_documents(
+            {"state": {"$in": list(OPEN_TICKET_STATES)}}
+        ),
         "communities": await mongo["communities"].count_documents({"status": "active"}),
+    }
+
+
+async def list_tickets(
+    *, claims, mongo: AsyncIOMotorDatabase, include_closed: bool = False
+) -> dict[str, Any]:
+    staff = await mongo[USERS].find_one({"_id": claims.user_id}, {"role": 1})
+    rank = ROLE_RANK.get((staff or {}).get("role", ""), 0)
+
+    reachable = [role for role, level in ROLE_RANK.items() if level <= rank]
+
+    query: dict[str, Any] = {"required_role": {"$in": reachable}}
+    if not include_closed:
+        query["state"] = {"$in": list(OPEN_TICKET_STATES)}
+
+    docs = (
+        await mongo[TICKETS]
+        .find(query)
+        .sort("created_at", 1)
+        .limit(QUEUE_LIMIT)
+        .to_list(length=QUEUE_LIMIT)
+    )
+
+    people = await cards([doc.get("user_id") for doc in docs], mongo=mongo)
+
+    return {
+        "items": [
+            {
+                "ticket_id": doc["_id"],
+                "type": doc["type"],
+                "state": doc["state"],
+                "reason": doc.get("reason", ""),
+                "required_role": doc["required_role"],
+                "opened_by": card_for(people, doc.get("user_id")),
+                "created_at": to_wire(doc.get("created_at")),
+                "updated_at": to_wire(doc.get("updated_at")),
+            }
+            for doc in docs
+        ]
     }
 
 

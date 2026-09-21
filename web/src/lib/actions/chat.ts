@@ -2,12 +2,28 @@
 
 import { revalidatePath } from 'next/cache';
 import { backendFetch } from '../server/session';
+import type { TPersonToMessage } from '../chat/types';
 
 export async function publishChatKey(publicKey: string) {
   await backendFetch('/chat/identity', {
     method: 'POST',
     body: { public_key: publicKey },
   });
+}
+
+export async function peopleToMessage(cursor: string | null) {
+  const query = new URLSearchParams({ limit: '20' });
+  if (cursor) query.set('cursor', cursor);
+
+  const result = await backendFetch<{
+    items: TPersonToMessage[];
+    next_cursor: string | null;
+    has_more: boolean;
+  }>(`/chat/people?${query}`);
+
+  return result.ok
+    ? { error: null, page: result.value }
+    : { error: result.message, page: null };
 }
 
 export async function peerIdentity(username: string) {
@@ -29,6 +45,39 @@ export async function startConversation(body: {
   );
   revalidatePath('/chats');
   return result.ok ? result.value.conversation.conversation_id : null;
+}
+
+export async function deleteConversation(conversationId: string) {
+  const result = await backendFetch(`/chat/conversations/${conversationId}`, {
+    method: 'DELETE',
+  });
+  revalidatePath('/chats');
+  return result.ok;
+}
+
+export async function hideMessageForMe(conversationId: string, messageId: string) {
+  const result = await backendFetch(
+    `/chat/conversations/${conversationId}/messages/${messageId}/mine`,
+    { method: 'DELETE' },
+  );
+  revalidatePath(`/chats/${conversationId}`);
+  return result.ok;
+}
+
+export async function rekeyConversation(
+  conversationId: string,
+  body: {
+    wrapped_cek_for_me: string;
+    wrapped_cek_for_them: string;
+    sender_public_key: string;
+  },
+) {
+  const result = await backendFetch<{ rekeyed: boolean }>(
+    `/chat/conversations/${conversationId}/keys`,
+    { method: 'PUT', body },
+  );
+  revalidatePath(`/chats/${conversationId}`);
+  return result.ok ? { error: null } : { error: result.message };
 }
 
 export async function sendMessage(

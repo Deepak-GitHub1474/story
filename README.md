@@ -6,7 +6,7 @@
 
 Anonymous long-form storytelling with an encrypted private vault.
 
-Full specification lives in [`docs/`](docs/). Read [`docs/00-product-overview.md`](docs/00-product-overview.md) first.
+Security, operations and feature notes live in [`docs/`](docs/).
 
 ## Download the app
 
@@ -83,7 +83,7 @@ accepts it. Twenty passes an hour.
 
 Publishing runs one model call before anything becomes visible, and it decides
 five separate things. They are separate on purpose — different failure costs,
-different appeal paths. Full rules in [`docs/12-ai-layer.md`](docs/12-ai-layer.md).
+different appeal paths.
 
 | Check | What it asks | May it block? |
 |---|---|---|
@@ -141,7 +141,7 @@ its secret word back, exactly, capitals included.
 
 Each account gets **100 MB**, set by `VAULT_QUOTA_BYTES` and enforced when space
 is reserved, again when the bytes land, and hourly by a sweeper that erases
-uploads nobody finished. See [`docs/15-storage-security-and-scale.md`](docs/15-storage-security-and-scale.md).
+uploads nobody finished. See [`docs/03-operations.md`](docs/03-operations.md).
 
 ### Chat and notifications
 
@@ -153,6 +153,40 @@ Chat is end-to-end encrypted. The server stores ciphertext and cannot read any o
 which is why the conversation list shows no message previews. Message someone
 you follow; if you follow each other it opens straight away, otherwise it waits
 in their requests.
+
+### Calling
+
+One-to-one voice calls, over WebRTC. The audio goes **phone to phone** — it does
+not pass through the server, which only carries the signalling needed to set the
+call up. A call rings for 45 seconds, and rings a phone whose app is closed via
+a push that wakes a foreground service. Call history is per conversation and is
+kept for 30 days.
+
+Most networks let two phones talk directly. Symmetric and carrier-grade NAT do
+not, which is most mobile data, so those calls relay through a coturn server.
+The API mints a fresh relay username and password on every `POST /v1/calls`,
+valid five minutes:
+
+```
+POST /v1/calls  →  {
+  "call_id": "cal_...",
+  "ring_timeout_seconds": 45,
+  "ice_servers": [
+    { "urls": ["stun:stun.l.google.com:19302"] },
+    { "urls": ["turn:203.0.113.10:3478"],
+      "username": "1789971558:usr_...",      // expiry:user, 5 minutes
+      "credential": "3eOnPKRRXwKa..." }      // HMAC-SHA1 of the above
+  ]
+}
+```
+
+The relay secret stays on the server and is never compiled into the app — the
+APK is public, and a static secret inside it would be an open relay for the
+internet, billed to us. Without `TURN_SHARED_SECRET` and `TURN_URLS` set the API
+returns STUN only: calls still ring and connect on permissive networks, and fail
+to find each other on mobile data. Setup is in
+[`docs/04-voice-calling.md`](docs/04-voice-calling.md) and
+[`docs/03-operations.md`](docs/03-operations.md).
 
 ### Your account
 
@@ -174,11 +208,12 @@ username is released.
 
 | Piece | State |
 |---|---|
-| Backend | Working, 1,000 tests |
-| Flutter app | Working, 549 tests |
-| Vault — encrypted files | Working, see [`docs/05-security-and-crypto.md`](docs/05-security-and-crypto.md) |
+| Backend | Working, 1,088 tests |
+| Flutter app | Working, 594 tests |
+| Vault — encrypted files | Working, see [`docs/01-security-and-crypto.md`](docs/01-security-and-crypto.md) |
 | Chat — end-to-end encrypted | Working |
-| AI sanity layer | Working, see [`docs/12-ai-layer.md`](docs/12-ai-layer.md) |
+| Voice calls — 1:1, WebRTC | Working; needs a TURN relay for mobile data |
+| AI sanity layer | Working |
 | Web + admin (Next.js) | Behind the app; feature parity incomplete |
 | 2FA | Deferred |
 
@@ -267,9 +302,10 @@ make promote USER=quiet_fox ROLE=admin       # queue, accounts, audit
 ```
 
 Design tokens live in three hand-maintained files — `app/lib/theme/tokens.dart`,
-`web/src/styles/tokens.css` and `admin/src/styles/tokens.css`. There is no
-generator and no shared source. Changing a colour means touching all three; the
-CSS files carry a banner saying so.
+`web/src/app/globals.css` and `admin/src/app/globals.css`. There is no generator
+and no shared source. Changing a colour means touching all three. On the two web
+surfaces the tokens sit in `globals.css` rather than a file of their own, because
+Tailwind v4 only reads `@theme` from the `@import 'tailwindcss'` graph.
 
 ## Secrets
 
@@ -309,9 +345,9 @@ Values are redacted by default — a field is logged only if its key is allowlis
 
 ## Conventions
 
-Binding on all code in this repository, see [`docs/02-repo-structure-and-conventions.md`](docs/02-repo-structure-and-conventions.md) §5a:
+Binding on all code in this repository:
 
-- **No comments and no docstrings in source.** Reasoning lives in `docs/`.
+- **No comments and no docstrings in source.** Names carry the meaning.
 - **One response shape.** `{success, message, data}` on every backend response; `Result<T>` on every client call.
 - **Custom components only.** No UI kits, no icon packages.
 - **No dependency without a reason** that could not be met in ~50 lines.

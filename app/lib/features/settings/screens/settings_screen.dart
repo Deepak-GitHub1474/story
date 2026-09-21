@@ -17,6 +17,7 @@ import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../notifications/providers/notification_providers.dart';
+import '../../calls/providers/call_providers.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -86,6 +87,17 @@ class SettingsScreen extends ConsumerWidget {
                         label: 'Vault',
                         icon: Icons.lock_outline,
                         onTap: () => context.push(Routes.vault),
+                      ),
+                      AppListRow(
+                        label: 'Keep call history',
+                        value: switch (user?.prefs['call_history_days'] as int? ?? 30) {
+                          0 => 'Forever',
+                          1 => '24 hours',
+                          7 => '7 days',
+                          final days => '$days days',
+                        },
+                        icon: Icons.history_toggle_off_outlined,
+                        onTap: () => _pickCallRetention(context, ref),
                       ),
                     ],
                   ),
@@ -454,4 +466,34 @@ class _PrefSwitchState extends State<_PrefSwitch> {
       onChanged: _flip,
     );
   }
+}
+
+Future<void> _pickCallRetention(BuildContext context, WidgetRef ref) async {
+  const choices = <int, String>{
+    1: '24 hours',
+    7: '7 days',
+    30: '30 days',
+    0: 'Forever',
+  };
+
+  final chosen = await showAppSheet<int>(
+    context: context,
+    title: 'Keep call history for',
+    builder: (sheetContext) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final entry in choices.entries)
+          AppListRow(
+            label: entry.value,
+            onTap: () => Navigator.of(sheetContext).pop(entry.key),
+          ),
+        const SizedBox(height: AppSpacing.md),
+      ],
+    ),
+  );
+  if (chosen == null) return;
+
+  await ref.read(callRepositoryProvider).setRetention(chosen);
+  ref.invalidate(callHistoryProvider);
+  await ref.read(authProvider.notifier).refreshUser();
 }

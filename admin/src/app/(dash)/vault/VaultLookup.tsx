@@ -14,10 +14,16 @@ type TPasscode = {
   last_used_at: string | null;
 };
 
-export function VaultLookup() {
-  const [username, setUsername] = useState('');
+export function VaultLookup({
+  initialUsername = '',
+  initialTicketId = '',
+}: {
+  initialUsername?: string;
+  initialTicketId?: string;
+}) {
+  const [username, setUsername] = useState(initialUsername);
   const [passcodes, setPasscodes] = useState<TPasscode[] | null>(null);
-  const [ticketId, setTicketId] = useState('');
+  const [ticketId, setTicketId] = useState(initialTicketId);
   const [totpCode, setTotpCode] = useState('');
   const [justification, setJustification] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -61,11 +67,11 @@ export function VaultLookup() {
           <p className="text-text-secondary">This account has no vault passcodes.</p>
         ) : (
           <>
-            <ul className="divide-y divide-border rounded-[length:var(--radius-md)] border border-border">
+            <ul className="divide-y divide-border rounded-[length:var(--radius-lg)] border border-border">
               {passcodes.map((passcode) => (
                 <li key={passcode.passcode_id} className="px-4 py-3">
                   <p className="font-medium">{passcode.label}</p>
-                  <p className="text-[length:var(--text-caption)] text-text-muted">
+                  <p className="numeric text-[length:var(--text-caption)] text-text-muted">
                     {passcode.scope} · {passcode.failed_attempts} failed attempts
                   </p>
                 </li>
@@ -93,7 +99,7 @@ export function VaultLookup() {
                   }
                 });
               }}
-              className="flex flex-col gap-4 rounded-[length:var(--radius-md)] border border-danger bg-surface p-5"
+              className="flex flex-col gap-4 rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5"
             >
               <h2 className="font-medium text-danger">Release to the owner</h2>
               <Field
@@ -116,7 +122,7 @@ export function VaultLookup() {
                   onChange={(event) => setJustification(event.target.value)}
                   rows={3}
                   minLength={50}
-                  className="resize-y rounded-[length:var(--radius-md)] border border-border bg-bg px-4 py-3 outline-none focus:border-accent"
+                  className="resize-y rounded-[length:var(--radius-lg)] border border-border bg-bg px-4 py-3 outline-none focus:border-accent"
                 />
                 <p className="text-[length:var(--text-caption)] text-text-muted">
                   At least 50 characters. Stored in the audit log the owner can read.

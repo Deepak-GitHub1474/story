@@ -43,21 +43,21 @@ export default async function PublicProfilePage({ params }: Props) {
   const stories = storiesResult.ok ? storiesResult.value.items : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <header className="flex flex-wrap items-center gap-6">
         <Avatar seed={profile.avatar_seed} size={80} />
         <dl className="flex flex-1 justify-around gap-6 text-center">
           <div>
-            <dd className="text-[length:var(--text-heading)] font-medium">
+            <dd className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
               {profile.counts.stories ?? 0}
             </dd>
             <dt className="text-[length:var(--text-caption)] text-text-muted">Stories</dt>
           </div>
           <div>
-            <dd className="text-[length:var(--text-heading)] font-medium">
+            <dd className="font-editorial text-[length:var(--text-heading)] font-semibold tracking-[var(--tracking-title)]">
               {profile.counts.followers ?? 0}
             </dd>
-            <dt className="text-[length:var(--text-caption)] text-text-muted">Readers</dt>
+            <dt className="text-[length:var(--text-caption)] text-text-muted">Followers</dt>
           </div>
         </dl>
       </header>

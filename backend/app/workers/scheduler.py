@@ -8,6 +8,7 @@ from app.api.endpoints.media.cleanup import sweep_orphans
 from app.config import get_settings
 from app.logging import get_logger
 from app.ports.factory import build_push, build_storage
+from app.workers.call_sweep import sweep_expired_calls
 from app.workers.deletion import purge_deleted_accounts
 from app.workers.maintenance import publish_scheduled_stories, reconcile_counts
 from app.workers.push import sweep_due
@@ -21,6 +22,7 @@ PURGE_INTERVAL_SECONDS = 3600
 MEDIA_SWEEP_INTERVAL_SECONDS = 3600
 PUSH_SWEEP_INTERVAL_SECONDS = 30
 VAULT_SWEEP_INTERVAL_SECONDS = 3600
+CALL_SWEEP_INTERVAL_SECONDS = 3600
 
 
 async def _every(seconds: int, job, mongo: AsyncIOMotorDatabase, name: str) -> None:
@@ -77,6 +79,10 @@ def _push_sweeper(app):
     return run
 
 
+async def _sweep_calls(mongo: AsyncIOMotorDatabase) -> int:
+    return await sweep_expired_calls(mongo=mongo)
+
+
 def jobs(app) -> list[tuple[int, Any, str]]:
     """Everything that runs on a timer, as data, so it can be read and tested."""
     return [
@@ -86,6 +92,7 @@ def jobs(app) -> list[tuple[int, Any, str]]:
         (MEDIA_SWEEP_INTERVAL_SECONDS, _sweep_media, "media_sweep"),
         (PUSH_SWEEP_INTERVAL_SECONDS, _push_sweeper(app), "push_sweep"),
         (VAULT_SWEEP_INTERVAL_SECONDS, _sweep_vault, "vault_sweep"),
+        (CALL_SWEEP_INTERVAL_SECONDS, _sweep_calls, "call_sweep"),
     ]
 
 

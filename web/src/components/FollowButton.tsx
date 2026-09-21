@@ -7,15 +7,19 @@ import { toggleFollow } from '@/lib/actions/stories';
 export function FollowButton({
   username,
   isFollowing,
+  size = 'md',
 }: {
   username: string;
   isFollowing: boolean;
+  size?: 'md' | 'sm';
 }) {
   const [following, setOptimistic] = useOptimistic(isFollowing, (_, next: boolean) => next);
   const [, startTransition] = useTransition();
 
   return (
     <Button
+      size={size}
+      isFullWidth={size === 'md'}
       variant={following ? 'secondary' : 'primary'}
       onClick={() =>
         startTransition(async () => {

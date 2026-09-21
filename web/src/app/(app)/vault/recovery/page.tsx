@@ -51,7 +51,7 @@ export default async function VaultRecoveryPage() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-8">
       <div>
-        <h1 className="text-[length:var(--text-title)] font-medium">Recovery</h1>
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Recovery</h1>
         <Card className="mt-6">
           <h2 className="font-medium">What we can and cannot do</h2>
           <p className="mt-2 leading-relaxed text-text-secondary">

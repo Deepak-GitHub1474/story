@@ -43,8 +43,8 @@ export function InterestPicker({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">{title}</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">{title}</h1>
       <p className="mt-2 max-w-prose leading-relaxed text-text-secondary">
         Pick up to {MAX}. This shapes what you are shown, and nobody else can see your
         choices.
@@ -66,10 +66,10 @@ export function InterestPicker({
                       aria-pressed={isOn}
                       onClick={() => toggle(item.slug)}
                       className={cn(
-                        'rounded-[length:var(--radius-pill)] border px-4 py-2',
+                        'rounded-[length:var(--radius-md)] border px-3.5 py-2 text-[length:var(--text-caption)]',
                         'text-[length:var(--text-label)] transition-all duration-150',
                         isOn
-                          ? 'scale-[1.03] border-accent bg-accent font-medium text-accent-text'
+                          ? 'scale-[1.03] border-accent-strong bg-accent-strong font-medium text-accent-text'
                           : 'border-border text-text-secondary hover:border-text-muted',
                       )}
                     >

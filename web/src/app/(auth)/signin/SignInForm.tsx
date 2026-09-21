@@ -12,8 +12,8 @@ import { bootstrapChat } from '@/lib/chat/useIdentity';
 export function SignInForm() {
   const router = useRouter();
   const [state, action, isPending] = useActionState(signIn, EMPTY_FORM);
-  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     if (!state.userId) return;
@@ -35,6 +35,8 @@ export function SignInForm() {
         autoComplete="username"
         autoCapitalize="none"
         spellCheck={false}
+        value={username}
+        onChange={(event) => setUsername(event.target.value)}
         required
         error={state.field === 'username' ? state.error : null}
       />
@@ -42,21 +44,12 @@ export function SignInForm() {
       <Field
         label="Password"
         name="password"
-        type={showPassword ? 'text' : 'password'}
+        type="password"
         autoComplete="current-password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         required
         error={state.field === 'password' ? state.error : null}
-        suffix={
-          <button
-            type="button"
-            onClick={() => setShowPassword((value) => !value)}
-            className="text-[length:var(--text-caption)] text-text-muted hover:text-text-secondary"
-          >
-            {showPassword ? 'Hide' : 'Show'}
-          </button>
-        }
       />
 
       {state.error && !state.field ? (

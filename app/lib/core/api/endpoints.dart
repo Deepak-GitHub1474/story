@@ -70,6 +70,19 @@ class Endpoints {
   static const String reports = '/reports';
 
   static const String keys = '/users/me/keys';
+  static const String calls = '/calls';
+  static const String callsDelete = '/calls/delete';
+  static const String callRetention = '/calls/retention';
+
+  static String call(String id) => '/calls/$id';
+
+  static String pendingCall(String id) => '/calls/$id/pending';
+
+  static const String ringingForMe = '/calls/ringing';
+
+  static String callsIn(String conversationId) =>
+      '/calls?conversation_id=$conversationId';
+
   static const String chatIdentity = '/chat/identity';
   static const String chatBackup = '/chat/backup';
   static const String chatUnread = '/chat/unread-count';

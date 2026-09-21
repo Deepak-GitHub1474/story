@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <aside className="relative hidden lg:col-span-5 lg:flex lg:flex-col lg:justify-between lg:border-r lg:border-border lg:bg-surface lg:px-12 lg:py-12">
         <Link
           href="/"
-          className="rise text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary"
+          className="rise text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-accent transition-opacity hover:opacity-80"
         >
           STORY
         </Link>
@@ -54,15 +54,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </p>
       </aside>
 
-      <div className="flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:col-span-7 lg:py-12">
+      <div className="flex min-h-dvh flex-col px-6 py-5 sm:px-10 sm:py-10 lg:col-span-7 lg:py-12">
         <Link
           href="/"
-          className="text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-text-muted transition-colors hover:text-text-secondary lg:hidden"
+          className="text-[length:var(--text-caption)] font-medium tracking-[0.42em] text-accent transition-opacity hover:opacity-80 lg:hidden"
         >
           STORY
         </Link>
 
-        <div className="flex flex-1 flex-col justify-center py-10">
+        <div className="flex flex-1 flex-col justify-center py-4 sm:py-10">
           <div className="rise mx-auto w-full max-w-[26rem]">{children}</div>
         </div>
       </div>

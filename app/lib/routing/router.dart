@@ -26,6 +26,7 @@ import '../features/settings/screens/edit_profile_screen.dart';
 import '../features/settings/screens/sessions_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/chat/screens/chat_list_screen.dart';
+import '../features/calls/screens/call_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/vault/screens/recovery_screen.dart';
 import '../features/vault/screens/vault_screen.dart';
@@ -41,7 +42,7 @@ const shellDestinations = [
   ),
   ShellDestination(
     route: Routes.activity,
-    label: 'Notifications',
+    label: 'Activity',
     icon: Icons.favorite_border,
     activeIcon: Icons.favorite,
   ),
@@ -117,6 +118,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: Routes.call,
+        pageBuilder: (context, state) =>
+            fadePage(key: state.pageKey, child: const CallScreen()),
+      ),
+      GoRoute(
         path: Routes.communities,
         pageBuilder: (context, state) =>
             slidePage(key: state.pageKey, child: const CommunitiesScreen()),
@@ -132,18 +138,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '${Routes.user}/:username',
         pageBuilder: (context, state) => slidePage(
           key: state.pageKey,
-          child: PublicProfileScreen(username: state.pathParameters['username']!),
+          child: PublicProfileScreen(
+            username: state.pathParameters['username']!,
+          ),
         ),
       ),
       GoRoute(
         path: Routes.search,
-        pageBuilder: (context, state) =>
-            fadePage(
-              key: state.pageKey,
-              child: SearchScreen(
-                peopleOnly: state.uri.queryParameters['people'] == '1',
-              ),
-            ),
+        pageBuilder: (context, state) => fadePage(
+          key: state.pageKey,
+          child: SearchScreen(
+            peopleOnly: state.uri.queryParameters['people'] == '1',
+          ),
+        ),
       ),
       GoRoute(
         path: Routes.following,
@@ -240,13 +247,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: Routes.chats,
-            pageBuilder: (context, state) =>
-                NoTransitionPage(key: state.pageKey, child: const ChatListScreen()),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const ChatListScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.profile,
-            pageBuilder: (context, state) =>
-                NoTransitionPage(key: state.pageKey, child: const ProfileScreen()),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const ProfileScreen(),
+            ),
           ),
         ],
       ),

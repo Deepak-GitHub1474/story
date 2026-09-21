@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
+import { linksFor } from '@/components/nav/const';
 import { requireStaff } from '@/lib/server/guard';
 
 export default async function DashLayout({
@@ -8,31 +9,35 @@ export default async function DashLayout({
   children: React.ReactNode;
 }) {
   const staff = await requireStaff();
-  const isAdmin = staff.role !== 'moderator';
-  const isSuperAdmin = staff.role === 'super_admin';
+  const links = linksFor(staff.role);
 
   return (
     <div className="min-h-dvh">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-          <span className="text-xs font-medium tracking-[0.35em]">STORY ADMIN</span>
+      <header className="sticky top-0 z-30 border-b border-border bg-bg/92 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-5 px-4 sm:px-6">
+          <span className="shrink-0 text-[length:var(--text-micro)] font-semibold tracking-[0.3em] text-text-primary">
+            STORY
+            <span className="ml-2 text-text-muted">ADMIN</span>
+          </span>
 
-          <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-            <NavLink href="/queue" label="Queue" />
-            {isAdmin ? <NavLink href="/users" label="Accounts" /> : null}
-            {isAdmin ? <NavLink href="/audit" label="Audit" /> : null}
-            {isSuperAdmin ? <NavLink href="/vault" label="Vault escrow" /> : null}
-            <NavLink href="/security" label="Security" />
+          <nav className="-mx-1 flex flex-1 items-center gap-0.5 overflow-x-auto px-1">
+            {links.map((link) => (
+              <NavLink key={link.href} href={link.href} label={link.label} />
+            ))}
           </nav>
 
-          <span className="hidden text-[length:var(--text-caption)] text-text-muted sm:inline">
-            @{staff.username} · {staff.role}
+          <span className="hidden shrink-0 items-center gap-2 text-[length:var(--text-caption)] text-text-muted sm:flex">
+            <span className="numeric">@{staff.username}</span>
+            <span className="rounded-[length:var(--radius-sm)] border border-border px-1.5 py-0.5 text-[length:var(--text-micro)] tracking-[0.08em] uppercase">
+              {staff.role.replace('_', ' ')}
+            </span>
           </span>
+
           <SignOutButton />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }
@@ -41,7 +46,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="rounded-[length:var(--radius-sm)] px-3 py-2 text-[length:var(--text-label)] text-text-secondary transition-colors hover:bg-surface-raised hover:text-text-primary"
+      className="rounded-[length:var(--radius-md)] px-2.5 py-1.5 text-[length:var(--text-label)] whitespace-nowrap text-text-secondary transition-colors duration-[var(--motion-fast)] hover:bg-surface hover:text-text-primary"
     >
       {label}
     </Link>

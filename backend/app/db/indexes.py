@@ -123,6 +123,15 @@ INDEXES: dict[str, list[IndexSpec]] = {
             "ix_category_popular",
         ),
     ],
+    "calls": [
+        IndexSpec([("owner_id", ASCENDING), ("started_at", DESCENDING)], "ix_owner_time"),
+        IndexSpec(
+            [("expires_at", ASCENDING)],
+            "ix_expiry",
+            partial={"expires_at": {"$type": "date"}},
+        ),
+        IndexSpec([("call_id", ASCENDING)], "ix_call"),
+    ],
     "vault_items": [
         IndexSpec(
             [("user_id", ASCENDING), ("visibility", ASCENDING), ("_id", DESCENDING)],

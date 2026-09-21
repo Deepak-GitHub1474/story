@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -26,7 +27,7 @@ export function ForgotPasswordForm() {
         className="flex flex-col gap-6"
       >
         <header>
-          <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">
+          <h1 className="font-editorial text-[length:var(--text-title)] leading-tight font-semibold tracking-[var(--tracking-title)]">
             Forgot password
           </h1>
           <p className="mt-2 leading-relaxed text-text-secondary">
@@ -46,6 +47,13 @@ export function ForgotPasswordForm() {
         <Button type="submit" isLoading={isRequesting} disabled={!username.trim()}>
           Send code
         </Button>
+
+        <p className="text-center text-[length:var(--text-label)] text-text-secondary">
+          Remembered it?{' '}
+          <Link href="/signin" className="text-accent underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
       </form>
     );
   }
@@ -53,19 +61,19 @@ export function ForgotPasswordForm() {
   return (
     <form action={resetAction} className="flex flex-col gap-6">
       <header>
-        <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">Enter your code</h1>
+        <h1 className="font-editorial text-[length:var(--text-title)] leading-tight font-semibold tracking-[var(--tracking-title)]">Enter your code</h1>
         <p className="mt-2 text-text-secondary">{requestState.ok}</p>
       </header>
 
       <input type="hidden" name="username" value={username} />
       <Otp hasError={Boolean(resetState.error)} />
 
-      <div className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
-        <h2 className="font-medium text-danger">Read this before continuing</h2>
+      <div className="rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5">
+        <h2 className="font-editorial font-semibold text-danger">Read this before continuing</h2>
         <p className="mt-2 text-[length:var(--text-label)] leading-relaxed text-text-secondary">
-          A reset gives you back your account, not your vault. Anything encrypted with
-          your old password becomes permanently unreadable. Nobody can undo this,
-          including us.
+          Your vault is safe — it is locked by your vault passcode, not your password.
+          What you lose is your message history. Those keys were wrapped with the
+          password you have forgotten, so nobody can open them again, including us.
         </p>
       </div>
 
@@ -77,7 +85,7 @@ export function ForgotPasswordForm() {
           className="mt-0.5 size-[22px] shrink-0 accent-[var(--c-danger)]"
         />
         <span className="text-[length:var(--text-label)] text-text-secondary">
-          I understand my vault cannot be recovered.
+          I understand my messages cannot be recovered.
         </span>
       </label>
 
@@ -101,6 +109,13 @@ export function ForgotPasswordForm() {
       >
         Reset password
       </Button>
+
+      <p className="text-center text-[length:var(--text-label)] text-text-secondary">
+        Remembered it?{' '}
+        <Link href="/signin" className="text-accent underline-offset-4 hover:underline">
+          Sign in
+        </Link>
+      </p>
     </form>
   );
 }

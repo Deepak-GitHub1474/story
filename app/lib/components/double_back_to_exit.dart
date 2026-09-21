@@ -20,7 +20,8 @@ class _DoubleBackToExitState extends State<DoubleBackToExit> {
 
   bool get _withinWindow {
     final last = _lastPress;
-    return last != null && DateTime.now().difference(last) < DoubleBackToExit.window;
+    return last != null &&
+        DateTime.now().difference(last) < DoubleBackToExit.window;
   }
 
   void _handleBack() {
@@ -35,7 +36,11 @@ class _DoubleBackToExitState extends State<DoubleBackToExit> {
     }
 
     _lastPress = DateTime.now();
-    AppToast.show(context, 'Press back again to leave.');
+    AppToast.show(
+      context,
+      'Press back again to leave.',
+      icon: Icons.exit_to_app_outlined,
+    );
   }
 
   @override

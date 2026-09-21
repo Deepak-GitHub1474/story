@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { confirmTotp, disableTotp, startTotp } from '@/lib/actions';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function TotpSetup({
   isEnabled,
@@ -14,13 +15,14 @@ export function TotpSetup({
 }) {
   const [secret, setSecret] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [isRemoving, setIsRemoving] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   if (backupCodes) {
     return (
-      <div className="rounded-[length:var(--radius-md)] border border-danger bg-surface p-5">
+      <div className="rounded-[length:var(--radius-lg)] border border-danger/50 bg-surface p-5">
         <h2 className="font-medium text-danger">Save these now</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">
           Each one works once, in place of a code, if you lose your phone. They are
@@ -42,7 +44,7 @@ export function TotpSetup({
 
   if (isEnabled) {
     return (
-      <div className="rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
+      <div className="rounded-[length:var(--radius-lg)] border border-border bg-surface p-5">
         <p className="font-medium text-success">Authenticator active</p>
         <p className="mt-2 text-[length:var(--text-label)] text-text-secondary">
           {backupsLeft} backup {backupsLeft === 1 ? 'code' : 'codes'} left.
@@ -52,18 +54,7 @@ export function TotpSetup({
           className="mt-5 flex flex-col gap-4 border-t border-border pt-5"
           onSubmit={(event) => {
             event.preventDefault();
-            startTransition(async () => {
-              if (
-                !confirm(
-                  'Remove your authenticator? You will not be able to approve a passcode release until you set one up again.',
-                )
-              ) {
-                return;
-              }
-              const result = await disableTotp(code.trim());
-              if (result.error) setError(result.error);
-              else setCode('');
-            });
+            setIsRemoving(true);
           }}
         >
           <Field
@@ -108,7 +99,7 @@ export function TotpSetup({
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-[length:var(--radius-md)] border border-border bg-surface p-5">
+    <div className="flex flex-col gap-5 rounded-[length:var(--radius-lg)] border border-border bg-surface p-5">
       <div>
         <h2 className="font-medium">1. Add this key to your app</h2>
         <p className="mt-2 leading-relaxed text-text-secondary">
@@ -147,6 +138,23 @@ export function TotpSetup({
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isRemoving}
+        title="Remove your authenticator?"
+        body="You will not be able to approve a passcode release until you set one up again."
+        confirmLabel="Remove"
+        isDanger
+        onCancel={() => setIsRemoving(false)}
+        onConfirm={() => {
+          setIsRemoving(false);
+          startTransition(async () => {
+            const result = await disableTotp(code.trim());
+            if (result.error) setError(result.error);
+            else setCode('');
+          });
+        }}
+      />
     </div>
   );
 }

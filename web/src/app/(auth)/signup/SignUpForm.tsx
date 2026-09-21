@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { checkUsername, signUp } from '@/lib/actions/auth';
 import { EMPTY_FORM } from '@/lib/actions/state';
 import { bootstrapChat } from '@/lib/chat/useIdentity';
+import { Icon } from '@/components/ui/Icon';
+import { TermsSheet } from '@/components/TermsSheet';
 
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 const USERNAME_MIN = 2;
@@ -19,6 +21,7 @@ export function SignUpForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [accepted, setAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const router = useRouter();
 
@@ -58,12 +61,12 @@ export function SignUpForm() {
     available !== false;
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form action={action} className="flex flex-col gap-4 sm:gap-6">
       <header>
         <h1 className="font-editorial text-[clamp(1.75rem,3.4vw,2.25rem)] leading-tight font-medium tracking-[-0.015em]">
           Create your account
         </h1>
-        <p className="mt-2 text-text-secondary">
+        <p className="mt-2 text-[length:var(--text-label)] text-text-secondary sm:text-[length:var(--text-body)]">
           Pick a name nobody can trace back to you. No email, no phone.
         </p>
       </header>
@@ -114,19 +117,31 @@ export function SignUpForm() {
         error={state.field === 'referral_code' ? state.error : null}
       />
 
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          name="tnc_accepted"
-          checked={accepted}
-          onChange={(event) => setAccepted(event.target.checked)}
-          className="mt-0.5 size-[22px] shrink-0 accent-[var(--c-accent)]"
-        />
-        <span className="text-[length:var(--text-label)] leading-relaxed text-text-secondary">
-          I accept the terms and understand that a forgotten password cannot be
-          recovered without an email on the account.
-        </span>
-      </label>
+      <div className="flex items-center gap-2">
+        <label className="flex flex-1 cursor-pointer items-center gap-3 py-2">
+          <input
+            type="checkbox"
+            name="tnc_accepted"
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            className="size-[22px] shrink-0 accent-[var(--c-accent-strong)]"
+          />
+          <span className="text-[length:var(--text-label)] text-text-secondary">
+            I accept the Terms &amp; Conditions
+          </span>
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowTerms(true)}
+          aria-label="What this means"
+          title="What this means"
+          className="inline-grid size-9 shrink-0 place-items-center rounded-full text-text-muted hover:text-text-primary"
+        >
+          <Icon name="info" size={22} />
+        </button>
+      </div>
+
+      <TermsSheet isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
       {state.error && !state.field ? (
         <p

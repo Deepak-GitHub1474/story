@@ -54,6 +54,7 @@ MUTABLE_COLLECTIONS = (
     "support_tickets",
     "media",
     "push_tokens",
+    "calls",
 )
 
 

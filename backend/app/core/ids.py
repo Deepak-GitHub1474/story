@@ -20,6 +20,8 @@ ID_PREFIXES: frozenset[str] = frozenset(
         "msg",
         "med",
         "psh",
+        "cal",
+        "chi",
     }
 )
 

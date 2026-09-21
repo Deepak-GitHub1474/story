@@ -5,6 +5,8 @@ export type TChatPeer = {
   avatar_seed: string;
 };
 
+export type TPersonToMessage = TChatPeer & { opens_straight_away: boolean };
+
 export type TConversation = {
   conversation_id: string;
   state: string;

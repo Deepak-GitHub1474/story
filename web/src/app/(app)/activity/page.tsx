@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { KindBadge } from './KindBadge';
 import { MarkAllRead } from './MarkAllRead';
 import { NotificationLink } from './NotificationLink';
+import { RemoveNotification } from './RemoveNotification';
 import { backendFetch } from '@/lib/server/session';
 import { relativeTime } from '@/lib/format';
 import type { TNotification, TPage } from '@/lib/types';
@@ -16,9 +17,9 @@ export default async function ActivityPage() {
   const unread = items.filter((item) => !item.is_read).length;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-[length:var(--text-title)] font-medium">Activity</h1>
+        <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">Activity</h1>
         {unread > 0 ? <MarkAllRead /> : null}
       </div>
 
@@ -30,7 +31,7 @@ export default async function ActivityPage() {
       ) : (
         <ul className="mt-6 divide-y divide-border border-y border-border">
           {items.map((item) => (
-            <li key={item.notification_id}>
+            <li key={item.notification_id} className="flex items-stretch">
               <NotificationLink
                 notificationId={item.notification_id}
                 isRead={item.is_read}
@@ -60,6 +61,7 @@ export default async function ActivityPage() {
                   />
                 ) : null}
               </NotificationLink>
+              <RemoveNotification notificationId={item.notification_id} />
             </li>
           ))}
         </ul>

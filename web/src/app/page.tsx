@@ -72,8 +72,8 @@ export default function HomePage() {
       />
 
       <div className="min-h-dvh bg-bg text-text-primary">
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7 sm:px-10">
-          <span className="rise text-[length:var(--text-label)] font-medium tracking-[0.42em]">
+        <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
+          <span className="rise text-[length:var(--text-label)] font-medium tracking-[0.4em]">
             STORY
           </span>
           <nav className="rise flex items-center gap-6" style={{ animationDelay: '80ms' }}>
@@ -85,7 +85,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-[length:var(--radius-pill)] bg-accent px-5 py-2.5 text-[length:var(--text-label)] font-medium text-accent-text transition-transform hover:-translate-y-0.5"
+              className="inline-flex h-10 items-center rounded-[length:var(--radius-md)] border border-transparent bg-accent-strong px-5 text-[length:var(--text-caption)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
             >
               Start writing
             </Link>
@@ -93,17 +93,17 @@ export default function HomePage() {
         </header>
 
         <main>
-          <section className="mx-auto grid max-w-6xl gap-12 px-6 pt-10 pb-24 sm:px-10 lg:grid-cols-12 lg:gap-8 lg:pt-20 lg:pb-32">
+          <section className="mx-auto grid max-w-6xl gap-12 px-5 pt-12 pb-[var(--space-section)] sm:px-8 lg:grid-cols-12 lg:gap-10 lg:pt-24">
             <div className="lg:col-span-7">
               <p
-                className="rise text-[length:var(--text-caption)] tracking-[0.28em] text-text-muted uppercase"
+                className="rise text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase"
                 style={{ animationDelay: '120ms' }}
               >
                 Anonymous · Long form · Encrypted
               </p>
 
               <h1
-                className="rise font-editorial mt-7 text-[clamp(2.6rem,7vw,4.6rem)] leading-[1.04] font-medium tracking-[-0.02em] text-balance"
+                className="rise font-editorial mt-7 text-[length:var(--text-display)] leading-[1.02] font-semibold tracking-[var(--tracking-display)] text-balance"
                 style={{ animationDelay: '200ms' }}
               >
                 Write it down.
@@ -126,26 +126,30 @@ export default function HomePage() {
               >
                 <Link
                   href="/signup"
-                  className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-medium text-accent-text transition-transform hover:-translate-y-0.5"
+                  className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent-strong px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
                 >
                   Create an account
                 </Link>
-                <span className="text-[length:var(--text-label)] text-text-muted">
+                <span className="max-w-64 text-[length:var(--text-caption)] leading-relaxed text-text-muted">
                   Takes a username and a password. Nothing else.
                 </span>
               </div>
             </div>
 
             <div className="lg:col-span-5 lg:pt-16">
-              <figure
-                className="rise border-l-2 border-accent pl-7"
-                style={{ animationDelay: '520ms' }}
-              >
-                <blockquote className="font-editorial text-[clamp(1.35rem,2.6vw,1.75rem)] leading-[1.5] text-balance">
+              <figure className="rise relative" style={{ animationDelay: '520ms' }}>
+                <span
+                  aria-hidden="true"
+                  className="font-editorial pointer-events-none absolute -top-16 -left-1 text-[6rem] leading-none text-accent/20 select-none"
+                >
+                  &ldquo;
+                </span>
+                <div className="h-px w-14 bg-accent/70" />
+                <blockquote className="font-editorial relative mt-7 text-[clamp(1.4rem,2.7vw,1.85rem)] leading-[1.48] text-balance">
                   I told six hundred strangers something I have never told my
                   brother, and then I slept properly for the first time in a year.
                 </blockquote>
-                <figcaption className="mt-5 text-[length:var(--text-caption)] tracking-[0.16em] text-text-muted uppercase">
+                <figcaption className="mt-6 text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
                   Written on Story · Author unknown, permanently
                 </figcaption>
               </figure>
@@ -154,12 +158,12 @@ export default function HomePage() {
 
           <div className="rule-soft mx-auto h-px max-w-6xl" />
 
-          <section className="mx-auto max-w-6xl px-6 py-24 sm:px-10 lg:py-32">
+          <section className="mx-auto max-w-6xl px-5 py-[var(--space-section)] sm:px-8">
             <Reveal as="div" className="max-w-2xl">
-              <p className="text-[length:var(--text-caption)] tracking-[0.28em] text-text-muted uppercase">
+              <p className="text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
                 01 — What lands here
               </p>
-              <h2 className="font-editorial mt-6 text-[clamp(2rem,4.4vw,3rem)] leading-[1.12] font-medium tracking-[-0.015em] text-balance">
+              <h2 className="font-editorial mt-6 text-[clamp(1.9rem,1rem+3.4vw,2.9rem)] leading-[1.1] font-semibold tracking-[var(--tracking-title)] text-balance">
                 It opens with the good things, on purpose.
               </h2>
               <p className="mt-6 text-[length:var(--text-body)] leading-[1.75] text-text-secondary">
@@ -174,7 +178,7 @@ export default function HomePage() {
             <ul className="mt-16 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {ROOMS.map(([name, blurb], index) => (
                 <Reveal as="li" key={name} delay={index * 70}>
-                  <p className="font-editorial text-[length:var(--text-heading)] font-medium">
+                  <p className="font-editorial text-[length:var(--text-heading)] font-semibold">
                     {name}
                   </p>
                   <p className="mt-2 leading-relaxed text-text-secondary">{blurb}</p>
@@ -184,12 +188,12 @@ export default function HomePage() {
           </section>
 
           <section className="bg-surface">
-            <div className="mx-auto max-w-6xl px-6 py-24 sm:px-10 lg:py-32">
+            <div className="mx-auto max-w-6xl px-5 py-[var(--space-section)] sm:px-8">
               <Reveal as="div" className="max-w-2xl">
-                <p className="text-[length:var(--text-caption)] tracking-[0.28em] text-text-muted uppercase">
+                <p className="text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
                   02 — Why it is safe to say
                 </p>
-                <h2 className="font-editorial mt-6 text-[clamp(2rem,4.4vw,3rem)] leading-[1.12] font-medium tracking-[-0.015em] text-balance">
+                <h2 className="font-editorial mt-6 text-[clamp(1.9rem,1rem+3.4vw,2.9rem)] leading-[1.1] font-semibold tracking-[var(--tracking-title)] text-balance">
                   Privacy you can check, not privacy you are asked to trust.
                 </h2>
               </Reveal>
@@ -201,7 +205,7 @@ export default function HomePage() {
                       <span className="text-[length:var(--text-caption)] text-text-muted tabular-nums">
                         {String(index + 1).padStart(2, '0')}
                       </span>
-                      <span className="font-editorial text-[length:var(--text-heading)] font-medium">
+                      <span className="font-editorial text-[length:var(--text-heading)] font-semibold">
                         {title}
                       </span>
                     </dt>
@@ -214,13 +218,13 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className="mx-auto max-w-6xl px-6 py-24 sm:px-10 lg:py-32">
+          <section className="mx-auto max-w-6xl px-5 py-[var(--space-section)] sm:px-8">
             <div className="grid gap-14 lg:grid-cols-12 lg:gap-10">
               <Reveal as="div" className="lg:col-span-5">
-                <p className="text-[length:var(--text-caption)] tracking-[0.28em] text-text-muted uppercase">
+                <p className="text-[length:var(--text-caption)] tracking-[var(--tracking-eyebrow)] text-text-muted uppercase">
                   03 — The vault
                 </p>
-                <h2 className="font-editorial mt-6 text-[clamp(2rem,4.4vw,3rem)] leading-[1.12] font-medium tracking-[-0.015em] text-balance">
+                <h2 className="font-editorial mt-6 text-[clamp(1.9rem,1rem+3.4vw,2.9rem)] leading-[1.1] font-semibold tracking-[var(--tracking-title)] text-balance">
                   Some things are not for posting.
                 </h2>
               </Reveal>
@@ -248,16 +252,16 @@ export default function HomePage() {
           </section>
 
           <section className="border-t border-border">
-            <div className="mx-auto max-w-6xl px-6 py-24 sm:px-10 lg:py-32">
+            <div className="mx-auto max-w-6xl px-5 py-[var(--space-section)] sm:px-8">
               <Reveal as="div" className="max-w-3xl">
-                <h2 className="font-editorial text-[clamp(2.2rem,5.4vw,3.6rem)] leading-[1.08] font-medium tracking-[-0.02em] text-balance">
+                <h2 className="font-editorial text-[clamp(2.1rem,1rem+4.4vw,3.5rem)] leading-[1.06] font-semibold tracking-[var(--tracking-display)] text-balance">
                   Nobody here will ever know who you are.
                   <span className="block text-text-muted">That is the point.</span>
                 </h2>
                 <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
                   <Link
                     href="/signup"
-                    className="rounded-[length:var(--radius-pill)] bg-accent px-8 py-4 font-medium text-accent-text transition-transform hover:-translate-y-0.5"
+                    className="inline-flex h-13 items-center rounded-[length:var(--radius-md)] bg-accent-strong px-7 text-[length:var(--text-label)] font-medium tracking-[var(--tracking-label)] text-accent-text transition-[filter] duration-[var(--motion-fast)] hover:brightness-108"
                   >
                     Create an account
                   </Link>
@@ -274,7 +278,7 @@ export default function HomePage() {
         </main>
 
         <footer className="border-t border-border">
-          <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-[length:var(--text-caption)] text-text-muted sm:flex-row sm:items-center sm:justify-between sm:px-10">
+          <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-10 text-[length:var(--text-caption)] sm:px-8 text-text-muted sm:flex-row sm:items-center sm:justify-between">
             <p>
               Reading a story someone sent you? Open the link — no account needed.
             </p>

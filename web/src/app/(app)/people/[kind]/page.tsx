@@ -14,7 +14,7 @@ const KINDS = {
   },
   followers: {
     path: '/connections/followers',
-    title: 'Readers',
+    title: 'Followers',
     empty: 'People who follow you appear here.',
   },
   blocked: {
@@ -47,8 +47,8 @@ export default async function PeoplePage({ params }: Props) {
   const people = result.ok ? result.value.items : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">{config.title}</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">{config.title}</h1>
 
       {people.length === 0 ? (
         <EmptyState title="Nobody here yet" body={config.empty} />

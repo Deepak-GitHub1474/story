@@ -112,3 +112,43 @@ async def test_a_blocked_authors_story_is_not_public(client, signup_payload, app
 
     response = await client.get(f"/v1/public/stories/{story['slug']}")
     assert response.status_code == 404
+
+
+async def test_the_public_story_carries_its_pictures(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = (
+        await client.post(
+            "/v1/stories",
+            json={
+                "body": "A story with something to look at.",
+                "images": ["/v1/media/med_01JQ0000000000000000000000"],
+                "image_ratio": 0.8,
+                "image_fit": "contain",
+            },
+            headers=headers,
+        )
+    ).json()["data"]["story"]
+    published = (
+        await client.post(
+            f"/v1/stories/{story['story_id']}/publish",
+            json={"visibility": "public"},
+            headers=headers,
+        )
+    ).json()["data"]["story"]
+
+    data = (await client.get(f"/v1/public/stories/{published['slug']}")).json()["data"]
+
+    assert data["story"]["images"] == ["/v1/media/med_01JQ0000000000000000000000"]
+    assert data["story"]["image_ratio"] == 0.8
+    assert data["story"]["image_fit"] == "contain"
+
+
+async def test_a_public_story_without_pictures_says_so_plainly(client, signup_payload):
+    headers = await auth_headers(client, signup_payload)
+    story = await publish(client, headers)
+
+    data = (await client.get(f"/v1/public/stories/{story['slug']}")).json()["data"]
+
+    assert data["story"]["images"] == []
+    assert data["story"]["image_ratio"] is None
+    assert data["story"]["image_fit"] == "cover"

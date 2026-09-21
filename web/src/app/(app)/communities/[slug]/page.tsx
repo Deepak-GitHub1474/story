@@ -31,8 +31,8 @@ export default async function CommunityPage({ params }: Props) {
   const stories = page.items;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-[length:var(--text-title)] font-medium">{community.name}</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-[length:var(--text-heading)] font-medium sm:font-editorial sm:text-[length:var(--text-title)] sm:font-semibold sm:tracking-[var(--tracking-title)]">{community.name}</h1>
       <p className="mt-2 leading-relaxed text-text-secondary">{community.description}</p>
       <p className="mt-3 text-[length:var(--text-caption)] text-text-muted">
         {community.counts.members} members · {community.counts.stories} stories

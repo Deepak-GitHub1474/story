@@ -3,14 +3,32 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { backendFetch } from '../server/session';
-import type { TComment, TStory } from '../types';
+import type { TComment, TLiker, TPage, TPictures, TStory } from '../types';
+
+function picturesFrom(form: FormData): TPictures | null {
+  const raw = String(form.get('images') ?? '');
+  if (!raw) return null;
+
+  const images = JSON.parse(raw) as string[];
+  if (images.length === 0) return null;
+
+  const ratio = Number(form.get('image_ratio'));
+  return {
+    images,
+    image_ratio: Number.isFinite(ratio) && ratio > 0 ? ratio : null,
+    image_fit: String(form.get('image_fit') ?? 'cover') === 'contain' ? 'contain' : 'cover',
+  };
+}
 
 export async function createDraft(form: FormData): Promise<void> {
+  const pictures = picturesFrom(form);
+
   const result = await backendFetch<{ story: TStory }>('/stories', {
     method: 'POST',
     body: {
       title: String(form.get('title') ?? '').trim() || null,
       body: String(form.get('body') ?? ''),
+      ...(pictures ?? {}),
     },
   });
   if (!result.ok) redirect('/compose');
@@ -35,10 +53,15 @@ export async function reshareStory(storyId: string, note: string) {
   return { error: null };
 }
 
-export async function saveStory(storyId: string, title: string, body: string) {
+export async function saveStory(
+  storyId: string,
+  title: string,
+  body: string,
+  pictures?: TPictures,
+) {
   const result = await backendFetch<{ story: TStory }>(`/stories/${storyId}`, {
     method: 'PATCH',
-    body: { title: title.trim(), body },
+    body: { title: title.trim(), body, ...(pictures ?? {}) },
   });
   return result.ok ? { error: null } : { error: result.message };
 }
@@ -163,4 +186,16 @@ export async function editComment(commentId: string, storyId: string, body: stri
   if (!result.ok) return { error: result.message };
   revalidatePath(`/story/${storyId}`);
   return { error: null };
+}
+
+export async function loadLikers(storyId: string, cursor: string | null) {
+  const query = new URLSearchParams({ limit: '30' });
+  if (cursor) query.set('cursor', cursor);
+
+  const result = await backendFetch<TPage<TLiker>>(
+    `/stories/${storyId}/likes?${query}`,
+  );
+  return result.ok
+    ? { error: null, page: result.value }
+    : { error: result.message, page: null };
 }

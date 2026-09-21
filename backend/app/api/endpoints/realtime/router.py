@@ -2,6 +2,7 @@ import json
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
+from app.api.endpoints.calls import signaling as call_signaling
 from app.api.endpoints.chat import controllers as chat_controllers
 from app.api.endpoints.realtime import controllers
 from app.core.deps import CurrentClaims
@@ -68,3 +69,7 @@ async def _handle(raw: str, *, user_id: str, redis, mongo) -> None:
             await chat_controllers.typing_from_socket(
                 conversation_id, user_id=user_id, mongo=mongo, redis=redis
             )
+        return
+
+    if kind in call_signaling.SIGNAL_TYPES:
+        await call_signaling.handle(event, user_id=user_id, redis=redis, mongo=mongo)

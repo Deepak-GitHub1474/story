@@ -67,6 +67,8 @@ ThemeData buildTheme(AppColors colors, Brightness brightness) {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
+      leadingWidth: 48,
+      titleSpacing: AppSpacing.xs,
       titleTextStyle: TextStyle(
         color: colors.textPrimary,
         fontSize: AppTypeScale.heading,
