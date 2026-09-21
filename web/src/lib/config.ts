@@ -1,12 +1,21 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:9000/v1';
+const ENVIRONMENTS = {
+  development: {
+    api: 'http://127.0.0.1:9000/v1',
+    site: 'http://localhost:3100',
+  },
+  production: {
+    api: 'https://story-story-api-huxg0j-fe9bbd-13-53-86-234.sslip.io/v1',
+    site: 'https://story-six-chi.vercel.app',
+  },
+};
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const APP_ENV = (process.env.NEXT_PUBLIC_STORY_ENV ?? 'development').toLowerCase();
+const current = APP_ENV === 'production' ? ENVIRONMENTS.production : ENVIRONMENTS.development;
+const API_ORIGIN = current.api.replace(/\/v1\/?$/, '');
 
+export const API_BASE_URL = current.api;
+export const SITE_URL = current.site;
 export const SITE_NAME = 'STORY';
-
-export const API_ORIGIN = API_BASE_URL.replace(/\/v1\/?$/, '');
 
 export function mediaUrl(path: string): string {
   return /^https?:\/\//.test(path) ? path : `${API_ORIGIN}${path}`;
