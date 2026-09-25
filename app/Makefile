@@ -1,7 +1,7 @@
 .PHONY: help setup test check run apk apk-release release e2e
 
 API_URL  ?= http://127.0.0.1:9000/v1
-LIVE_API ?= https://story-story-api-huxg0j-fe9bbd-13-53-86-234.sslip.io/v1
+LIVE_API ?= https://story-storyapi-wicta2-e768a5-35-188-103-96.sslip.io/v1
 REPO     ?= Deepak-GitHub1474/story
 # The version is pubspec's alone. Bump it there, nowhere else.
 VERSION   = $(shell awk '/^version:/{split($$2,v,"+"); print v[1]}' pubspec.yaml)
