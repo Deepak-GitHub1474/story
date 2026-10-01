@@ -4,8 +4,8 @@ const ENVIRONMENTS = {
     site: 'http://localhost:3100',
   },
   production: {
-    api: 'https://story-storyapi-wicta2-e768a5-35-188-103-96.sslip.io/v1',
-    site: 'https://story-six-chi.vercel.app',
+    api: 'https://story-storyapi-r3ymhy-ce7c64-35-244-31-217.sslip.io/v1',
+    site: 'https://developerstring-story.vercel.app',
   },
 };
 
